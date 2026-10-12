@@ -36,7 +36,15 @@ def use_real_auth(html, filename):
     marker = "<script>window.APP_CONFIG={SUPABASE_URL:'demo'"
     start = html.find(marker)
     if start < 0:
-        raise SystemExit("Missing expected configuration in " + filename)
+        # An archive which already loads config.js and the real SDK needs no rewriting.
+        if '/config.js' in html and 'supabase-js' in html:
+            return html
+        # Older static archives may lack the new config script altogether.
+        scripts = ('<script src="/config.js"></script>\\n'
+                   '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>\\n')
+        if '</head>' in html:
+            return html.replace('</head>', scripts + '</head>', 1)
+        raise SystemExit("Unable to add configuration to " + filename)
     middle = html.find("</script>", start) + len("</script>")
     next_script = html.find("<script>", middle)
     if next_script < 0:
