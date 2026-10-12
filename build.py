@@ -78,6 +78,11 @@ if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
+# Remove the legacy retake button while preserving the PDF download.
+redo_button = '<button id="gtRedo" class="ghost" type="button">Refazer o teste</button>'
+if html.count(redo_button) != 1:
+    raise SystemExit("Unexpected number of retake buttons in original site")
+html = html.replace(redo_button, '', 1)
 index_page.write_text(html, encoding="utf-8")
 # Stop the deployment if a literal backslash-n ever replaces a script newline again.
 if "<script>" + chr(92) + "n" in html:
