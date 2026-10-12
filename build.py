@@ -3,6 +3,8 @@
 from pathlib import Path
 from zipfile import ZipFile
 import shutil
+import os
+import json
 
 root = Path(__file__).resolve().parent
 archive = root / "mapa-guardiao-site.zip"
@@ -28,4 +30,18 @@ with ZipFile(archive) as z:
             shutil.copyfileobj(src, target)
 if not (out / "index.html").exists():
     raise SystemExit("Build failed: public/index.html missing")
-print("Prepared", len(list(out.rglob("*"))), "site paths")
+
+# The Supabase URL and publishable key are safe for browser configuration.
+# Never expose the service-role key or Anthropic API key here.
+client_config = {
+    "SUPABASE_URL": os.getenv("SUPABASE_URL", ""),
+    "SUPABASE_ANON_KEY": os.getenv("SUPABASE_ANON_KEY", ""),
+    "ADMIN_EMAIL": os.getenv("ADMIN_EMAIL", "contato.energystudio@gmail.com"),
+}
+(out / "config.js").write_text(
+    "window.APP_CONFIG = " + json.dumps(client_config, ensure_ascii=False) + ";\n",
+    encoding="utf-8",
+)
+print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
+      bool(client_config["SUPABASE_URL"] and client_config["SUPABASE_ANON_KEY"]))
+
