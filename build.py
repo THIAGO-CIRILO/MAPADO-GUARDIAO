@@ -31,6 +31,29 @@ with ZipFile(archive) as z:
 if not (out / "index.html").exists():
     raise SystemExit("Build failed: public/index.html missing")
 
+
+def use_real_auth(html, filename):
+    marker = "<script>window.APP_CONFIG={SUPABASE_URL:'demo'"
+    start = html.find(marker)
+    if start < 0:
+        raise SystemExit("Missing expected configuration in " + filename)
+    middle = html.find("</script>", start) + len("</script>")
+    next_script = html.find("<script>", middle)
+    if next_script < 0:
+        raise SystemExit("Missing example script in " + filename)
+    end = html.find("</script>", next_script)
+    if end < 0:
+        raise SystemExit("Example script did not close in " + filename)
+    end += len("</script>")
+    scripts = ('<script src="/config.js"></script>\n'
+               '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>')
+    return html[:start] + scripts + html[end:]
+
+for filename in ("index.html", "admin.html"):
+    file = out / filename
+    if file.exists():
+        file.write_text(use_real_auth(file.read_text(encoding="utf-8"), filename), encoding="utf-8")
+
 # The Supabase URL and publishable key are safe for browser configuration.
 # Never expose the service-role key or Anthropic API key here.
 client_config = {
