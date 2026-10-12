@@ -65,6 +65,9 @@ function wz() {
       <div class="wz-nav"><button class="ghost" id="wzBackW" type="button">Voltar</button><button id="wzAuth" type="button"${W.busy ? ' disabled' : ''}>${m === 'login' ? 'Entrar' : m === 'forgot' ? 'Enviar link' : 'Criar conta'}</button></div>
       ${m === 'login' ? '<button class="wz-link" id="wzForgot" type="button">Esqueci a minha senha</button>' : ''}</div></div>`; return;
   }
+  if (s === 'aguardando') {
+    R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Estamos aguardando a confirmação do pagamento</h2><p class="lead">Sua conta está criada. Para liberar seu único Mapa do Guardião, o pagamento precisa estar aprovado na Kiwify usando o mesmo e-mail: <b>${esc(W.user?.email || '')}</b>.</p><p class="wz-msg">Após a confirmação, você poderá responder ao questionário uma vez e consultar seu mapa e PDF pelo painel.</p><div class="wz-nav"><button id="wzCheckPayment" type="button">Verificar meu acesso</button></div><p class="gt-note">Se comprou com outro e-mail, entre com a conta correspondente ou fale com o suporte.</p></div></div>`; return;
+  }
   if (s === 'confirma') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Confira o seu e-mail</h2><p class="lead">Enviamos um link para <b>${esc(W.email || '')}</b>. Clique nele para confirmar e depois volte aqui para entrar.</p><div class="wz-nav"><button id="wzToLogin" type="button">Já confirmei, entrar</button></div></div></div>`; return; }
   if (s === 'novasenha') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Nova senha</h2><label>Nova senha (mínimo 6 caracteres)<input id="wzPass" type="password" autocomplete="new-password"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzSetPass" type="button">Salvar senha</button></div></div></div>`; return; }
   if (s === 'lista') {
@@ -118,10 +121,18 @@ function msgAuth(e) {
   if (t.includes('rate') || t.includes('seconds')) return 'Muitas tentativas. Aguarde um instante e tente de novo.';
   return 'Não foi possível concluir. Confira os dados e tente de novo.';
 }
+async function liberarAcesso() {
+  if (isAdmin()) return true;
+  const { data, error } = await sb.rpc('tem_acesso_guardiao');
+  if (error) { W.err = 'Não foi possível verificar o pagamento. Tente novamente em alguns instantes.'; W.screen = 'aguardando'; wz(); return false; }
+  if (data !== true) { W.err = ''; W.screen = 'aguardando'; wz(); return false; }
+  return true;
+}
 async function afterLogin() {
   syncLocal(); await loadMaps();
   if (new URLSearchParams(location.search).get('ver')) return;
   if (W.maps.length) return openMap(W.maps[0].id, false);
+  if (!(await liberarAcesso())) return;
   W.screen = 'step'; D.step = D.step || 'dados1'; wz();
 }
 async function doAuth() {
@@ -242,7 +253,8 @@ async function openMap(id, asAdmin) {
 document.addEventListener('click', async e => {
   const t = e.target.closest('button,li,a'); if (!t || !$('gt') || $('gt').hidden) return;
   const id = t.id;
-  if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } if (W.maps.length) return openMap(W.maps[0].id, false); W.screen = 'step'; return wz(); }
+  if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } if (W.maps.length) return openMap(W.maps[0].id, false); if (!(await liberarAcesso())) return; W.screen = 'step'; return wz(); }
+  if (id === 'wzCheckPayment') { if (!(await liberarAcesso())) return; W.screen = 'step'; D.step = D.step || 'dados1'; return wz(); }
   if (id === 'wzHave') { W.screen = 'auth'; W.mode = 'login'; W.err = ''; return wz(); }
   if (id === 'wzBackW') { W.screen = 'welcome'; W.err = ''; W.msg = ''; return wz(); }
   if (id === 'wzTabS') { W.mode = 'signup'; W.err = ''; return wz(); }
@@ -317,8 +329,12 @@ async function boot() {
     return openMap(ver, true);
   }
   if (W.user) {
-    syncLocal(); await loadMaps();
-    if (W.maps.length) return openMap(W.maps[0].id, false);
+    return afterLogin();
+  }
+  if (new URLSearchParams(location.search).get('compra') === 'aprovada') {
+    W.screen = 'auth'; W.mode = 'signup';
+    W.msg = 'Crie sua conta com o mesmo e-mail utilizado na compra da Kiwify.';
+    return wz();
   }
   W.screen = 'welcome'; wz();
 }
