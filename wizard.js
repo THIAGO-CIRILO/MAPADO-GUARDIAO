@@ -68,7 +68,7 @@ function wz() {
   if (s === 'confirma') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Confira o seu e-mail</h2><p class="lead">Enviamos um link para <b>${esc(W.email || '')}</b>. Clique nele para confirmar e depois volte aqui para entrar.</p><div class="wz-nav"><button id="wzToLogin" type="button">Já confirmei, entrar</button></div></div></div>`; return; }
   if (s === 'novasenha') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Nova senha</h2><label>Nova senha (mínimo 6 caracteres)<input id="wzPass" type="password" autocomplete="new-password"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzSetPass" type="button">Salvar senha</button></div></div></div>`; return; }
   if (s === 'lista') {
-    R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Seus mapas</h2><div class="wz-list">${W.maps.map(m => `<button type="button" data-map="${m.id}">Mapa de ${fdate(m.created_at)}<small>${esc(m.guardiao || '')} · ${esc(m.potencial || '')}</small></button>`).join('')}</div><div class="wz-nav"><button id="wzNew" type="button">Fazer um novo mapa</button></div></div></div>`; return;
+    R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Meu Mapa do Guardião</h2><p class="lead">Seu mapa é único. Você pode consultá-lo e baixar o PDF sempre que quiser.</p><div class="wz-list">${W.maps.map(m => `<button type="button" data-map="${m.id}">Mapa de ${fdate(m.created_at)}<small>${esc(m.guardiao || '')} · ${esc(m.potencial || '')}</small></button>`).join('')}</div></div></div>`; return;
   }
   if (s === 'loading') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Abrindo…</p></div></div>'; return; }
   if (s === 'gerando') {
@@ -79,7 +79,7 @@ function wz() {
     const p = db.people.find(x => x.id === D.pid && x.gt && x.gt.res); if (!p) { W.screen = 'welcome'; return wz(); }
     gtResult(p);
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
-    root().insertAdjacentHTML('beforeend', extra); if (W.viewing && $('gtRedo')) $('gtRedo').remove(); return;
+    root().insertAdjacentHTML('beforeend', extra); if ($('gtRedo')) $('gtRedo').remove(); return;
   }
   // etapas
   const st = D.step;
@@ -121,8 +121,8 @@ function msgAuth(e) {
 async function afterLogin() {
   syncLocal(); await loadMaps();
   if (new URLSearchParams(location.search).get('ver')) return;
-  if (W.maps.length) { W.screen = 'lista'; } else { W.screen = 'step'; D.step = D.step || 'dados1'; }
-  wz();
+  if (W.maps.length) return openMap(W.maps[0].id, false);
+  W.screen = 'step'; D.step = D.step || 'dados1'; wz();
 }
 async function doAuth() {
   const email = ($('wzEmail').value || '').trim(), m = W.mode; W.email = email; W.err = ''; W.msg = '';
@@ -159,15 +159,19 @@ function wzTeste(p, S) {
   };
 }
 async function gerar() {
+  if (W.busy) return;
+  W.busy = true;
+  try { await loadMaps(); } catch (e) {}
+  if (W.maps.length) { W.busy = false; return openMap(W.maps[0].id, false); }
   const sess = (await sb.auth.getSession()).data.session;
-  if (!sess) { W.screen = 'auth'; W.mode = 'login'; W.err = 'Entre de novo para continuar.'; return wz(); }
+  if (!sess) { W.busy = false; W.screen = 'auth'; W.mode = 'login'; W.err = 'Entre de novo para continuar.'; return wz(); }
   const c = { uf: D.uf, nome: D.city };
   let p = db.people.find(x => x.id === D.pid && x.gt); if (!p) { p = { id: 'gt' + Date.now(), events: [], elem: {} }; db.people.push(p); }
   Object.assign(p, { name: D.name.trim(), birth: D.birth, goal: D.goal.trim(), time: D.time || '', dst: !!D.dst, city: D.city ? `${D.city}, ${D.uf}` : '', lat: parseFloat(D.lat), lon: parseFloat(D.lon), tz: parseFloat(D.tz) });
   p.gt = { ans: Object.assign({}, D.ans) }; D.pid = p.id; db.cur = p.id; refStr = iso(todayObj); gtSave();
   fillForm(); render();
   const S = gtScore(D.ans), dossier = buildDossier('atual');
-  if (!dossier) { W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
+  if (!dossier) { W.busy = false; W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
   delete dossier.areas; delete dossier.modo; delete dossier.elementos_autoavaliacao;
   const teste = wzTeste(p, S);
   W.screen = 'gerando'; W.live = 'Lendo as suas respostas…'; wz();
@@ -202,11 +206,18 @@ async function gerar() {
     res.trabalhar = (res.trabalhar || []).slice(0, 4); if (res.plano && res.plano.dias) res.plano.dias = res.plano.dias.slice(0, 7);
     if (!gtOk(res)) throw Object.assign(new Error('incompleto'), { status: 0 });
     p.gt.S = S; p.gt.res = res; p.gt.when = iso(todayObj); save();
-    try {
-      await sb.from('perfis').upsert({ id: W.user.id, email: W.user.email, nome: p.name, nascimento: D.birth, hora: D.time || null, uf: D.uf || null, cidade: D.city || null, lat: p.lat, lon: p.lon, tz: p.tz, dst: !!D.dst, objetivo: p.goal, aceite_lgpd_em: new Date().toISOString() });
-      await sb.from('mapas').insert({ user_id: W.user.id, respostas: D.ans, scores: S, resultado: res, guardiao: GT_G[S.rg[0]][0], ferida: S.rw[0] ? GT_W[S.rw[0]][0] : null, potencial: GT_P[S.rp[0]][0] });
-      await loadMaps();
-    } catch (e) { console.error('salvar', e); }
+    // Only show a completed map after the database confirms it was saved.
+    const { error: profileError } = await sb.from('perfis').upsert({ id: W.user.id, email: W.user.email, nome: p.name, nascimento: D.birth, hora: D.time || null, uf: D.uf || null, cidade: D.city || null, lat: p.lat, lon: p.lon, tz: p.tz, dst: !!D.dst, objetivo: p.goal, aceite_lgpd_em: new Date().toISOString() });
+    if (profileError) console.warn('Perfil não atualizado; mapa continua salvo se inserção funcionar.');
+    const { error: saveError } = await sb.from('mapas').insert({ user_id: W.user.id, respostas: D.ans, scores: S, resultado: res, guardiao: GT_G[S.rg[0]][0], ferida: S.rw[0] ? GT_W[S.rw[0]][0] : null, potencial: GT_P[S.rp[0]][0] });
+    if (saveError) {
+      if (saveError.code === '23505') {
+        await loadMaps();
+        if (W.maps.length) { clearInterval(tm); return openMap(W.maps[0].id, false); }
+      }
+      throw new Error('O mapa foi escrito, mas não pôde ser salvo. Tente novamente: as etapas já concluídas serão reutilizadas.');
+    }
+    await loadMaps();
     clearInterval(tm); W.viewing = null; W.screen = 'result'; wz(); window.scrollTo(0, 0);
   } catch (e) {
     clearInterval(tm);
@@ -215,7 +226,7 @@ async function gerar() {
     W.err = e.status === 401 ? 'Sua sessão expirou. Entre de novo.' : detalhe;
     if (e.j?.fase) W.err += ' (Etapa ' + String(e.j.fase).toUpperCase() + ')';
     W.screen = 'erro'; wz();
-  }
+  } finally { W.busy = false; }
 }
 async function openMap(id, asAdmin) {
   W.screen = 'loading'; wz();
@@ -231,7 +242,7 @@ async function openMap(id, asAdmin) {
 document.addEventListener('click', async e => {
   const t = e.target.closest('button,li,a'); if (!t || !$('gt') || $('gt').hidden) return;
   const id = t.id;
-  if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } W.screen = W.maps.length ? 'lista' : 'step'; return wz(); }
+  if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } if (W.maps.length) return openMap(W.maps[0].id, false); W.screen = 'step'; return wz(); }
   if (id === 'wzHave') { W.screen = 'auth'; W.mode = 'login'; W.err = ''; return wz(); }
   if (id === 'wzBackW') { W.screen = 'welcome'; W.err = ''; W.msg = ''; return wz(); }
   if (id === 'wzTabS') { W.mode = 'signup'; W.err = ''; return wz(); }
@@ -241,9 +252,7 @@ document.addEventListener('click', async e => {
   if (id === 'wzToLogin') { W.screen = 'auth'; W.mode = 'login'; return wz(); }
   if (id === 'wzSetPass') { const v = $('wzPass').value; if (v.length < 6) { W.err = 'A senha precisa ter pelo menos 6 caracteres.'; return wz(); } const { error } = await sb.auth.updateUser({ password: v }); if (error) { W.err = msgAuth(error); return wz(); } history.replaceState(null, '', '/'); const { data } = await sb.auth.getSession(); W.user = data.session ? data.session.user : null; return afterLogin(); }
   if (id === 'wzOut') { await sb.auth.signOut(); W.user = null; W.maps = []; W.screen = 'welcome'; return wz(); }
-  if (id === 'wzNew') { resetDraft(true); W.screen = 'step'; return wz(); }
-  if (id === 'wzMine') { W.screen = 'lista'; return wz(); }
-  if (id === 'gtRedo') { resetDraft(true); W.screen = 'step'; return wz(); }
+  if (id === 'wzMine') { await loadMaps(); W.screen = 'lista'; return wz(); }
   if (t.dataset && t.dataset.map) return openMap(t.dataset.map, false);
   if (id === 'wzPrev') return stepPrev();
   if (t.dataset && t.dataset.opt !== undefined) { const i = +/^q(\d+)$/.exec(D.step)[1]; D.ans[i] = +t.dataset.opt; gtSave(); return wz(); }
@@ -307,7 +316,10 @@ async function boot() {
     if (!W.user) { W.screen = 'auth'; W.mode = 'login'; W.msg = 'Entre com a conta de administrador para ver este mapa.'; return wz(); }
     return openMap(ver, true);
   }
-  if (W.user) { syncLocal(); await loadMaps(); }
+  if (W.user) {
+    syncLocal(); await loadMaps();
+    if (W.maps.length) return openMap(W.maps[0].id, false);
+  }
   W.screen = 'welcome'; wz();
 }
 // quando o administrador entra pelo link ?ver=
