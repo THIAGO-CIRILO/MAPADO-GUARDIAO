@@ -1,5 +1,6 @@
 // Geração do Mapa do Guardião com autenticação Supabase e Claude.
 // Executado apenas no servidor Vercel. A chave Anthropic nunca é enviada ao navegador.
+const { buildPrompt } = require('./_prompt.js');
 const T = { type: 'string' };
 const obj = props => ({ type: 'object', properties: props, required: Object.keys(props), additionalProperties: false });
 const array = items => ({ type: 'array', items });
@@ -113,8 +114,7 @@ export default async function handler(req, res) {
         system: SYSTEM,
         messages: [{
           role: 'user',
-          content: 'Etapa ' + fase.toUpperCase() + ' de 5. Objetivo desta etapa: ' + FOCUS[fase] +
-                   '\nUse os dados como contexto, sem reproduzi-los integralmente:\n' + payload
+          content: buildPrompt(fase, teste, dossier)
         }],
         output_config: { format: { type: 'json_schema', schema: SCHEMAS[fase] } }
       }),
