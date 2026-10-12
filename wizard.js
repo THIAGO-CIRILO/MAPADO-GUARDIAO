@@ -2,6 +2,9 @@
 (() => {
 const CFG = window.APP_CONFIG || {};
 const ADMIN = (CFG.ADMIN_EMAIL || 'contato.energystudio@gmail.com').toLowerCase();
+// Confirmation and password recovery must always return to the public site,
+// even if a user starts registration from a localhost preview.
+const AUTH_REDIRECT_URL = 'https://mapado-guardiao.vercel.app/';
 let sb = null;
 try { if (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY); } catch (e) { sb = null; }
 // download direto no navegador (o app original usava o recurso de download do Claude)
@@ -142,9 +145,9 @@ async function doAuth() {
   if (m !== 'forgot' && pass.length < 6) { W.err = 'A senha precisa ter pelo menos 6 caracteres.'; return wz(); }
   W.busy = true; $('wzAuth').disabled = true;
   try {
-    if (m === 'forgot') { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/' }); if (error) throw error; W.msg = 'Pronto! Se o e-mail existir, o link chegou na sua caixa de entrada.'; }
+    if (m === 'forgot') { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: AUTH_REDIRECT_URL }); if (error) throw error; W.msg = 'Pronto! Se o e-mail existir, o link chegou na sua caixa de entrada.'; }
     else if (m === 'signup') {
-      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: location.origin + '/' } }); if (error) throw error;
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: AUTH_REDIRECT_URL } }); if (error) throw error;
       if (data.session) { W.user = data.session.user; W.busy = false; return afterLogin(); }
       W.screen = 'confirma';
     } else {
