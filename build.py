@@ -115,6 +115,25 @@ replacement = '<div class="retrato" id="fotoAutor"><img src="/foto-thiago.webp" 
 sales_html = sales_html.replace(placeholder, replacement, 1)
 sales_css = '#fotoAutor{padding:0;display:block}#fotoAutor img{width:100%;height:100%;margin:0;object-fit:cover;object-position:center 34%}'
 sales_html = sales_html.replace("</style>", sales_css + "\n</style>", 1)
+# Connect all purchase buttons to the verified Kiwify checkout.
+checkout_url = "https://pay.kiwify.com.br/vT6ZxZd"
+old_checkout = "linkPagamento: '#'"
+if sales_html.count(old_checkout) != 1:
+    raise SystemExit("Unexpected Kiwify checkout configuration in sales page")
+sales_html = sales_html.replace(old_checkout, "linkPagamento: '" + checkout_url + "'", 1)
+# No price was supplied; avoid displaying placeholder R$ XX amounts as real prices.
+sales_html = sales_html.replace(
+    "var p = CONFIG.parcelas + 'x de <b>' + CONFIG.valorParcela + '</b> ou ' + CONFIG.valorVista + ' à vista';",
+    "var p = 'Veja o valor e as opções de pagamento no checkout';"
+)
+sales_html = sales_html.replace(
+    "e.innerHTML = CONFIG.parcelas + 'x de ' + CONFIG.valorParcela;",
+    "e.textContent = 'Confira as opções de parcelamento no checkout';"
+)
+sales_html = sales_html.replace(
+    "e.textContent = 'ou ' + CONFIG.valorVista + ' à vista';",
+    "e.textContent = 'Confira o valor à vista no checkout';"
+)
 sales_page.write_text(sales_html, encoding="utf-8")
 
 print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
