@@ -77,8 +77,13 @@ close_tag = html.find("</script>", wizard_pos)
 if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
-html = html[:open_tag] + "<script>\\n" + wizard_source + "\\n</script>" + html[close_tag + len("</script>"):]
+html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
 index_page.write_text(html, encoding="utf-8")
+# Stop the deployment if a literal backslash-n ever replaces a script newline again.
+if "<script>" + chr(92) + "n" in html:
+    raise SystemExit("Invalid JavaScript script delimiter in generated HTML")
+if html.count("/* ===== MAPA DO GUARDIÃO · app em etapas, login (Supabase) e geração (servidor) ===== */") != 1:
+    raise SystemExit("Wizard must be embedded exactly once")
 
 for filename in ("index.html", "admin.html"):
     file = out / filename
