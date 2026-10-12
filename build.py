@@ -55,7 +55,15 @@ def use_real_auth(html, filename):
     end += len("</script>")
     scripts = ('<script src="/config.js"></script>\n'
                '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>')
-    return html[:start] + scripts + html[end:]
+    html = html[:start] + scripts + html[end:]
+    # Remove obsolete demonstration banner, fake-account instructions and reset link.
+    banner_start = html.find('<div id="demoBar">')
+    if banner_start >= 0:
+        banner_end = html.find('</style>', banner_start)
+        if banner_end < 0:
+            raise SystemExit("Malformed demo banner in " + filename)
+        html = html[:banner_start] + html[banner_end + len('</style>'):]
+    return html
 
 for filename in ("index.html", "admin.html"):
     file = out / filename
