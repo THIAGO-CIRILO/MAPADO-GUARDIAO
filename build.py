@@ -101,6 +101,22 @@ client_config = {
     "window.APP_CONFIG = " + json.dumps(client_config, ensure_ascii=False) + ";\n",
     encoding="utf-8",
 )
+# The sales page uses the creator's actual photograph from this repository.
+photo = root / "foto-thiago.webp"
+sales_page = out / "venda.html"
+if not photo.exists() or not sales_page.exists():
+    raise SystemExit("Missing creator photograph or sales page")
+shutil.copyfile(photo, out / photo.name)
+sales_html = sales_page.read_text(encoding="utf-8")
+placeholder = '<div class="retrato" id="fotoAutor" role="img" aria-label="Espaço para a foto do Thiago">COLOQUE AQUI<br>A SUA FOTO</div>'
+if sales_html.count(placeholder) != 1:
+    raise SystemExit("Cannot locate the creator photograph placeholder in the sales page")
+replacement = '<div class="retrato" id="fotoAutor"><img src="/foto-thiago.webp" alt="Thiago Cervi, criador do Mapa do Guardião" width="320" height="400" loading="lazy" decoding="async"></div>'
+sales_html = sales_html.replace(placeholder, replacement, 1)
+sales_css = '#fotoAutor{padding:0;display:block}#fotoAutor img{width:100%;height:100%;margin:0;object-fit:cover;object-position:center 34%}'
+sales_html = sales_html.replace("</style>", sales_css + "\n</style>", 1)
+sales_page.write_text(sales_html, encoding="utf-8")
+
 print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
       bool(client_config["SUPABASE_URL"] and client_config["SUPABASE_ANON_KEY"]))
 
