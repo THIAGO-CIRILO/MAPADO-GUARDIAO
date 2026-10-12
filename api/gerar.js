@@ -116,22 +116,42 @@ module.exports = async function handler(req, res) {
           role: 'user',
           content: buildPrompt(fase, teste, dossier)
         }],
-        output_config: { format: { type: 'json_schema', schema: SCHEMAS[fase] } }
+        output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMAS[fase] } }
       }),
       signal: AbortSignal.timeout(50000)
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.error('Falha Claude API:', response.status, data?.error?.type || 'unknown');
-      return res.status(502).json({ erro: 'O Claude não conseguiu responder. Verifique a chave, os créditos e o modelo configurado.' });
+      const kind = data?.error?.type || 'unknown';
+      const detailsCode = data?.error?.details?.error_code || '';
+      const safeRequestId = response.headers.get('request-id') || data?.request_id || '';
+      const providerMessage = String(data?.error?.message || '');
+      const creditProblem = /credit balance|credits|billing|spend limit|payment|usage limits/i.test(providerMessage)
+        || detailsCode === 'enforced_spend_limit_reached';
+      console.error('Claude request failed', { fase, status: response.status, kind, detailsCode, requestId: safeRequestId });
+      let msg = 'O Claude recusou a solicitação. Confira a configuração da API.';
+      let status = 502;
+      if (creditProblem) msg = 'A conta da API do Claude está sem créditos ou atingiu um limite de gastos. Confira Billing no Claude Console.';
+      else if (response.status === 401 || response.status === 403) msg = 'A chave da API do Claude não foi aceita ou não tem permissão. Confira a chave na Vercel.';
+      else if (response.status === 404) msg = 'O modelo configurado não está disponível nesta conta do Claude.';
+      else if (response.status === 429) {
+        status = 503;
+        msg = 'A API do Claude atingiu o limite de requisições. Aguarde alguns minutos e tente novamente.';
+      } else if (response.status === 400) msg = 'O Claude recusou o formato da solicitação. É necessário ajustar a API do site.';
+      else if (response.status >= 500) msg = 'A API do Claude está temporariamente indisponível. Tente novamente.';
+      return res.status(status).json({ erro: msg, fase });
     }
     const text = (data.content || []).filter(x => x.type === 'text').map(x => x.text).join('');
     if (!text || data.stop_reason === 'max_tokens')
-      return res.status(502).json({ erro: 'A resposta do Claude ficou incompleta. Tente novamente.' });
+      return res.status(502).json({ erro: 'A resposta do Claude ficou incompleta. Tente novamente somente esta etapa.', fase });
     const parte = JSON.parse(text);
     return res.status(200).json({ ok: true, parte });
   } catch (e) {
-    console.error('Erro na geração:', e?.name || 'unknown');
-    return res.status(503).json({ erro: 'Falha temporária de geração. Tente novamente.' });
+    console.error('Erro na geração:', e?.name || 'unknown', 'fase', req.body?.fase);
+    if (e?.name === 'TimeoutError' || e?.name === 'AbortError')
+      return res.status(504).json({ erro: 'A API do Claude demorou além do tempo permitido. Tente novamente.', fase: req.body?.fase });
+    if (e instanceof SyntaxError)
+      return res.status(502).json({ erro: 'O Claude retornou um texto que não pôde ser interpretado. Tente novamente.', fase: req.body?.fase });
+    return res.status(503).json({ erro: 'Falha temporária ao gerar o mapa. Tente novamente.', fase: req.body?.fase });
   }
 }
