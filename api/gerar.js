@@ -84,6 +84,27 @@ module.exports = async function handler(req, res) {
     const user = await auth.json();
     if (!user.id || !user.email) return res.status(401).json({ erro: 'Sessão inválida.' });
 
+    // A valid login is not a purchase. Confirm access using authenticated Supabase RLS.
+    const entitlement = await fetch(base + '/rest/v1/rpc/tem_acesso_guardiao', {
+      method: 'POST',
+      headers: {
+        apikey: publicKey, Authorization: 'Bearer ' + jwt,
+        'Content-Type': 'application/json'
+      },
+      body: '{}',
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!entitlement.ok) {
+      console.error('Guardiao entitlement lookup failed', entitlement.status);
+      return res.status(503).json({ erro: 'Não foi possível conferir seu acesso. Tente novamente em alguns instantes.', fase });
+    }
+    if ((await entitlement.json()) !== true) {
+      return res.status(403).json({
+        erro: 'Seu acesso ao Mapa do Guardião ainda não está liberado. Após a compra, entre usando o mesmo e-mail informado na Kiwify.',
+        fase
+      });
+    }
+
     // Reserva de uso feita atomicamente no banco, com bloqueio por usuário.
     const reserved = await fetch(base + '/rest/v1/rpc/reserve_guardiao_call', {
       method: 'POST',
