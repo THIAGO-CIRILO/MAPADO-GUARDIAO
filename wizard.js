@@ -72,7 +72,7 @@ function wz() {
   }
   if (s === 'loading') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Abrindo…</p></div></div>'; return; }
   if (s === 'gerando') {
-    R.innerHTML = `<div class="wz"><div class="wz-card wz-load"><span class="gt-dot"></span><h2>Montando o seu mapa</h2><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${esc(W.live || 'Lendo as suas respostas…')}</p><p class="wz-msg">Isso leva cerca de um minuto. Pode deixar esta página aberta.</p></div></div>`; return;
+    R.innerHTML = `<div class="wz"><div class="wz-card wz-load"><span class="gt-dot"></span><h2>Montando o seu mapa</h2><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${esc(W.live || 'Lendo as suas respostas…')}</p><p class="wz-msg">Isso pode levar alguns minutos. Mantenha esta página aberta.</p></div></div>`; return;
   }
   if (s === 'erro') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Não deu certo desta vez</h2><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzToObj" type="button">Voltar</button><button id="wzRetry" type="button">Tentar de novo</button></div></div></div>`; return; }
   if (s === 'result') {
@@ -176,8 +176,29 @@ async function gerar() {
   const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier }) })
     .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'erro'), { status: r.status, j }); return j.parte; });
   try {
-    const [A, B] = await Promise.all([call('a'), call('b')]);
-    const res = Object.assign({}, A, B);
+    // Reuse completed stages after an error. Limit concurrency to two API calls.
+    const assinatura = JSON.stringify({ teste, dossier });
+    if (W.assinaturaGeracao !== assinatura) {
+      W.assinaturaGeracao = assinatura;
+      W.partesGeradas = {};
+    }
+    const fases = ['a', 'b', 'c', 'd', 'e'];
+    const partes = new Array(fases.length);
+    for (let i = 0; i < fases.length; i += 2) {
+      const lote = fases.slice(i, i + 2);
+      const estados = await Promise.allSettled(lote.map(async fase => {
+        if (W.partesGeradas[fase]) return W.partesGeradas[fase];
+        const parte = await call(fase);
+        W.partesGeradas[fase] = parte;
+        return parte;
+      }));
+      estados.forEach((estado, j) => {
+        if (estado.status === 'fulfilled') partes[i + j] = estado.value;
+      });
+      const falha = estados.find(estado => estado.status === 'rejected');
+      if (falha) throw falha.reason;
+    }
+    const res = Object.assign({}, ...partes);
     res.trabalhar = (res.trabalhar || []).slice(0, 4); if (res.plano && res.plano.dias) res.plano.dias = res.plano.dias.slice(0, 7);
     if (!gtOk(res)) throw Object.assign(new Error('incompleto'), { status: 0 });
     p.gt.S = S; p.gt.res = res; p.gt.when = iso(todayObj); save();
@@ -189,7 +210,10 @@ async function gerar() {
     clearInterval(tm); W.viewing = null; W.screen = 'result'; wz(); window.scrollTo(0, 0);
   } catch (e) {
     clearInterval(tm);
-    W.err = e.status === 401 ? 'Sua sessão expirou. Entre de novo.' : e.status === 429 ? 'Você atingiu o limite de mapas gerados. Fale com o terapeuta para liberar mais.' : 'Não foi possível gerar o mapa agora. As suas respostas estão salvas; tente de novo em instantes.';
+    const detalhe = (typeof e?.message === 'string' && e.message.length < 300 && !['erro','incompleto'].includes(e.message))
+      ? e.message : 'Não foi possível gerar o mapa agora. Suas respostas estão salvas; tente novamente.';
+    W.err = e.status === 401 ? 'Sua sessão expirou. Entre de novo.' : detalhe;
+    if (e.j?.fase) W.err += ' (Etapa ' + String(e.j.fase).toUpperCase() + ')';
     W.screen = 'erro'; wz();
   }
 }
