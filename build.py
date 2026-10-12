@@ -121,19 +121,22 @@ old_checkout = "linkPagamento: '#'"
 if sales_html.count(old_checkout) != 1:
     raise SystemExit("Unexpected Kiwify checkout configuration in sales page")
 sales_html = sales_html.replace(old_checkout, "linkPagamento: '" + checkout_url + "'", 1)
-# No price was supplied; avoid displaying placeholder R$ XX amounts as real prices.
-sales_html = sales_html.replace(
-    "var p = CONFIG.parcelas + 'x de <b>' + CONFIG.valorParcela + '</b> ou ' + CONFIG.valorVista + ' à vista';",
-    "var p = 'Veja o valor e as opções de pagamento no checkout';"
-)
-sales_html = sales_html.replace(
-    "e.innerHTML = CONFIG.parcelas + 'x de ' + CONFIG.valorParcela;",
-    "e.textContent = 'Confira as opções de parcelamento no checkout';"
-)
-sales_html = sales_html.replace(
-    "e.textContent = 'ou ' + CONFIG.valorVista + ' à vista';",
-    "e.textContent = 'Confira o valor à vista no checkout';"
-)
+# Restore the original large price typography using confirmed Kiwify checkout prices.
+# The 8x installment includes checkout financing fees; cash price is R$ 37,00.
+for previous, actual in (
+    ("parcelas: 12", "parcelas: 8"),
+    ("valorParcela: 'R$ XX,XX'", "valorParcela: 'R$ 5,38'"),
+    ("valorVista: 'R$ XX'", "valorVista: 'R$ 37,00'"),
+):
+    if sales_html.count(previous) != 1:
+        raise SystemExit("Unexpected sales page price configuration: " + previous)
+    sales_html = sales_html.replace(previous, actual, 1)
+if sales_html.count("var p = CONFIG.parcelas + 'x de <b>' + CONFIG.valorParcela + '</b> ou ' + CONFIG.valorVista + ' à vista';") != 1:
+    raise SystemExit("Price display in main page or sticky bar has changed")
+if sales_html.count("e.innerHTML = CONFIG.parcelas + 'x de ' + CONFIG.valorParcela;") != 1:
+    raise SystemExit("Large price display is missing")
+if sales_html.count("e.textContent = 'ou ' + CONFIG.valorVista + ' à vista';") != 1:
+    raise SystemExit("Cash price display is missing")
 
 # Give purchasers accurate account-access instructions; checkout and app are separate.
 sales_html = sales_html.replace(
