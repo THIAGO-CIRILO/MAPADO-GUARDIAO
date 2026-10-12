@@ -76,6 +76,7 @@ module.exports = async function handler(req, res) {
   const payload = JSON.stringify({ teste, dossier });
   if (payload.length > 42000) return res.status(413).json({ erro: 'Dados excedem o limite.' });
 
+  let liberarReservaPendente = null;
   try {
     const auth = await fetch(base + '/auth/v1/user', {
       headers: { apikey: publicKey, Authorization: 'Bearer ' + jwt },
@@ -147,8 +148,10 @@ module.exports = async function handler(req, res) {
       try { await rpc('liberar_fase_guardiao', params); }
       catch (e) { console.error('Cannot release phase reservation', fase); }
     };
+    liberarReservaPendente = release;
     const fail = async (status, erro) => {
       await release();
+      liberarReservaPendente = null;
       return res.status(status).json({ erro, fase });
     };
 
@@ -201,8 +204,10 @@ module.exports = async function handler(req, res) {
     const saved = await rpc('concluir_fase_guardiao', { ...params, p_parte: parte });
     if (saved !== true)
       return res.status(503).json({ erro: 'Falha ao salvar a etapa. Aguarde antes de tentar de novo.', fase });
+    liberarReservaPendente = null;
     return res.status(200).json({ ok: true, parte });
   } catch (e) {
+    if (liberarReservaPendente) await liberarReservaPendente();
     console.error('Erro na geração:', e?.name || 'unknown', 'fase', req.body?.fase);
     if (e?.name === 'TimeoutError' || e?.name === 'AbortError')
       return res.status(504).json({ erro: 'A API do Claude demorou além do tempo permitido. Tente novamente.', fase: req.body?.fase });
