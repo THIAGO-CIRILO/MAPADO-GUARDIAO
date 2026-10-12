@@ -1,6 +1,7 @@
 // Geração do Mapa do Guardião com autenticação Supabase e Claude.
 // Executado apenas no servidor Vercel. A chave Anthropic nunca é enviada ao navegador.
 const { buildPrompt } = require('./_prompt.js');
+const { createHash } = require('node:crypto');
 const T = { type: 'string' };
 const obj = props => ({ type: 'object', properties: props, required: Object.keys(props), additionalProperties: false });
 const array = items => ({ type: 'array', items });
@@ -105,22 +106,51 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Reserva de uso feita atomicamente no banco, com bloqueio por usuário.
-    const reserved = await fetch(base + '/rest/v1/rpc/reserve_guardiao_call', {
-      method: 'POST',
-      headers: {
-        apikey: publicKey, Authorization: 'Bearer ' + jwt,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ p_fase: fase }),
-      signal: AbortSignal.timeout(8000)
-    });
-    if (!reserved.ok) {
-      console.error('Falha na reserva de uso:', reserved.status);
-      return res.status(503).json({ erro: 'Controle de uso indisponível.' });
+    // One account, one questionnaire and one map. Cached phases incur no new Claude calls.
+    const assinatura = createHash('sha256').update(payload).digest('hex');
+    const headers = {
+      apikey: publicKey, Authorization: 'Bearer ' + jwt,
+      'Content-Type': 'application/json'
+    };
+    const rpc = async (name, params) => {
+      const out = await fetch(base + '/rest/v1/rpc/' + name, {
+        method: 'POST', headers,
+        body: JSON.stringify(params),
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!out.ok) {
+        console.error('Guardiao RPC failed', name, out.status);
+        throw new Error('DATABASE_UNAVAILABLE');
+      }
+      return out.json();
+    };
+    const params = { p_fase: fase, p_assinatura: assinatura };
+    const gate = await rpc('iniciar_fase_guardiao', params);
+    if (gate.estado === 'concluido')
+      return res.status(409).json({ erro: 'Seu Mapa do Guardião já foi gerado. Acesse seu painel para visualizá-lo e baixar o PDF.', fase });
+    if (gate.estado === 'sem_acesso')
+      return res.status(403).json({ erro: 'Seu acesso ainda não foi liberado. Utilize o mesmo e-mail da compra na Kiwify.', fase });
+    if (gate.estado === 'questionario_ja_definido')
+      return res.status(409).json({ erro: 'Este acesso já tem um questionário em geração. Entre em contato com o suporte se precisar recuperá-lo.', fase });
+    if (gate.estado === 'pronta')
+      return res.status(200).json({ ok: true, parte: gate.parte, reutilizada: true });
+    if (gate.estado === 'processando')
+      return res.status(409).json({ erro: 'Esta etapa já está sendo gerada. Aguarde um pouco antes de tentar novamente.', fase });
+    if (gate.estado === 'limite')
+      return res.status(429).json({ erro: 'Limite temporário de tentativas atingido. Aguarde antes de continuar.', fase });
+    if (gate.estado !== 'reservada') {
+      console.error('Guardiao unexpected reservation status', gate.estado);
+      return res.status(503).json({ erro: 'Não foi possível iniciar a geração. Tente mais tarde.', fase });
     }
-    if ((await reserved.json()) !== true)
-      return res.status(429).json({ erro: 'Limite diário de geração atingido.' });
+    // Reservation is atomic across multiple tabs. Always release failed attempts.
+    const release = async () => {
+      try { await rpc('liberar_fase_guardiao', params); }
+      catch (e) { console.error('Cannot release phase reservation', fase); }
+    };
+    const fail = async (status, erro) => {
+      await release();
+      return res.status(status).json({ erro, fase });
+    };
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -160,12 +190,17 @@ module.exports = async function handler(req, res) {
         msg = 'A API do Claude atingiu o limite de requisições. Aguarde alguns minutos e tente novamente.';
       } else if (response.status === 400) msg = 'O Claude recusou o formato da solicitação. É necessário ajustar a API do site.';
       else if (response.status >= 500) msg = 'A API do Claude está temporariamente indisponível. Tente novamente.';
-      return res.status(status).json({ erro: msg, fase });
+      return fail(status, msg);
     }
     const text = (data.content || []).filter(x => x.type === 'text').map(x => x.text).join('');
     if (!text || data.stop_reason === 'max_tokens')
-      return res.status(502).json({ erro: 'A resposta do Claude ficou incompleta. Tente novamente somente esta etapa.', fase });
-    const parte = JSON.parse(text);
+      return fail(502, 'A resposta do Claude ficou incompleta. Tente novamente somente esta etapa.');
+    let parte;
+    try { parte = JSON.parse(text); }
+    catch (e) { return fail(502, 'O Claude retornou uma resposta incompleta. Tente novamente.'); }
+    const saved = await rpc('concluir_fase_guardiao', { ...params, p_parte: parte });
+    if (saved !== true)
+      return res.status(503).json({ erro: 'Falha ao salvar a etapa. Aguarde antes de tentar de novo.', fase });
     return res.status(200).json({ ok: true, parte });
   } catch (e) {
     console.error('Erro na geração:', e?.name || 'unknown', 'fase', req.body?.fase);
