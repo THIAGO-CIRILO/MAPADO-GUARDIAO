@@ -134,6 +134,18 @@ sales_html = sales_html.replace(
     "e.textContent = 'ou ' + CONFIG.valorVista + ' à vista';",
     "e.textContent = 'Confira o valor à vista no checkout';"
 )
+
+# Give purchasers accurate account-access instructions; checkout and app are separate.
+sales_html = sales_html.replace(
+    "Assim que o pagamento for confirmado, você recebe por e-mail o link para criar a sua conta e entrar no seu painel.",
+    "Assim que o pagamento for confirmado, acesse mapado-guardiao.vercel.app e crie sua conta com o mesmo e-mail informado na compra na Kiwify.",
+    1,
+)
+sales_html = sales_html.replace(
+    "Por e-mail, logo depois da confirmação do pagamento. Você cria a sua senha e entra pelo celular ou pelo computador.",
+    "Depois de pagar, entre em mapado-guardiao.vercel.app e crie sua conta com o mesmo e-mail da compra. Assim que a Kiwify confirmar o pagamento, seu acesso será liberado.",
+    1,
+)
 sales_page.write_text(sales_html, encoding="utf-8")
 
 print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
