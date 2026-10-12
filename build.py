@@ -65,6 +65,21 @@ def use_real_auth(html, filename):
         html = html[:banner_start] + html[banner_end + len('</style>'):]
     return html
 
+# Use the current tracked wizard.js, not the outdated copy embedded in the ZIP.
+index_page = out / "index.html"
+html = index_page.read_text(encoding="utf-8")
+wizard_marker = "/* ===== MAPA DO GUARDIÃO · app em etapas, login (Supabase) e geração (servidor) ===== */"
+wizard_pos = html.find(wizard_marker)
+if wizard_pos < 0:
+    raise SystemExit("Could not locate the wizard script in the site archive")
+open_tag = html.rfind("<script>", 0, wizard_pos)
+close_tag = html.find("</script>", wizard_pos)
+if open_tag < 0 or close_tag < 0:
+    raise SystemExit("Could not safely replace wizard script")
+wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
+html = html[:open_tag] + "<script>\\n" + wizard_source + "\\n</script>" + html[close_tag + len("</script>"):]
+index_page.write_text(html, encoding="utf-8")
+
 for filename in ("index.html", "admin.html"):
     file = out / filename
     if file.exists():
