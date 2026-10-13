@@ -64,7 +64,7 @@ function creator(p){
  const S=p.gt.S||{},R=p.gt.res||{},g=S.g||{},w=S.w||{},po=S.p||{},l=S.l||{},m=S.m||{};
  const peak=(o,k)=>Math.round(100*validNum(o[k])/Math.max(1,...Object.values(o).map(validNum)));
  const has=(o,arr,i)=>arr&&arr[i]&&validNum(o[arr[i]])>0;
- const primary=(dict,o,keys)=>keys&&dict[keys[0]]?dict[keys[0]][0]:"Não indicado";
+ const primary=(dict,o,keys)=>has(o,keys,0)&&dict[keys[0]]?dict[keys[0]][0]:"Não indicado";
  const secondary=(dict,o,keys)=>has(o,keys,1)&&dict[keys[1]]?dict[keys[1]][0]:"Sem segundo resultado indicado";
  const gp=primary(GT_G,g,S.rg),gs=secondary(GT_G,g,S.rg),wp=primary(GT_W,w,S.rw),ws=secondary(GT_W,w,S.rw);
  const pp=primary(GT_P,po,S.rp),ps=secondary(GT_P,po,S.rp),lp=primary(GT_L,l,S.rl),mp=primary(GT_M,m,S.rm);
@@ -318,7 +318,7 @@ function generate(p){
  blocks(q.R.pergunta,53,510,512,56,{size:12,color:"ivory",heading:"pergunta"});
  // Append any necessary continuations without losing the user text.
  let extras=0;
- while(overflows.length&&extras<24){
+ while(overflows.length&&extras<50){
   const extra=overflows.shift();doc.addPage();page++;extras++;
   rect(0,0,W,H,"ivory");rect(0,0,W,6,"orange");
   text("CAMPO GUARDIÃO / LEITURA COMPLEMENTAR",41,47,9,"orange","helvetica","bold");
@@ -330,6 +330,7 @@ function generate(p){
   part.forEach((line,i)=>doc.text(cleanse(line),45,188+i*lineHeight));
   if(extra.lines.length>max)overflows.push({...extra,lines:extra.lines.slice(max)});
  }
+ if (overflows.length) throw new Error('O texto excede o limite de páginas adicionais. Entre em contato com o suporte para receber o relatório sem cortes.');
  // Consistent final pagination even with optional overflow pages.
  const total=doc.getNumberOfPages();
  for(let i=1;i<=total;i++){
