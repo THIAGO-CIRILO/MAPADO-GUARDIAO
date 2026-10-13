@@ -294,9 +294,11 @@ async function renderReport(m,p){
   card(doc,'O QUE O ANO FAVORECE',listText(ano.favorece),294,266,237,237);
   card(doc,'ONDE PEDE CUIDADO',listText(ano.cuidado),545,266,248,237);
   // 23
-  page(doc,23,'Seu jeito de aprender','APRENDIZAGEM');
+  page(doc,23,'Seu jeito de aprender e trabalhar','APRENDIZAGEM');
   card(doc,'PREFERÊNCIA PRINCIPAL',firstLearn||'Não informada',43,168,269,83,{font:17});
   card(doc,'PREFERÊNCIA DE APOIO',secondLearn||'Sem segunda modalidade com resultado',43,262,269,83);
+  card(doc,'SEU JEITO PREFERIDO DE TRABALHAR',firstWork||'Não informado no teste',43,362,269,65,{font:11});
+  card(doc,'SEGUNDA PREFERÊNCIA DE TRABALHO',secondWork||'Sem segundo resultado com pontuação positiva',43,435,269,65,{font:9.7});
   card(doc,'COMO VOCÊ APRENDE',ano.aprende?.leitura,327,168,466,181);
   arr(ano.aprende?.dicas).slice(0,3).forEach((d,i)=>card(doc,'DICA '+(i+1),d,327,361+i*48,466,43,{font:9}));
   // 24
