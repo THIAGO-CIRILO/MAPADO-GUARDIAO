@@ -234,7 +234,8 @@ async function renderReport(m,p){
   divider(doc,images,11,'portrait','HONRAR','SUA FERIDA','A sensibilidade que pede escuta.');
   // 12
   page(doc,12,'A sensibilidade por trás do padrão','FERIDA');
-  panelPhoto(doc,images,'earth',39,167,326,334);
+  panelPhoto(doc,images,'earth',39,167,326,157);
+  card(doc,'O QUE É ESTA FERIDA',r.intro_ferida,39,338,326,165,{font:10});
   card(doc,'FERIDA PRINCIPAL',primaryF,380,167,414,75,{font:17});
   card(doc,'FERIDA SECUNDÁRIA',secondaryF||'Sem resultado secundário acima de zero',380,251,414,75);
   card(doc,'LEITURA DA FERIDA',fer.leitura,380,335,414,168);
@@ -246,10 +247,12 @@ async function renderReport(m,p){
   divider(doc,images,14,'horizon','ATUALIZAR','SEU POTENCIAL','Aquilo que pode voltar ao seu uso.');
   // 15
   page(doc,15,'O recurso que ficou guardado','POTÊNCIA');
-  panelPhoto(doc,images,'earth',44,168,360,333);
+  panelPhoto(doc,images,'earth',44,168,360,227);
+  card(doc,'PRIMEIRO GESTO PARA ATUALIZAR',power.primeiro_gesto,44,407,360,94,{font:9.6});
   card(doc,'POTENCIAL PRINCIPAL',primaryP,420,168,373,78,{font:15});
   card(doc,'POTENCIAL SECUNDÁRIO',secondaryP||'Sem segundo resultado acima de zero',420,255,373,77);
-  card(doc,'COMO ESSA POTÊNCIA SE EXPRESSA',power.leitura,420,342,373,159);
+  card(doc,'COMO ESSA POTÊNCIA SE EXPRESSA',power.leitura,420,342,373,103);
+  card(doc,'QUANDO A PROTEÇÃO RELAXA',power.quando_livre,420,454,373,47,{font:9.1});
   // 16
   page(doc,16,'O cruzamento do seu campo','LEITURA INTEGRADA');
   card(doc,'GUARDIÃO + FERIDA + POTÊNCIA',r.cruzamento,41,168,372,336,{font:10.5});
