@@ -293,7 +293,7 @@ document.addEventListener('click', async e => {
       });
       if (!pdf.ok) {
         const err = await pdf.json().catch(() => ({}));
-        throw new Error(err.erro || 'Não foi possível preparar o seu PDF.');
+        throw Object.assign(new Error(err.erro || 'Não foi possível preparar o seu PDF.'), { status: pdf.status });
       }
       const blob = await pdf.blob();
       if (blob.type !== 'application/pdf' && blob.size < 1000) throw new Error('O arquivo do relatório veio incompleto.');
@@ -307,7 +307,15 @@ document.addEventListener('click', async e => {
       setTimeout(() => URL.revokeObjectURL(href), 30000);
       if (status) status.textContent = 'Seu PDF está pronto.';
     } catch (err) {
-      if (status) status.textContent = err?.message || 'O download falhou. Seu mapa continua salvo.';
+      // If only the PDF server fails, compose the SAME saved map in-browser.
+      // Never bypass a 401/403 payment/session rejection.
+      if ((!err?.status || err.status >= 500) && window.guardiaoPdf29?.download && W.activeMapId) {
+        if (status) status.textContent = 'O servidor demorou. Montando o PDF no navegador…';
+        try { await window.guardiaoPdf29.download(btn || { disabled: false }, status || { textContent: '' }); }
+        catch (fallbackErr) { if (status) status.textContent = 'Não foi possível baixar agora. Seu mapa continua salvo.'; }
+      } else if (status) {
+        status.textContent = err?.message || 'O download falhou. Seu mapa continua salvo.';
+      }
     } finally {
       W.pdfDownloading = false;
       if (btn) btn.disabled = false;
