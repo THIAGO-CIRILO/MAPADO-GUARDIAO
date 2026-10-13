@@ -60,8 +60,10 @@ const leftovers=[];
 function card(doc,label,value,x,y,w,h,opts={}){
   const fg=opts.dark?'ivory':'ink';
   box(doc,x,y,w,h,opts.dark?'dark':'paper',9,opts.dark?'dark':'line');
-  if(label)sub(doc,label,x+14,y+13,w-28,opts.dark?'sand':'orange');
-  const top=y+(label?39:15), bottom=y+h-13, width=w-28;
+  const compact = Boolean(label && h < 83);
+  if(label)sub(doc,label,x+14,y+(compact?9:13),w-28,opts.dark?'sand':'orange');
+  const top=y+(label?(compact?26:39):15), bottom=y+h-(compact?7:13), width=w-28;
+  if (bottom - top < 10) throw new Error('PDF card layout too small: ' + label);
   let val=plain(value);
   if(!val)val='Não informado nesta leitura.';
   const font=opts.font||10.2;let size=font;
