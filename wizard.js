@@ -85,7 +85,14 @@ function wz() {
     const p = db.people.find(x => x.id === D.pid && x.gt && x.gt.res); if (!p) { W.screen = 'welcome'; return wz(); }
     gtResult(p);
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
-    root().insertAdjacentHTML('beforeend', extra); if ($('gtRedo')) $('gtRedo').remove(); return;
+    root().insertAdjacentHTML('beforeend', extra);
+    if ($('gtRedo')) $('gtRedo').remove();
+    // The 29-page report is assembled from the saved Supabase record, never from a new Claude call.
+    if ($('gtPdf')) {
+      $('gtPdf').id = 'wzPdf29';
+      $('wzPdf29').textContent = 'Baixar meu PDF completo (29 páginas)';
+    }
+    return;
   }
   // etapas
   const st = D.step;
@@ -232,6 +239,7 @@ async function gerar() {
       throw new Error('O mapa foi escrito, mas não pôde ser salvo. Tente novamente: as etapas já concluídas serão reutilizadas.');
     }
     await loadMaps();
+    W.activeMapId = W.maps[0]?.id || null;
     clearInterval(tm); W.viewing = null; W.screen = 'result'; wz(); window.scrollTo(0, 0);
   } catch (e) {
     clearInterval(tm);
@@ -249,7 +257,7 @@ async function openMap(id, asAdmin) {
   const { data: pf } = await sb.from('perfis').select('*').eq('id', m.user_id).maybeSingle(); const f = pf || {};
   const p = { id: 'gtv' + m.id, events: [], elem: {}, name: f.nome || '', birth: f.nascimento, time: f.hora || '', tz: f.tz ?? -3, dst: !!f.dst, city: f.cidade ? `${f.cidade}, ${f.uf || ''}` : '', lat: f.lat, lon: f.lon, goal: f.objetivo || '', gt: { ans: m.respostas, S: m.scores, res: m.resultado } };
   db.people = db.people.filter(x => x.id !== p.id); db.people.push(p); db.cur = p.id; D.pid = p.id; refStr = (m.created_at || '').slice(0, 10) || iso(todayObj);
-  fillForm(); render(); W.viewing = asAdmin ? m : null; W.screen = 'result'; wz(); window.scrollTo(0, 0);
+  fillForm(); render(); W.viewing = asAdmin ? m : null; W.activeMapId = m.id; W.screen = 'result'; wz(); window.scrollTo(0, 0);
 }
 
 /* ---- eventos ---- */
@@ -267,6 +275,45 @@ document.addEventListener('click', async e => {
   if (id === 'wzToLogin') { W.screen = 'auth'; W.mode = 'login'; return wz(); }
   if (id === 'wzSetPass') { const v = $('wzPass').value; if (v.length < 6) { W.err = 'A senha precisa ter pelo menos 6 caracteres.'; return wz(); } const { error } = await sb.auth.updateUser({ password: v }); if (error) { W.err = msgAuth(error); return wz(); } history.replaceState(null, '', '/'); const { data } = await sb.auth.getSession(); W.user = data.session ? data.session.user : null; return afterLogin(); }
   if (id === 'wzOut') { await sb.auth.signOut(); W.user = null; W.maps = []; W.screen = 'welcome'; return wz(); }
+  if (id === 'wzPdf29') {
+    if (W.pdfDownloading) return;
+    W.pdfDownloading = true;
+    const status = $('gtPdfSt');
+    const btn = $('wzPdf29');
+    if (btn) btn.disabled = true;
+    if (status) status.textContent = 'Preparando seu PDF de 29 páginas…';
+    try {
+      const mapId = W.activeMapId || W.maps[0]?.id;
+      if (!mapId) throw new Error('Aguarde o mapa ser salvo no painel antes de baixar.');
+      const { data } = await sb.auth.getSession();
+      const session = data?.session;
+      if (!session) throw new Error('Entre novamente para baixar seu relatório.');
+      const pdf = await fetch('/api/relatorio?id=' + encodeURIComponent(mapId), {
+        headers: { Authorization: 'Bearer ' + session.access_token }
+      });
+      if (!pdf.ok) {
+        const err = await pdf.json().catch(() => ({}));
+        throw new Error(err.erro || 'Não foi possível preparar o seu PDF.');
+      }
+      const blob = await pdf.blob();
+      if (blob.type !== 'application/pdf' && blob.size < 1000) throw new Error('O arquivo do relatório veio incompleto.');
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = 'Mapa_do_Guardiao_' + String((db.people.find(x => x.id === D.pid)?.name || 'Meu_Mapa')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_') + '.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 30000);
+      if (status) status.textContent = 'Seu PDF está pronto.';
+    } catch (err) {
+      if (status) status.textContent = err?.message || 'O download falhou. Seu mapa continua salvo.';
+    } finally {
+      W.pdfDownloading = false;
+      if (btn) btn.disabled = false;
+    }
+    return;
+  }
   if (id === 'wzMine') { await loadMaps(); W.screen = 'lista'; return wz(); }
   if (t.dataset && t.dataset.map) return openMap(t.dataset.map, false);
   if (id === 'wzPrev') return stepPrev();
