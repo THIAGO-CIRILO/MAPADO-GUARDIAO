@@ -83,6 +83,18 @@ redo_button = '<button id="gtRedo" class="ghost" type="button">Refazer o teste</
 if html.count(redo_button) != 1:
     raise SystemExit("Unexpected number of retake buttons in original site")
 html = html.replace(redo_button, '', 1)
+# Publish the 29-page PDF composer as a separate, browser-only script.
+pdf_source = root / "pdf29.js"
+if not pdf_source.exists():
+    raise SystemExit("Missing pdf29.js editorial PDF composer")
+(out / "pdf29.js").write_text(pdf_source.read_text(encoding="utf-8"), encoding="utf-8")
+if html.count("<script>\\n" + wizard_source) != 1:
+    raise SystemExit("Cannot place pdf29.js before the wizard")
+html = html.replace(
+    "<script>\\n" + wizard_source,
+    '<script src="/pdf29.js"></script>\\n<script>\\n' + wizard_source,
+    1,
+)
 index_page.write_text(html, encoding="utf-8")
 # Stop the deployment if a literal backslash-n ever replaces a script newline again.
 if "<script>" + chr(92) + "n" in html:
