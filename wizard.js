@@ -56,7 +56,7 @@ function wz() {
   if (s === 'boot') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Carregando…</p></div></div>'; return; }
   if (s === 'config') { R.innerHTML = '<div class="wz"><div class="wz-card"><h2>Falta configurar</h2><p class="lead">Preencha o arquivo <b>config.js</b> com o endereço e a chave pública do seu Supabase (veja o README) e publique de novo.</p></div></div>'; return; }
   if (s === 'welcome') {
-    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">Descubra o bloqueio emocional por trás do seu comportamento.</p><p class="wz-sub">Em cerca de 10 minutos: o que protege você, o que ficou guardado, um plano de ação e o lugar onde você trabalha melhor.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Este mapa é um convite à reflexão. Não é diagnóstico nem previsão.</p></div></div>`; return;
+    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">Descubra o bloqueio emocional por trás do seu comportamento.</p><p class="wz-sub">Em cerca de 5 minutos: o que protege você, o que ficou guardado, um plano de ação e o lugar onde você trabalha melhor.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Este mapa é um convite à reflexão. Não é diagnóstico nem previsão.</p></div></div>`; return;
   }
   if (s === 'auth') {
     const m = W.mode;
@@ -167,14 +167,16 @@ async function doAuth() {
 
 /* ---- geração ---- */
 function wzTeste(p, S) {
-  const g1 = GT_G[S.rg[0]], g2 = GT_G[S.rg[1]], po1 = GT_P[S.rp[0]], po2 = GT_P[S.rp[1]];
+  const g1 = GT_G[S.rg[0]], po1 = GT_P[S.rp[0]];
+  const g2 = S.rg[1] && Number(S.g[S.rg[1]]) > 0 ? GT_G[S.rg[1]] : null;
+  const po2 = S.rp[1] && Number(S.p[S.rp[1]]) > 0 ? GT_P[S.rp[1]] : null;
   return {
-    guardiao_principal: { nome: g1[0], apelido: g1[1], protege: g1[2], frase_interna: g1[3] }, guardiao_secundario: { nome: g2[0], apelido: g2[1] },
+    guardiao_principal: { nome: g1[0], apelido: g1[1], protege: g1[2], frase_interna: g1[3] }, guardiao_secundario: g2 ? { nome: g2[0], apelido: g2[1] } : null,
     ferida_principal: S.rw[0] ? { nome: GT_W[S.rw[0]][0], descricao: GT_W[S.rw[0]][1], jeito_de_se_defender: GT_W[S.rw[0]][2] } : 'a pessoa pulou a pergunta da infância; trate a ferida como hipótese leve e diga que ela pode confirmar ou não',
-    ferida_secundaria: S.rw[1] ? GT_W[S.rw[1]][0] : null,
-    potencial_principal: { nome: po1[0], significa: po1[1] }, potencial_secundario: { nome: po2[0], significa: po2[1] },
-    estilo_de_aprender: { principal: GT_L[S.rl[0]][0] + ': ' + GT_L[S.rl[0]][1], secundario: GT_L[S.rl[1]][0] },
-    fonte_de_renda_preferida: { principal: GT_M[S.rm[0]][0] + ': ' + GT_M[S.rm[0]][1], secundaria: GT_M[S.rm[1]][0] },
+    ferida_secundaria: S.rw[1] && Number(S.w[S.rw[1]]) > 0 ? GT_W[S.rw[1]][0] : null,
+    potencial_principal: { nome: po1[0], significa: po1[1] }, potencial_secundario: po2 ? { nome: po2[0], significa: po2[1] } : null,
+    estilo_de_aprender: { principal: GT_L[S.rl[0]][0] + ': ' + GT_L[S.rl[0]][1], secundario: S.rl[1] && Number(S.l[S.rl[1]]) > 0 ? GT_L[S.rl[1]][0] : null },
+    fonte_de_renda_preferida: { principal: GT_M[S.rm[0]][0] + ': ' + GT_M[S.rm[0]][1], secundaria: S.rm[1] && Number(S.m[S.rm[1]]) > 0 ? GT_M[S.rm[1]][0] : null },
     respostas: GT_Q.map((q, i) => ({ pergunta: q[0], resposta: q[2][D.ans[i]] ? q[2][D.ans[i]][0] : 'não respondeu' })),
     objetivo_da_pessoa: p.goal
   };
