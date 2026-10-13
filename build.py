@@ -88,11 +88,11 @@ pdf_source = root / "pdf29.js"
 if not pdf_source.exists():
     raise SystemExit("Missing pdf29.js editorial PDF composer")
 (out / "pdf29.js").write_text(pdf_source.read_text(encoding="utf-8"), encoding="utf-8")
-if html.count("<script>\\n" + wizard_source) != 1:
+if html.count("<script>\n" + wizard_source) != 1:
     raise SystemExit("Cannot place pdf29.js before the wizard")
 html = html.replace(
-    "<script>\\n" + wizard_source,
-    '<script src="/pdf29.js"></script>\\n<script>\\n' + wizard_source,
+    "<script>\n" + wizard_source,
+    '<script src="/pdf29.js"></script>\n<script>\n' + wizard_source,
     1,
 )
 index_page.write_text(html, encoding="utf-8")
