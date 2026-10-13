@@ -154,6 +154,97 @@ sales_html = sales_html.replace(
     "Depois de pagar, entre em mapado-guardiao.vercel.app e crie sua conta com o mesmo e-mail da compra. Assim que a Kiwify confirmar o pagamento, seu acesso será liberado.",
     1,
 )
+sales_copy_updates = [
+  [
+    "Em 10 minutos, descubra o seu lugar de potência para ganhar ainda mais dinheiro e o plano para as próximas 72 horas.",
+    "Descubra onde a sua energia rende mais e custa menos. Conheça seu Guardião, seus potenciais e um plano de ação possível."
+  ],
+  [
+    "<h1>Em 10 minutos, você descobre <em>o seu lugar de potência</em> para ganhar ainda mais dinheiro.</h1>",
+    "<h1>O seu lugar de potência é onde <em>a sua energia rende mais e custa menos.</em></h1>"
+  ],
+  [
+    "Existe um lugar onde o seu dinheiro flui com mais facilidade, e ninguém nunca te mostrou qual é. Dentro de você há uma parte, o seu Guardião, que decide quanto você cobra, aparece e recebe. O Mapa mostra quem ele é, o lugar onde você tem mais potência para ganhar e o que fazer nas próximas 72 horas.",
+    "Você pode estar se esforçando muito para caber em lugares que não combinam com o seu jeito de funcionar. O Mapa do Guardião ajuda você a reconhecer a proteção por trás das suas escolhas, identificar potenciais e encontrar passos mais coerentes para sua vida. São cerca de 5 minutos para responder ao questionário; a leitura é gerada em seguida."
+  ],
+  [
+    "É aqui que o seu dinheiro flui com mais facilidade. Esse lugar pede que você mostre o que já viveu, sem esperar estar perfeita.",
+    "É aqui que a sua experiência pode se transformar em contribuição. Esse lugar pede que você mostre o que já viveu, sem esperar estar perfeita."
+  ],
+  [
+    "<h2>O seu lugar de potência é onde a sua energia rende mais e custa menos</h2>",
+    "<h2>Você não precisa continuar se esforçando para caber em qualquer lugar.</h2>"
+  ],
+  [
+    "o seu lugar de potência para ganhar dinheiro, e as formas de ganhar que combinam com você",
+    "o seu lugar de potência e as formas de aplicar seus recursos no trabalho e nas escolhas"
+  ],
+  [
+    "Trabalha muito e sente que o dinheiro não acompanha o esforço.",
+    "Se dedica muito e, mesmo assim, sente que tudo exige mais energia do que deveria."
+  ],
+  [
+    "Sabe o que precisa fazer para ganhar mais e, na hora de agir, adia, hesita ou muda de ideia.",
+    "Sabe o que gostaria de mudar e, na hora de agir, adia, hesita ou volta ao mesmo padrão."
+  ],
+  [
+    "Você faz o que todo mundo manda e <em>o dinheiro não vem</em>?",
+    "Você segue as expectativas dos outros e <em>se distancia de si</em>?"
+  ],
+  [
+    "Segue o método que funcionou para outra pessoa, cobra o que acha que pode, adia o que seria o grande passo. Cada tentativa pede muito e devolve pouco.",
+    "Segue fórmulas que funcionaram para outras pessoas, tenta corresponder a todas as expectativas e adia as escolhas importantes. Cada tentativa pede muita energia e oferece pouca clareza."
+  ],
+  [
+    "O Mapa não fala só de dinheiro. Ele cruza o seu Guardião com os seus ciclos de vida e mostra o seu lugar em cada área.",
+    "O Mapa cruza o seu Guardião com os seus ciclos de vida para observar padrões e possibilidades em diferentes áreas, inclusive no trabalho e nas finanças."
+  ],
+  [
+    "Onde você ganha com mais facilidade, sem se esgotar.",
+    "Como reconhecer seus recursos, se posicionar e cuidar dos seus limites."
+  ],
+  [
+    "Onde o seu dinheiro flui melhor",
+    "Seus recursos no trabalho e nas finanças"
+  ],
+  [
+    "O seu lugar de potência para ganhar mais.",
+    "O seu lugar de potência na vida profissional."
+  ],
+  [
+    "As formas de ganhar dinheiro que combinam com você, a armadilha que costuma te segurar e o primeiro passo para cobrar e vender com mais firmeza.",
+    "Possibilidades de aplicar seus talentos ao trabalho e ao dinheiro, padrões que dificultam suas decisões e um primeiro passo para se posicionar com mais consciência."
+  ],
+  [
+    "Descobrir em 10 minutos o seu lugar de potência, e construir o seu dinheiro e a sua vida a partir dele.",
+    "Reconhecer onde a sua energia rende mais e custa menos e começar a fazer escolhas mais coerentes com você."
+  ],
+  [
+    "O seu lugar de potência para ganhar mais dinheiro",
+    "O seu lugar de potência e como aplicá-lo nas suas escolhas"
+  ],
+  [
+    "Se você quer descobrir ainda hoje o seu lugar de potência para ganhar mais dinheiro, clique no botão abaixo.",
+    "Descubra onde a sua energia rende mais e custa menos. Comece a ocupar seu lugar de potência com escolhas possíveis para sua realidade."
+  ],
+  [
+    "Cerca de 10 minutos para responder. A leitura é gerada em seguida.",
+    "Cerca de 5 minutos para responder. A leitura é gerada em seguida."
+  ],
+  [
+    "<summary>Posso refazer o Mapa?</summary><p>Sim. Todas as leituras ficam salvas no seu painel, e você pode gerar uma nova quando quiser, dentro do limite do seu acesso.</p>",
+    "<summary>Posso gerar o Mapa mais de uma vez?</summary><p>Não. Cada compra dá direito a gerar um único Mapa. Ele fica salvo no painel, e você pode consultá-lo e baixar o PDF novamente durante o período de acesso.</p>"
+  ],
+  [
+    "Você tem acesso ao Mapa do Guardião por um ano e guarda todas as suas leituras lá.",
+    "Você tem acesso ao Mapa do Guardião por um ano e pode consultar a sua leitura e baixar o PDF pelo painel."
+  ]
+]
+for previous, revised in sales_copy_updates:
+    if sales_html.count(previous) != 1:
+        raise SystemExit('Unexpected original sales copy or duplicate occurrence: ' + previous[:95])
+    sales_html = sales_html.replace(previous, revised, 1)
+
 sales_page.write_text(sales_html, encoding="utf-8")
 
 print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
