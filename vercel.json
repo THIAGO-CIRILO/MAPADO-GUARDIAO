@@ -18,6 +18,9 @@
   "functions": {
     "api/gerar.js": {
       "maxDuration": 60
+    },
+    "api/relatorio.js": {
+      "maxDuration": 60
     }
   }
 }
