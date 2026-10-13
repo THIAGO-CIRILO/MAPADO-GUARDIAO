@@ -363,5 +363,5 @@ if(prior){
  gtPDF=pdfEditorial29;
  window.gtPDF=pdfEditorial29;
 }
-window.guardiaoPdf29={generate,creator,version:"29-editorial-1"};
+window.guardiaoPdf29={generate,creator,download:pdfEditorial29,version:"29-editorial-1"};
 })();
