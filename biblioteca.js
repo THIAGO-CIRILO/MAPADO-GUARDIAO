@@ -23,6 +23,32 @@
     return s.slice(0,280);
   };
   const ensure = ({data,error}) => { if (error) throw error; return data; };
+  // Mobile networks can interrupt Supabase calls without an HTTP error.
+  // Retry ONLY transient failures. Permission and validation errors fail immediately.
+  const transientError = error => {
+    const statusCode=Number(error?.status||error?.code)||0;
+    if([408,425,429,500,502,503,504,520,521,522,523,524].includes(statusCode))return true;
+    const m=String(error?.message||error||'').toLowerCase();
+    return /failed to fetch|networkerror|network error|fetch failed|load failed|connection lost|timed out|timeout|temporar(?:ily|iamente) unavailable|econnreset/.test(m);
+  };
+  const wait = ms => new Promise(resolve=>setTimeout(resolve,ms));
+  async function requestWithRetry(stage, action, note, maxAttempts=5){
+    let last;
+    for(let attempt=1;attempt<=maxAttempts;attempt++){
+      try {
+        return ensure(await action());
+      } catch(err){
+        last=err;
+        if(!transientError(err)||attempt===maxAttempts)break;
+        const delay=[1100,2300,4500,7500][attempt-1]||9500;
+        if(note)note.textContent='Conexão instável ao '+stage+'. Tentativa '+(attempt+1)+'/'+maxAttempts+' em '+Math.ceil(delay/1000)+' s…';
+        await wait(delay);
+      }
+    }
+    const error=new Error('Falha em '+stage+': '+message(last)+'. '+(transientError(last)?'A rede não respondeu após várias tentativas.':''));
+    error.cause=last;
+    throw error;
+  }
   const progress = value => { $('bar').style.width = Math.min(100,Math.max(0,value)).toFixed(1)+'%'; };
   function queueLine(label, detail){
     const li=document.createElement('li'), name=document.createElement('span'), note=document.createElement('span');
@@ -91,7 +117,8 @@
     if(!window.pdfjsLib)throw new Error('Leitor de PDF indisponível. Atualize a página e tente novamente.');
     const signature=new TextDecoder().decode(bytes.slice(0,5));
     if(signature!=='%PDF-')throw new Error('O arquivo não tem assinatura de PDF válido.');
-    const task=pdfjsLib.getDocument({data:bytes.slice(),isEvalSupported:false});
+    // PDF.js may transfer this buffer to its worker. Avoid a costly second copy on mobile.
+    const task=pdfjsLib.getDocument({data:bytes,isEvalSupported:false});
     const doc=await task.promise;
     if(doc.numPages>3000){await doc.destroy();throw new Error('O livro excede o limite de 3.000 páginas.');}
     const chunks=[];let pagesWithText=0;
@@ -122,46 +149,74 @@
   async function insertChunks(id,chunks,note){
     for(let k=0;k<chunks.length;k+=GROUP){
       const batch=chunks.slice(k,k+GROUP).map(x=>({livro_id:id,...x}));
-      ensure(await db.from('biblioteca_trechos').insert(batch));
-      note.textContent='Indexando '+Math.min(k+GROUP,chunks.length)+' de '+chunks.length+' trechos';
+      await requestWithRetry('indexar os trechos '+(k+1)+'–'+Math.min(k+GROUP,chunks.length),
+        () => db.from('biblioteca_trechos').upsert(batch,{onConflict:'livro_id,pagina,ordem'}),note);
+      note.textContent='Indexados '+Math.min(k+GROUP,chunks.length)+' de '+chunks.length+' trechos';
+      if(k>0&&k%(GROUP*6)===0)await wait(100);
     }
   }
   async function importSingle(file,category,note) {
     if(!isPdf(file))throw new Error('Aceito somente PDF digital válido de até 200 MB. Arquivos maiores precisam ser divididos.');
     const raw=await file.arrayBuffer(),bytes=new Uint8Array(raw);
     const sha=await hash(raw);
-    const found=ensure(await db.from('biblioteca_livros').select('id,titulo').eq('sha256',sha).maybeSingle());
-    if(found){note.textContent='Já importado: '+found.titulo;return;}
+    const found=await requestWithRetry('consultar livros existentes',
+      () => db.from('biblioteca_livros').select('id,titulo,situacao,storage_path,arquivo_armazenado,total_trechos').eq('sha256',sha).maybeSingle(),note);
+    if(found?.situacao==='pronto'){
+      note.textContent='Já cadastrado. Mantido sem reenviar: '+found.titulo;
+      return 'existente';
+    }
+    note.textContent=found?'Retomando livro incompleto…':'Lendo páginas e preparando índice…';
     const parsed=await parsePdf(bytes,note);
-    const id=crypto.randomUUID(),storedPdf=file.size<=MAX_STORAGE_SIZE;
-    const path=storedPdf?id+'/'+safeName(file.name):'somente-indice/'+id+'.pdf';
-    let uploaded=false,registered=false;
+    const id=found?.id||crypto.randomUUID();
+    const storedPdf=found?found.arquivo_armazenado:file.size<=MAX_STORAGE_SIZE;
+    const path=found?.storage_path||(storedPdf?id+'/'+safeName(file.name):'somente-indice/'+id+'.pdf');
+    let uploaded=!!found?.arquivo_armazenado,registered=!!found;
     try{
-      if(storedPdf){
-        note.textContent='Enviando PDF ao armazenamento privado…';
-        ensure(await db.storage.from(BUCKET).upload(path,file,{contentType:'application/pdf',upsert:false}));
-        uploaded=true;
+      if(!found){
+        if(storedPdf){
+          note.textContent='Enviando PDF ao armazenamento privado…';
+          await requestWithRetry('enviar o PDF',()=>{
+            return db.storage.from(BUCKET).upload(path,file,{contentType:'application/pdf',upsert:true});
+          },note);
+          uploaded=true;
+        }else{
+          note.textContent='Livro acima de 50 MB: indexando texto sem armazenar o PDF original…';
+        }
+        await requestWithRetry('cadastrar o livro',
+          () => db.from('biblioteca_livros').upsert({
+            id,titulo:cleanTitle(file.name),autor:'',categoria:category,
+            nome_arquivo:file.name,storage_path:path,sha256:sha,
+            arquivo_armazenado:storedPdf,tamanho_bytes:file.size,paginas:parsed.paginas,
+            situacao:'processando',ativo:false
+          },{onConflict:'sha256'}),note);
+        registered=true;
       }else{
-        note.textContent='Livro acima de 50 MB: indexando o texto sem armazenar o PDF original…';
+        await requestWithRetry('retomar o cadastro',
+          () => db.from('biblioteca_livros').update({
+            situacao:'processando',ativo:false,mensagem_erro:null,
+            paginas:parsed.paginas,atualizado_em:new Date().toISOString()
+          }).eq('id',id),note);
       }
-      ensure(await db.from('biblioteca_livros').insert({
-        id,titulo:cleanTitle(file.name),autor:'',categoria:category,
-        nome_arquivo:file.name,storage_path:path,sha256:sha,
-        arquivo_armazenado:storedPdf,tamanho_bytes:file.size,paginas:parsed.paginas,
-        situacao:'processando',ativo:false
-      }));
-      registered=true;
       await insertChunks(id,parsed.chunks,note);
-      ensure(await db.from('biblioteca_livros').update({
-        situacao:'pronto',ativo:true,total_trechos:parsed.chunks.length,
-        mensagem_erro:null,atualizado_em:new Date().toISOString()
-      }).eq('id',id));
+      await requestWithRetry('finalizar a indexação',
+        () => db.from('biblioteca_livros').update({
+          situacao:'pronto',ativo:true,total_trechos:parsed.chunks.length,
+          mensagem_erro:null,atualizado_em:new Date().toISOString()
+        }).eq('id',id),note);
       note.textContent='Pronto: '+parsed.paginas+' páginas · '+parsed.chunks.length+' trechos'+(storedPdf?'':' · somente índice textual');
+      return found?'retomado':'novo';
     }catch(err){
       if(registered){
-        await db.from('biblioteca_livros').update({situacao:'erro',ativo:false,mensagem_erro:message(err),atualizado_em:new Date().toISOString()}).eq('id',id);
+        try{
+          await requestWithRetry('registrar a falha',
+            () => db.from('biblioteca_livros').update({
+              situacao:'erro',ativo:false,mensagem_erro:message(err),
+              atualizado_em:new Date().toISOString()
+            }).eq('id',id),note,2);
+        }catch(_){}
       }else if(uploaded){
-        await db.storage.from(BUCKET).remove([path]);
+        try { await requestWithRetry('limpar upload incompleto',
+          () => db.storage.from(BUCKET).remove([path]),note,2); }catch(_){}
       }
       throw err;
     }
@@ -170,19 +225,21 @@
     if(importing||!selected.length)return;
     importing=true;$('btnImport').disabled=true;$('files').disabled=true;$('category').disabled=true;
     $('queue').replaceChildren();
-    let done=0,failed=0;
+    let done=0,failed=0,skipped=0;
     const batch=selected.slice(),category=$('category').value;
     for(let i=0;i<batch.length;i++){
       const file=batch[i],note=queueLine(file.name,'Aguardando');
-      try {await importSingle(file,category,note);}
-      catch(err){failed++;note.textContent='ERRO: '+message(err);}
+      try {
+        const result=await importSingle(file,category,note);
+        if(result==='existente')skipped++;
+      }catch(err){failed++;note.textContent='ERRO: '+message(err);}
       done++;progress(100*done/batch.length);
-      status('Importados/processados '+done+' de '+batch.length+(failed?' · '+failed+' falha(s)':''));
+      status('Processados '+done+' de '+batch.length+' · '+skipped+' já prontos · '+failed+' falha(s)');
     }
     importing=false;selected=[];$('files').disabled=false;$('files').value='';
     $('category').disabled=false;$('btnImport').disabled=true;
-    status('Lote finalizado: '+(done-failed)+' sem erro(s), '+failed+' falha(s).'+(failed?' Confira os detalhes acima.':''));
-    await loadBooks();
+    status('Lote concluído: '+(done-failed-skipped)+' novos/retomados, '+skipped+' já cadastrados, '+failed+' falha(s).'+(failed?' Confira a etapa do erro na lista.':''));
+    try{await loadBooks();}catch(err){status('O lote terminou, mas a lista não atualizou: '+message(err),true);}
   }
   function el(tag,content,className){
     const n=document.createElement(tag);if(content!==undefined)n.textContent=String(content);
@@ -208,7 +265,7 @@
       catch(err){check.checked=!check.checked;status(message(err),true);}});active.append(check);tr.append(active);
       const actions=el('td'),group=el('div',undefined,'actions');
       group.append(action('Editar',()=>editBook(book)));
-      if(book.situacao==='erro'&&book.arquivo_armazenado!==false)group.append(action('Reprocessar',()=>retryBook(book)));
+      if(book.situacao!=='pronto'&&book.arquivo_armazenado!==false)group.append(action('Retomar',()=>retryBook(book)));
       group.append(action('Excluir',()=>deleteBook(book),'ghost'));
       actions.append(group);tr.append(actions);$('rows').append(tr);
     }
@@ -238,18 +295,25 @@
     importing=true;$('btnImport').disabled=true;
     const note=queueLine('Reprocessando '+book.titulo,'Baixando original privado…');
     try{
-      const data=ensure(await db.storage.from(BUCKET).download(book.storage_path));
+      const data=await requestWithRetry('baixar PDF privado',
+        () => db.storage.from(BUCKET).download(book.storage_path),note);
       const bytes=new Uint8Array(await data.arrayBuffer());
       const parsed=await parsePdf(bytes,note);
-      ensure(await db.from('biblioteca_livros').update({situacao:'processando',ativo:false}).eq('id',book.id));
-      ensure(await db.from('biblioteca_trechos').delete().eq('livro_id',book.id));
+      await requestWithRetry('retomar livro',
+        () => db.from('biblioteca_livros').update({situacao:'processando',ativo:false}).eq('id',book.id),note);
+      // Upsert resumes where a previous attempt stopped, without deleting valid chunks.
       await insertChunks(book.id,parsed.chunks,note);
-      ensure(await db.from('biblioteca_livros').update({situacao:'pronto',ativo:true,paginas:parsed.paginas,total_trechos:parsed.chunks.length,mensagem_erro:null,atualizado_em:new Date().toISOString()}).eq('id',book.id));
+      await requestWithRetry('finalizar livro',
+        () => db.from('biblioteca_livros').update({situacao:'pronto',ativo:true,paginas:parsed.paginas,total_trechos:parsed.chunks.length,mensagem_erro:null,atualizado_em:new Date().toISOString()}).eq('id',book.id),note);
       note.textContent='Reprocessado com sucesso.';
     }catch(err){
       note.textContent='Erro: '+message(err);
-      await db.from('biblioteca_livros').update({situacao:'erro',ativo:false,mensagem_erro:message(err)}).eq('id',book.id);
-    }finally{importing=false;$('btnImport').disabled=!selected.length;await loadBooks();}
+      try{await requestWithRetry('registrar erro de recuperação',
+        () => db.from('biblioteca_livros').update({situacao:'erro',ativo:false,mensagem_erro:message(err)}).eq('id',book.id),note,2);}catch(_){}
+    }finally{
+      importing=false;$('btnImport').disabled=!selected.length;
+      try{await loadBooks();}catch(err){status('Não consegui atualizar a lista: '+message(err),true);}
+    }
   }
   async function search(event){
     event.preventDefault();
