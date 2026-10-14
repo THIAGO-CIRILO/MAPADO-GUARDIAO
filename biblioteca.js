@@ -6,7 +6,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const BUCKET = 'guardiao-livros';
-  const MAX_SIZE = 25 * 1024 * 1024;
+  const MAX_STORAGE_SIZE = 50 * 1024 * 1024;
+  const MAX_PARSE_SIZE = 200 * 1024 * 1024;
   const GROUP = 60;
   const cfg = window.APP_CONFIG || {};
   let db, user, importing = false, selected = [];
@@ -51,14 +52,15 @@
     if(error){$('loginError').textContent=message(error);return;}
     $('password').value='';await checkSession();
   }
-  const isPdf = file => file && /\.pdf$/i.test(file.name) && file.size>100 && file.size<=MAX_SIZE;
+  const isPdf = file => file && /\.pdf$/i.test(file.name) && file.size>100 && file.size<=MAX_PARSE_SIZE;
   function setSelected(files){
     selected=Array.from(files||[]);
     $('btnImport').disabled=importing||!selected.length;
     $('queue').replaceChildren();
     progress(0);
     const valid=selected.filter(isPdf).length;
-    status(selected.length ? selected.length+' arquivo(s) selecionado(s); '+valid+' PDF(s) dentro do limite de 25 MB.' : '');
+    const textOnly=selected.filter(f=>isPdf(f)&&f.size>MAX_STORAGE_SIZE).length;
+    status(selected.length ? selected.length+' arquivo(s) selecionado(s); '+valid+' PDF(s) aceito(s).'+(textOnly?' '+textOnly+' acima de 50 MB: somente texto indexado, sem cópia do PDF.':'') : '');
   }
   function cleanTitle(name){
     return String(name||'').replace(/\.pdf$/i,'').replace(/[_]+/g,' ').replace(/\s+/g,' ').trim().slice(0,250)||'Livro sem título';
@@ -125,22 +127,27 @@
     }
   }
   async function importSingle(file,category,note) {
-    if(!isPdf(file))throw new Error('Aceito somente PDF válido de até 25 MB.');
+    if(!isPdf(file))throw new Error('Aceito somente PDF digital válido de até 200 MB. Arquivos maiores precisam ser divididos.');
     const raw=await file.arrayBuffer(),bytes=new Uint8Array(raw);
     const sha=await hash(raw);
     const found=ensure(await db.from('biblioteca_livros').select('id,titulo').eq('sha256',sha).maybeSingle());
     if(found){note.textContent='Já importado: '+found.titulo;return;}
     const parsed=await parsePdf(bytes,note);
-    const id=crypto.randomUUID(),path=id+'/'+safeName(file.name);
+    const id=crypto.randomUUID(),storedPdf=file.size<=MAX_STORAGE_SIZE;
+    const path=storedPdf?id+'/'+safeName(file.name):'somente-indice/'+id+'.pdf';
     let uploaded=false,registered=false;
     try{
-      note.textContent='Enviando PDF ao armazenamento privado…';
-      ensure(await db.storage.from(BUCKET).upload(path,file,{contentType:'application/pdf',upsert:false}));
-      uploaded=true;
+      if(storedPdf){
+        note.textContent='Enviando PDF ao armazenamento privado…';
+        ensure(await db.storage.from(BUCKET).upload(path,file,{contentType:'application/pdf',upsert:false}));
+        uploaded=true;
+      }else{
+        note.textContent='Livro acima de 50 MB: indexando o texto sem armazenar o PDF original…';
+      }
       ensure(await db.from('biblioteca_livros').insert({
         id,titulo:cleanTitle(file.name),autor:'',categoria:category,
         nome_arquivo:file.name,storage_path:path,sha256:sha,
-        tamanho_bytes:file.size,paginas:parsed.paginas,
+        arquivo_armazenado:storedPdf,tamanho_bytes:file.size,paginas:parsed.paginas,
         situacao:'processando',ativo:false
       }));
       registered=true;
@@ -149,7 +156,7 @@
         situacao:'pronto',ativo:true,total_trechos:parsed.chunks.length,
         mensagem_erro:null,atualizado_em:new Date().toISOString()
       }).eq('id',id));
-      note.textContent='Pronto: '+parsed.paginas+' páginas · '+parsed.chunks.length+' trechos';
+      note.textContent='Pronto: '+parsed.paginas+' páginas · '+parsed.chunks.length+' trechos'+(storedPdf?'':' · somente índice textual');
     }catch(err){
       if(registered){
         await db.from('biblioteca_livros').update({situacao:'erro',ativo:false,mensagem_erro:message(err),atualizado_em:new Date().toISOString()}).eq('id',id);
@@ -185,13 +192,14 @@
     const b=el('button',label,cls+' small');b.type='button';b.addEventListener('click',fn);return b;
   }
   async function loadBooks(){
-    const data=ensure(await db.from('biblioteca_livros').select('id,titulo,autor,categoria,nome_arquivo,storage_path,paginas,total_trechos,situacao,ativo,mensagem_erro,criado_em').order('criado_em',{ascending:false}).limit(500));
+    const data=ensure(await db.from('biblioteca_livros').select('id,titulo,autor,categoria,nome_arquivo,storage_path,arquivo_armazenado,paginas,total_trechos,situacao,ativo,mensagem_erro,criado_em').order('criado_em',{ascending:false}).limit(500));
     $('total').textContent=(data||[]).length+' livro(s)';
     $('rows').replaceChildren();
     if(!data?.length){const tr=el('tr');const td=el('td','Nenhum livro importado.');td.colSpan=8;tr.append(td);$('rows').append(tr);return;}
     for(const book of data){
       const tr=el('tr');
       const nm=el('td');nm.append(el('div',book.titulo,'name'),el('div',book.nome_arquivo,'small-text'));
+      if(book.arquivo_armazenado===false)nm.append(el('div','Somente índice textual (PDF original não armazenado)','small-text'));
       tr.append(nm,el('td',book.autor||'—'),el('td',book.categoria),el('td',book.paginas),el('td',book.total_trechos));
       const st=el('td');st.append(el('span',book.situacao,'status-pill '+book.situacao));if(book.mensagem_erro)st.append(el('div',book.mensagem_erro,'small-text'));tr.append(st);
       const active=el('td');const check=document.createElement('input');check.type='checkbox';check.className='checkbox';check.checked=book.ativo;check.disabled=book.situacao!=='pronto';
@@ -200,7 +208,7 @@
       catch(err){check.checked=!check.checked;status(message(err),true);}});active.append(check);tr.append(active);
       const actions=el('td'),group=el('div',undefined,'actions');
       group.append(action('Editar',()=>editBook(book)));
-      if(book.situacao==='erro')group.append(action('Reprocessar',()=>retryBook(book)));
+      if(book.situacao==='erro'&&book.arquivo_armazenado!==false)group.append(action('Reprocessar',()=>retryBook(book)));
       group.append(action('Excluir',()=>deleteBook(book),'ghost'));
       actions.append(group);tr.append(actions);$('rows').append(tr);
     }
@@ -219,13 +227,14 @@
     if(importing)return;
     if(!confirm('Excluir definitivamente "'+book.titulo+'", o PDF e todos os trechos associados?'))return;
     try{
-      ensure(await db.storage.from(BUCKET).remove([book.storage_path]));
+      if(book.arquivo_armazenado!==false)ensure(await db.storage.from(BUCKET).remove([book.storage_path]));
       ensure(await db.from('biblioteca_livros').delete().eq('id',book.id));
       status('Livro excluído: '+book.titulo);await loadBooks();
     }catch(err){status('Não foi possível excluir: '+message(err),true);}
   }
   async function retryBook(book){
     if(importing)return;
+    if(book.arquivo_armazenado===false){status('Este livro tem somente o índice textual. Se houver erro, exclua o registro e selecione o PDF original novamente.',true);return;}
     importing=true;$('btnImport').disabled=true;
     const note=queueLine('Reprocessando '+book.titulo,'Baixando original privado…');
     try{
