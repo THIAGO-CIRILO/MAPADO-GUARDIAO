@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Biblioteca privada | Campo Guardião</title>
+<style>
+:root{--orange:#F04A12;--brown:#351A14;--ink:#252321;--ivory:#F7F1E9;--paper:#FFFCF7;--line:#DDCEC2;--muted:#725E54;--green:#286A55}
+*{box-sizing:border-box}body{margin:0;background:var(--ivory);color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.5}
+header{padding:22px max(5vw,18px);border-bottom:1px solid var(--line);background:var(--brown);color:var(--ivory)}
+header .top{max-width:1210px;margin:auto;display:flex;gap:15px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.kicker{color:#FFC4A7;font-size:11px;letter-spacing:.15em;text-transform:uppercase;font-weight:750}h1{font-size:clamp(25px,3.4vw,39px);line-height:1.08;letter-spacing:-.04em;margin:4px 0}h2{font-size:20px;letter-spacing:-.02em;margin:0 0 8px}h3{font-size:15px;margin:0 0 7px}p{margin:0 0 12px}header a{color:var(--ivory);text-decoration:none;font-size:13px;border:1px solid #98786D;border-radius:8px;padding:8px 12px}
+main{max-width:1210px;margin:26px auto 75px;padding:0 max(18px,2vw);display:grid;gap:20px}
+section{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:22px;min-width:0;box-shadow:0 9px 24px #351A1408}
+.lead{color:var(--muted);max-width:860px}label{font-weight:650;font-size:13px;display:grid;gap:5px;color:var(--brown)}
+input,select{font:inherit;padding:10px 12px;border:1px solid #C7B8AB;border-radius:8px;color:var(--ink);background:white;min-width:0}
+input[type=file]{padding:12px;width:100%;border:2px dashed #C7B8AB}
+button{font:inherit;cursor:pointer;background:var(--orange);color:white;border:0;border-radius:9px;padding:11px 18px;font-weight:750}
+button:disabled{opacity:.45;cursor:not-allowed}button.alt{background:var(--brown)}button.ghost{background:transparent;color:var(--brown);border:1px solid var(--line)}
+button.small{font-size:12px;padding:6px 10px}
+.row{display:flex;align-items:end;gap:14px;flex-wrap:wrap}.row>*{flex:1;min-width:160px}.row>.fit{flex:0 auto}
+#loginPanel{max-width:560px}.hint,.small-text{font-size:13px;color:var(--muted)}.error{color:#A42F25;font-weight:700}#status{font-weight:650;color:var(--brown);min-height:20px;margin-top:12px}
+#drop{border:2px dashed #D4C4B7;border-radius:12px;background:#FAF5EF;padding:20px;display:grid;gap:8px}
+#drop.drag{border-color:var(--orange);background:#FDE9DF}
+.progress{height:10px;background:#E9DDD3;border-radius:99px;overflow:hidden;margin-top:12px}.progress>i{height:100%;display:block;width:0;background:var(--orange);transition:width .2s}
+#queue{list-style:none;margin:15px 0 0;padding:0;display:grid;gap:6px;max-height:270px;overflow:auto}#queue li{font-size:13px;border-bottom:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;gap:12px}
+table{border-collapse:collapse;width:100%;min-width:900px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:11px 10px;font-size:13px;vertical-align:top}th{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.table-scroll{overflow-x:auto}.status-pill{display:inline-block;padding:3px 7px;border-radius:99px;font-size:11px;font-weight:750;background:#EAE1D7}.status-pill.pronto{background:#DCEDE4;color:#235640}.status-pill.erro{background:#F9E0DD;color:#922F22}
+.actions{display:flex;gap:5px;flex-wrap:wrap}.name{font-weight:720;color:var(--brown);max-width:280px;overflow-wrap:anywhere}.checkbox{width:17px;height:17px;accent-color:var(--orange)}.test-result{background:#F9F2EC;border-left:3px solid var(--orange);padding:10px 13px;margin-top:9px;border-radius:6px}
+#results{max-height:450px;overflow:auto}footer{max-width:1210px;margin:0 auto 50px;padding:0 18px;color:var(--muted);font-size:12px}
+@media(max-width:660px){section{padding:16px}header{padding:18px}.row>*{min-width:100%}.row>.fit{flex:1}}
+</style></head>
+<body>
+<header><div class="top"><div><div class="kicker">Área restrita · Campo Guardião</div><h1>Biblioteca de conhecimento</h1><div style="opacity:.8;font-size:13px">Importação em lote · referências privadas para o Claude</div></div><div class="row" style="gap:8px"><a href="/admin">Voltar ao painel</a><a href="/" title="Site do Mapa do Guardião">Ver o site</a></div></div></header>
+<main>
+<section id="loginPanel" hidden><h2>Acesso do administrador</h2><p class="lead">Entre com a mesma conta administrativa do Mapa do Guardião. O acesso é confirmado no banco de dados.</p>
+<form id="loginForm" class="row"><label>E-mail<input id="email" type="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button class="fit" type="submit">Entrar</button></form><p id="loginError" class="error" role="alert"></p></section>
+<section id="loadingPanel"><h2>Verificando a sua sessão…</h2><p class="lead">A biblioteca só fica disponível para a conta administrativa autorizada.</p></section>
+<div id="privatePanels" hidden style="display:grid;gap:20px">
+<section><div class="row" style="align-items:center"><div><h2>Importar vários PDFs de uma vez</h2><p class="lead">Selecione todos os livros de uma vez. O sistema processa cada arquivo, identifica as páginas e cria um índice pesquisável. Mantenha esta aba aberta até o fim.</p></div><button id="btnLogout" class="ghost fit" type="button">Sair</button></div>
+<div id="drop"><label for="files">Selecione seus arquivos PDF <span class="small-text">(até 25 MB cada; PDFs com texto selecionável)</span></label><input id="files" type="file" accept=".pdf,application/pdf" multiple><div class="small-text">Você também pode arrastar os arquivos para esta área. PDF digitalizado como imagem precisará de OCR antes.</div></div>
+<div class="row" style="margin-top:16px"><label>Classificação inicial<select id="category"><option value="astrologia">Astrologia · fundamentos e interpretação</option><option value="ciclos">Ciclos, trânsitos e períodos</option><option value="relacionamentos">Relacionamentos e psicologia</option><option value="cabala">Cabala e simbolismo</option><option value="espiritualidade">Espiritualidade</option><option value="numerologia">Numerologia</option><option value="metodo">Meu método Campo Guardião</option><option value="outros">Outros assuntos</option></select></label><button class="fit" id="btnImport" type="button" disabled>Importar PDFs</button></div>
+<div class="progress" aria-label="Progresso dos uploads"><i id="bar"></i></div><div id="status" role="status"></div><ul id="queue"></ul>
+<p class="small-text" style="margin-top:14px">Os PDFs permanecem privados. Somente trechos relevantes são recuperados durante a geração de novos mapas; o cliente não recebe o livro. Utilize apenas obras para as quais tenha permissão de armazenamento e uso no serviço.</p></section>
+<section><div class="row" style="align-items:center"><div><h2>Acervo cadastrado</h2><p class="lead"><span id="total">0 livros</span>. Desative uma obra para impedir que seja consultada nas próximas leituras.</p></div><button class="ghost fit" id="refresh" type="button">Atualizar lista</button></div>
+<div class="table-scroll"><table><thead><tr><th>Livro</th><th>Autor</th><th>Categoria</th><th>Páginas</th><th>Trechos</th><th>Estado</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="rows"><tr><td colspan="8">Nenhum livro cadastrado.</td></tr></tbody></table></div></section>
+<section><h2>Teste da busca da biblioteca</h2><p class="lead">Confirme se o sistema encontra as referências certas, com autor e página, antes de ativá-las nas leituras.</p><form id="searchForm" class="row"><label>Assunto a pesquisar<input id="searchQuery" type="search" placeholder="Ex.: Saturno; retrogradação; relações" required minlength="2"></label><button class="fit" type="submit">Pesquisar</button></form><div id="results" aria-live="polite"></div></section>
+<section><h2>Como os cálculos e os livros trabalham juntos</h2><p>A data de nascimento, os ciclos de sete anos e os números anuais/mensais são calculados por funções determinísticas. Os livros não substituem esses cálculos: ajudam o Claude a dar significado aos resultados, sempre junto das respostas do cliente.</p><p class="small-text">Posições astrológicas, casas, ascendente e trânsitos exigem efemérides adequadas, hora, fuso e local de nascimento. Esses cálculos não são inventados pela IA. A precisão astronômica será validada separadamente antes de entrar na leitura mensal.</p></section>
+</div></main><footer>Biblioteca privada · Campo Guardião · Nenhum livro desta área é publicado para visitantes.</footer>
+<script src="/config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="/biblioteca.js"></script>
+</body></html>
