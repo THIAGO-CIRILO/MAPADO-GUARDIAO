@@ -107,6 +107,21 @@ for filename in ("index.html", "admin.html"):
     if file.exists():
         file.write_text(use_real_auth(file.read_text(encoding="utf-8"), filename), encoding="utf-8")
 
+# Private knowledge library: static admin shell, protected by Supabase auth + database RLS.
+for filename in ("biblioteca.html", "biblioteca.js"):
+    src = root / filename
+    if not src.is_file():
+        raise SystemExit("Missing library asset: " + filename)
+    shutil.copyfile(src, out / filename)
+admin_html = out / "admin.html"
+if not admin_html.is_file():
+    raise SystemExit("Missing admin page to link the private library")
+admin_code = admin_html.read_text(encoding="utf-8")
+library_link = '<a id="guardiaoLibraryLink" href="/biblioteca" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#F04A12;color:#fff;padding:11px 17px;border-radius:10px;text-decoration:none;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px #351A1444">Biblioteca de livros</a>'
+if admin_code.count("</body>") != 1:
+    raise SystemExit("Could not safely add the private library navigation to admin")
+admin_html.write_text(admin_code.replace("</body>", library_link + "\n</body>", 1), encoding="utf-8")
+
 # The Supabase URL and publishable key are safe for browser configuration.
 # Never expose the service-role key or Anthropic API key here.
 client_config = {
