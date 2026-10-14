@@ -184,7 +184,7 @@ module.exports = async function handler(req, res) {
       'Escreva o capítulo SEUS PRÓXIMOS 12 MESES do Mapa do Guardião em português brasileiro.',
       'É um exercício de leitura simbólica, NÃO previsão factual, trânsito astronômico ou promessa financeira.',
       'Receba os 12 pares ano/mês do cálculo matemático. Retorne exatamente 12 objetos em "meses", na mesma ordem recebida, um para cada mês. Não escreva datas ou números no JSON; o servidor os adicionará.',
-      'Cada mês deve ter título humano específico (3 a 7 palavras), potencial (2 ou 3 frases), cuidado (2 ou 3 frases) e passo concreto (2 ou 3 frases). Evite frases vagas, clichês, ameaças, datas de acontecimentos e repetições. Entre 65 e 110 palavras no total por mês.',
+      'Cada mês deve ter título específico de 3 a 7 palavras; potencial em 2 frases (25 a 35 palavras), cuidado em 2 frases (20 a 30 palavras) e passo concreto em 1 frase (12 a 18 palavras). Total de 60 a 85 palavras por mês. Respeite estritamente esses tamanhos para caber no PDF. Evite previsões, clichês, ameaças e repetições.',
       'Cruze o foco do mês com o Guardião, a ferida, o potencial guardado e o objetivo declarado. Não invente acontecimentos do passado ou do futuro.',
       'O método Campo Guardião segue Reconhecer, Honrar, Atualizar. Os livros são referências de reflexão, não justificativa para afirmar previsões como fatos.',
       'DADOS DO TESTE: '+JSON.stringify(resumoTeste),
