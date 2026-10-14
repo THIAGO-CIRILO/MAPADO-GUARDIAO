@@ -1,6 +1,7 @@
 // Geração do Mapa do Guardião com autenticação Supabase e Claude.
 // Executado apenas no servidor Vercel. A chave Anthropic nunca é enviada ao navegador.
 const { buildPrompt } = require('./_prompt.js');
+const { obterContextoBibliografico } = require('./_biblioteca.js');
 const { createHash } = require('node:crypto');
 const T = { type: 'string' };
 const obj = props => ({ type: 'object', properties: props, required: Object.keys(props), additionalProperties: false });
@@ -155,6 +156,8 @@ module.exports = async function handler(req, res) {
       return res.status(status).json({ erro, fase });
     };
 
+    // Leitura bibliográfica opcional e privada: nunca chama o Claude e nunca altera o questionário salvo.
+    const fontesBibliograficas = await obterContextoBibliografico(fase);
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -168,7 +171,7 @@ module.exports = async function handler(req, res) {
         system: SYSTEM,
         messages: [{
           role: 'user',
-          content: buildPrompt(fase, teste, dossier)
+          content: buildPrompt(fase, teste, dossier) + fontesBibliograficas
         }],
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMAS[fase] } }
       }),
