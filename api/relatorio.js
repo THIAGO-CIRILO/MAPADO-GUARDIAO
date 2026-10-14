@@ -322,9 +322,9 @@ async function renderReport(m,p){
         sub(doc,monthNames[m.mes-1].toUpperCase()+' DE '+m.ano,x+122,183,width-133,'sand');
         doc.font('Times-Bold').fontSize(18).fillColor(HEX.ivory)
           .text(m.titulo,x+121,201,{width:width-141,height:44});
-        card(doc,'POTENCIAL DO MÊS',m.potencial,x,266,width,90,{font:10});
-        card(doc,'ONDE PEDE CUIDADO',m.cuidado,x,366,width,90,{font:10});
-        card(doc,'PASSO PRÁTICO',m.passo,x,466,width,68,{font:9.7});
+        card(doc,'POTENCIAL DO MÊS',m.potencial,x,260,width,87,{font:9.9});
+        card(doc,'ONDE PEDE CUIDADO',m.cuidado,x,353,width,87,{font:9.9});
+        card(doc,'PASSO PRÁTICO',m.passo,x,446,width,87,{font:9.9});
       }
     }
   }
