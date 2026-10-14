@@ -305,9 +305,9 @@ function generate(p){
     rect(x+102,169,wide-102,83,'dark');
     text(heading,x+116,189,11,'orange','helvetica','bold');
     blocks(m.titulo,x+115,197,wide-132,40,{size:18,font:'times',color:'ivory',heading:'Título do mês'});
-    card(x,266,wide,89,'Potencial do mês',m.potencial,{size:10.8});
-    card(x,366,wide,89,'Onde pede cuidado',m.cuidado,{size:10.8});
-    card(x,466,wide,67,'Uma atitude possível',m.passo,{size:10});
+    card(x,260,wide,87,'Potencial do mês',m.potencial,{size:9.9});
+    card(x,353,wide,87,'Onde pede cuidado',m.cuidado,{size:9.9});
+    card(x,446,wide,87,'Uma atitude possível',m.passo,{size:10});
    });
   }
  }
