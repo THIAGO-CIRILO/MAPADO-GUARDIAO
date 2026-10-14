@@ -200,7 +200,7 @@ async function gerar() {
   W.screen = 'gerando'; W.live = 'Lendo as suas respostas…'; wz();
   const frases = ['Calculando os seus ciclos…', 'Cruzando o seu Guardião com o seu momento de vida…', 'Escrevendo o seu mapa…', 'Montando o plano de ação…', 'Revisando os últimos detalhes…'];
   let k = 0; const tm = setInterval(() => { W.live = frases[Math.min(k++, frases.length - 1)]; const l = $('wzLive'); if (l) l.textContent = W.live; }, 9000);
-  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier }) })
+  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: iso(todayObj) } }) })
     .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'erro'), { status: r.status, j }); return j.parte; });
   try {
     // Reuse completed stages after an error. Limit concurrency to two API calls.
@@ -209,7 +209,7 @@ async function gerar() {
       W.assinaturaGeracao = assinatura;
       W.partesGeradas = {};
     }
-    const fases = ['a', 'b', 'c', 'd', 'e'];
+    const fases = ['a', 'b', 'c', 'd', 'e', 'f'];
     const partes = new Array(fases.length);
     for (let i = 0; i < fases.length; i += 2) {
       const lote = fases.slice(i, i + 2);
