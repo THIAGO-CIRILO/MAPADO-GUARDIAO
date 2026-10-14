@@ -138,7 +138,7 @@
       ensure(await db.storage.from(BUCKET).upload(path,file,{contentType:'application/pdf',upsert:false}));
       uploaded=true;
       ensure(await db.from('biblioteca_livros').insert({
-        id,titulo:cleanTitle(file.name),autor:'',categoria,
+        id,titulo:cleanTitle(file.name),autor:'',categoria:category,
         nome_arquivo:file.name,storage_path:path,sha256:sha,
         tamanho_bytes:file.size,paginas:parsed.paginas,
         situacao:'processando',ativo:false
