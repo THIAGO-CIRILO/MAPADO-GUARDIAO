@@ -6,7 +6,8 @@ const SEARCH = {
   b: ['Saturno','relacionamentos'],
   c: ['relacionamentos','casas'],
   d: ['Saturno','ciclos'],
-  e: ['responsabilidade','consciência']
+  e: ['responsabilidade','consciência'],
+  f: ['ciclos de vida','ano pessoal','mudanças']
 };
 const plain = value => String(value || '').replace(/[\u0000-\u001f]+/g,' ').replace(/\s+/g,' ').trim();
 async function obterContextoBibliografico(fase) {
