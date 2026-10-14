@@ -42,6 +42,10 @@ const SCHEMAS = {
     conversa: T, frase_nova: T,
     plano: obj({ h72: T, min5: T, dias: array(T) }),
     pergunta: T
+  }),
+  // Uma sexta etapa independente permite gerar os 12 meses sem truncar a leitura principal.
+  f: obj({
+    meses: array(obj({ titulo: T, potencial: T, cuidado: T, passo: T }))
   })
 };
 const FOCUS = {
@@ -49,7 +53,8 @@ const FOCUS = {
   b: 'Leitura da possível ferida, sem inferir acontecimentos não relatados. Potencial preservado e cruzamento entre proteção e possibilidades.',
   c: 'Quatro áreas da vida e posicionamento profissional/financeiro, com ações concretas. Pelo menos 2 itens em dinheiro.formas. Não prometa ganhos.',
   d: 'Momento de vida e ciclos simbólicos como lentes, sem previsões deterministas. Aprendizagem, síntese integrada e objetivo que a pessoa escreveu. Pelo menos 3 dicas.',
-  e: 'Plano prático em Reconhecer, Honrar e Atualizar. Exatamente 4 itens em trabalhar, 4 ações para fazer, 3 a evitar, 7 dias no plano, 1 conversa simbólica e pergunta final.'
+  e: 'Plano prático em Reconhecer, Honrar e Atualizar. Exatamente 4 itens em trabalhar, 4 ações para fazer, 3 a evitar, 7 dias no plano, 1 conversa simbólica e pergunta final.',
+  f: 'Os próximos 12 meses a partir do mês de referência: interpretar simbolicamente ano pessoal e mês pessoal, relacionados ao Guardião e ao objetivo da pessoa. Exatamente 12 leituras, distintas e acionáveis.'
 };
 const SYSTEM = `Você escreve, em português brasileiro, um mapa de reflexão do método Campo Guardião.
 Use as respostas e cálculos enviados como referência, nunca como diagnóstico de doença, comprovação de trauma, previsão do futuro ou garantia financeira. A pessoa pode concordar ou discordar das hipóteses. Não invente fatos biográficos.
@@ -69,12 +74,19 @@ module.exports = async function handler(req, res) {
 
   const jwt = /^(?:Bearer) (.+)$/i.exec(req.headers.authorization || '')?.[1];
   if (!jwt || jwt.length > 4096) return res.status(401).json({ erro: 'Entre novamente na sua conta.' });
-  const { fase, teste, dossier } = req.body || {};
+  const { fase, teste, dossier, dadosCiclos } = req.body || {};
   if (!Object.hasOwn(SCHEMAS, fase) || !teste || !dossier ||
       typeof teste !== 'object' || typeof dossier !== 'object' ||
       Array.isArray(teste) || Array.isArray(dossier)) {
     return res.status(400).json({ erro: 'Dados de geração inválidos.' });
   }
+  // Os dados de nascimento vêm do questionário, mas são verificados por um cálculo
+  // determinístico. Não entram na assinatura antiga, preservando reservas anteriores.
+  const cicloDoCliente = dadosCiclos && typeof dadosCiclos === 'object'
+    ? calcularCiclos(dadosCiclos.nascimento, dadosCiclos.referencia)
+    : calcularCiclos(dossier?.pessoa?.nascimento, dossier?.pessoa?.data_referencia);
+  if (fase === 'f' && (!cicloDoCliente || cicloDoCliente.proximos_12_meses.length !== 12))
+    return res.status(400).json({ erro: 'Não consegui calcular os próximos 12 meses. Confira sua data de nascimento e tente novamente.', fase });
   const payload = JSON.stringify({ teste, dossier });
   if (payload.length > 42000) return res.status(413).json({ erro: 'Dados excedem o limite.' });
 
@@ -159,8 +171,26 @@ module.exports = async function handler(req, res) {
 
     // Leitura bibliográfica opcional e privada: nunca chama o Claude e nunca altera o questionário salvo.
     const fontesBibliograficas = await obterContextoBibliografico(fase);
-    const calculoMCL = fase === 'd' ? calcularCiclos(dossier?.pessoa?.nascimento, dossier?.pessoa?.data_referencia) : null;
+    const calculoMCL = (fase === 'd' || fase === 'f') ? cicloDoCliente : null;
     const dadosCalculados = calculoMCL ? '\n\nCÁLCULOS NUMÉRICOS MCL-1 CONFERIDOS NO SERVIDOR (não inventar valores):\n' + JSON.stringify(calculoMCL) : '';
+    const resumoTeste = {
+      guardiao_principal: teste.guardiao_principal,
+      guardiao_secundario: teste.guardiao_secundario,
+      ferida_principal: teste.ferida_principal,
+      potencial_principal: teste.potencial_principal,
+      objetivo_da_pessoa: teste.objetivo_da_pessoa
+    };
+    const promptMensal = fase === 'f' ? [
+      'Escreva o capítulo SEUS PRÓXIMOS 12 MESES do Mapa do Guardião em português brasileiro.',
+      'É um exercício de leitura simbólica, NÃO previsão factual, trânsito astronômico ou promessa financeira.',
+      'Receba os 12 pares ano/mês do cálculo matemático. Retorne exatamente 12 objetos em "meses", na mesma ordem recebida, um para cada mês. Não escreva datas ou números no JSON; o servidor os adicionará.',
+      'Cada mês deve ter título humano específico (3 a 7 palavras), potencial (2 ou 3 frases), cuidado (2 ou 3 frases) e passo concreto (2 ou 3 frases). Evite frases vagas, clichês, ameaças, datas de acontecimentos e repetições. Entre 65 e 110 palavras no total por mês.',
+      'Cruze o foco do mês com o Guardião, a ferida, o potencial guardado e o objetivo declarado. Não invente acontecimentos do passado ou do futuro.',
+      'O método Campo Guardião segue Reconhecer, Honrar, Atualizar. Os livros são referências de reflexão, não justificativa para afirmar previsões como fatos.',
+      'DADOS DO TESTE: '+JSON.stringify(resumoTeste),
+      'CÁLCULOS NUMÉRICOS VERIFICADOS NO SERVIDOR: '+JSON.stringify(calculoMCL),
+      'Retorne apenas JSON válido com o formato {"meses":[{"titulo":"...","potencial":"...","cuidado":"...","passo":"..."}, ...]}.'
+    ].join('\n\n') : '';
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -170,11 +200,11 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
-        max_tokens: 4500,
+        max_tokens: fase === 'f' ? 4300 : 4500,
         system: SYSTEM,
         messages: [{
           role: 'user',
-          content: buildPrompt(fase, teste, dossier) + dadosCalculados + fontesBibliograficas
+          content: (fase === 'f' ? promptMensal : buildPrompt(fase, teste, dossier) + dadosCalculados) + fontesBibliograficas
         }],
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMAS[fase] } }
       }),
@@ -207,6 +237,22 @@ module.exports = async function handler(req, res) {
     let parte;
     try { parte = JSON.parse(text); }
     catch (e) { return fail(502, 'O Claude retornou uma resposta incompleta. Tente novamente.'); }
+    if (fase === 'f') {
+      if (!Array.isArray(parte?.meses) || parte.meses.length !== 12 ||
+          parte.meses.some(v => !v || ['titulo','potencial','cuidado','passo'].some(k => typeof v[k] !== 'string' || v[k].trim().length < 12))) {
+        return fail(502, 'A leitura dos 12 meses veio incompleta. Tente novamente somente essa etapa.');
+      }
+      // Os números são sempre atribuídos pelo motor, NUNCA copiados do texto da IA.
+      parte.meses = parte.meses.map((v,i) => ({
+        ...cicloDoCliente.proximos_12_meses[i],
+        titulo: v.titulo.trim().slice(0,150),
+        potencial: v.potencial.trim().slice(0,1400),
+        cuidado: v.cuidado.trim().slice(0,1400),
+        passo: v.passo.trim().slice(0,1400)
+      }));
+      parte.metodo_mensal = cicloDoCliente.metodo;
+      parte.referencia_mensal = cicloDoCliente.referencia;
+    }
     const saved = await rpc('concluir_fase_guardiao', { ...params, p_parte: parte });
     if (saved !== true)
       return res.status(503).json({ erro: 'Falha ao salvar a etapa. Aguarde antes de tentar de novo.', fase });
