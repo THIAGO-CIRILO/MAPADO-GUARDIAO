@@ -80,6 +80,8 @@ function generate(p){
  const doc=new jsPDF({unit:"pt",format:"a4",orientation:"landscape",compress:true});
  const W=841.89,H=595.28;
  const q=creator(p),R=q.R;
+ const hasMonths=Array.isArray(R.meses)&&R.meses.length===12&&R.meses.every(m=>m&&Number.isInteger(m.ano)&&Number.isInteger(m.mes)&&m.mes>=1&&m.mes<=12&&typeof m.titulo==='string');
+ const endingPage=hasMonths?35:29;
  let page=0; const overflows=[];
  const color=(c,method="setTextColor")=>doc[method](...(C[c]||C.ink));
  const rect=(x,y,w,h,c="paper",radius=0)=>{color(c,"setFillColor");if(radius)doc.roundedRect(x,y,w,h,radius,radius,"F");else doc.rect(x,y,w,h,"F")};
@@ -137,7 +139,7 @@ function generate(p){
   text("CAMPO GUARDIÃO / "+eyebrow.toUpperCase(),355,92,10,"orange","helvetica","bold");
   blocks(heading,352,144,430,200,{size:49,font:"times",heading});
   blocks(subtitle,359,378,390,97,{size:19,font:"times",style:"italic",heading});
-  text(String(page).padStart(2,"0")+" / 29",741,555,10,"muted","helvetica","bold");
+  text(String(page).padStart(2,"0")+" / "+endingPage,741,555,10,"muted","helvetica","bold");
  };
  const bar=(label,score,x,y,w,group)=>{
   const val=q.peak(group,score);
@@ -180,7 +182,7 @@ function generate(p){
  card(439,166,356,324,"Uma mensagem para você",R.abertura,{size:11.4});
  // 03
  newPage("Um percurso, não um rótulo","SEU SUMÁRIO");
- const toc=[["COMO LER","04–07","Método e resultados"],["O GUARDIÃO","08–10","Proteção e seus custos"],["FERIDA E POTÊNCIA","11–16","Da defesa aos recursos"],["ÁREAS E CICLOS","17–22","Seu contexto de vida"],["APRENDER E OBJETIVO","23–24","O que ajuda você"],["SEU PLANO","25–29","Reconhecer, honrar, atualizar"]];
+ const toc=[["COMO LER","04–07","Método e resultados"],["O GUARDIÃO","08–10","Proteção e seus custos"],["FERIDA E POTÊNCIA","11–16","Da defesa aos recursos"],["ÁREAS E CICLOS","17–22","Seu contexto de vida"],["APRENDER E OBJETIVO","23–24","O que ajuda você"],hasMonths?["PRÓXIMOS MESES E PLANO","25–35","Ciclos e escolhas práticas"]:["SEU PLANO","25–29","Reconhecer, honrar, atualizar"]];
  toc.forEach(([a,b,c],i)=>{const x=41+(i%3)*258,y=164+Math.floor(i/3)*171;card(x,y,240,153,a,c+"\n\nPáginas "+b,{size:11.2})});
  // 04
  newPage("O mapa tem três movimentos","COMO LER ESTA ENTREGA");
@@ -288,7 +290,28 @@ function generate(p){
  card(41,169,753,81,"Você escreveu",q.p.goal,{size:14});
  card(41,261,481,251,"A resposta do seu mapa",q.O.leitura,{size:12});
  card(537,261,257,251,"O próximo passo",q.O.proximo_passo,{size:11.8});
- // 25
+ // 25–30 · Seus próximos doze meses (dois meses em cada página).
+ // Este capítulo só existe para leituras novas que já salvaram a sexta etapa.
+ if(hasMonths){
+  const monthNames=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const scenes=['forest','mountain','light','water','journey','intro'];
+  for(let i=0;i<6;i++){
+   const oneMonth=R.meses[2*i],twoMonth=R.meses[2*i+1];
+   newPage('Seus próximos 12 meses · '+(i+1)+'/6','CICLOS SIMBÓLICOS DO SEU GUARDIÃO');
+   [oneMonth,twoMonth].forEach((m,col)=>{
+    const x=41+col*385,wide=369,photo=scenes[i%scenes.length];
+    const heading=monthNames[m.mes-1].toUpperCase()+' DE '+m.ano;
+    picture(photo,x,169,100,83);
+    rect(x+102,169,wide-102,83,'dark');
+    text(heading,x+116,189,11,'orange','helvetica','bold');
+    blocks(m.titulo,x+115,197,wide-132,40,{size:18,font:'times',color:'ivory',heading:'Título do mês'});
+    card(x,266,wide,89,'Potencial do mês',m.potencial,{size:10.8});
+    card(x,366,wide,89,'Onde pede cuidado',m.cuidado,{size:10.8});
+    card(x,466,wide,67,'Uma atitude possível',m.passo,{size:10});
+   });
+  }
+ }
+ // 25 ou 31
  newPage("Quatro pontos para trabalhar","RECONHECER E ESCOLHER");
  (q.R.trabalhar||[]).slice(0,4).forEach((a,i)=>card(41+(i%2)*386,170+Math.floor(i/2)*174,370,156,"Ponto "+String(i+1).padStart(2,"0"),a,{size:11.4}));
  // 26
@@ -309,7 +332,7 @@ function generate(p){
  });
  card(623,331,178,145,"Lembrete","Pequenos gestos repetidos contam mais que promessas impossíveis.",{size:11});
  // 29
- doc.addPage();page=29;
+ doc.addPage();page=endingPage;
  rect(0,0,W,H,"dark");picture("light",570,0,271,H,true);
  text("CAMPO GUARDIÃO",53,77,10,"orange","helvetica","bold");
  blocks("O seu lugar não pede que você desapareça para caber.",53,112,520,210,{size:50,font:"times",color:"ivory"});
@@ -335,7 +358,7 @@ function generate(p){
  const total=doc.getNumberOfPages();
  for(let i=1;i<=total;i++){
   doc.setPage(i);doc.setFont("helvetica","normal");doc.setFontSize(8);
-  color(i===29?"ivory":"muted");doc.text("MAPA DO GUARDIÃO · "+q.who+"  ·  "+i+" / "+total,42,585);
+  color(i===endingPage?"ivory":"muted");doc.text("MAPA DO GUARDIÃO · "+q.who+"  ·  "+i+" / "+total,42,585);
  }
  doc.setProperties({title:"Mapa do Guardião · "+q.who,subject:"Leitura simbólica individual · Campo Guardião",author:"Campo Guardião"});
  return {doc,pages:total,overflows:overflows.length};
@@ -347,7 +370,7 @@ async function pdfEditorial29(btn,status){
  if(!p||!p.gt||!p.gt.res||!p.gt.S){
   status.textContent="Seu mapa salvo não está disponível. Entre novamente no painel.";return;
  }
- btn.disabled=true;status.textContent="Montando seu PDF de 29 páginas, sem gerar nova leitura…";
+ btn.disabled=true;status.textContent="Montando seu PDF personalizado com os dados já salvos, sem gerar nova leitura…";
  try{
   await Promise.all(Object.keys(PHOTOS).map(k=>loadImage(k)));
   const result=generate(p);
@@ -363,5 +386,5 @@ if(prior){
  gtPDF=pdfEditorial29;
  window.gtPDF=pdfEditorial29;
 }
-window.guardiaoPdf29={generate,creator,download:pdfEditorial29,version:"29-editorial-1"};
+window.guardiaoPdf29={generate,creator,download:pdfEditorial29,version:"35-editorial-monthly-2"};
 })();
