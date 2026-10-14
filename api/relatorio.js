@@ -54,7 +54,7 @@ function base(doc,n,title,section='LEITURA PERSONALIZADA'){
   if(title)doc.font('Times-Bold').fontSize(31).fillColor(HEX.dark).text(title,39,83,{width:766,height:68});
   doc.moveTo(39,547).lineTo(803,547).strokeColor(HEX.line).stroke();
   sub(doc,'RECONHECER · HONRAR · ATUALIZAR',42,557,380,'muted');
-  text(doc,String(n).padStart(2,'0')+' / 29',735,557,65,9,'muted',true,{align:'right'});
+  text(doc,String(n).padStart(2,'0')+' / '+(doc._guardiaoTotalPages||29),735,557,65,9,'muted',true,{align:'right'});
 }
 const leftovers=[];
 function card(doc,label,value,x,y,w,h,opts={}){
@@ -116,7 +116,7 @@ function divider(doc,images,n,key,chapter,title,subtitle){
   doc.moveTo(332,117).lineTo(778,117).strokeColor(HEX.line).stroke();
   doc.font('Helvetica-Bold').fontSize(49).fillColor(HEX.dark).text(title,329,164,{width:454});
   doc.font('Times-Italic').fontSize(19).fillColor(HEX.burnt).text(subtitle,333,403,{width:420});
-  text(doc,n+' / 29',737,547,65,9,'muted',true,{align:'right'});
+  text(doc,n+' / '+(doc._guardiaoTotalPages||29),737,547,65,9,'muted',true,{align:'right'});
 }
 function listText(xs){return arr(xs).map((x,i)=>String(i+1)+'. '+plain(typeof x==='object'?(x.titulo?x.titulo+': ':'')+(x.texto||''):x)).join('\n\n');}
 function nameRank(scores,rank,dictionary,idx){
@@ -162,6 +162,8 @@ function appended(doc){
 }
 async function renderReport(m,p){
   const r=m.resultado||{}, s=m.scores||{}, pf=p||{}, g=s.g||{},w=s.w||{},pot=s.p||{},learn=s.l||{},work=s.m||{};
+  const hasMonths=Array.isArray(r.meses) && r.meses.length===12 &&
+    r.meses.every(x=>x && Number.isInteger(x.ano) && Number.isInteger(x.mes) && x.mes>=1 && x.mes<=12 && typeof x.titulo==='string');
   const primaryG=m.guardiao||nameRank(g,s.rg,G,0)||'Guardião de proteção';
   const secondaryG=nameRank(g,s.rg,G,1);
   const primaryF=m.ferida||nameRank(w,s.rw,F,0)||'Não informada';
@@ -178,6 +180,7 @@ async function renderReport(m,p){
   leftovers.length=0;
   const images=await photos();
   const doc=new PDFDocument({autoFirstPage:false,size:'A4',layout:'landscape',margin:0,compress:true,info:{Title:'Mapa do Guardião - '+nome,Author:'Campo Guardião',Subject:'Leitura individual e reflexiva'}});
+  doc._guardiaoTotalPages=hasMonths?35:29;
   const pieces=[];doc.on('data',chunk=>pieces.push(chunk));
   const done=new Promise((resolve,reject)=>{doc.on('end',()=>resolve(Buffer.concat(pieces)));doc.on('error',reject);});
   // 1 — capa fotográfica
@@ -196,7 +199,7 @@ async function renderReport(m,p){
   card(doc,'SUA CARTA DE ABERTURA',r.abertura,434,175,361,328,{font:10.5});
   // 3 — sumário
   page(doc,3,'Seu caminho pelas próximas páginas','SUMÁRIO');
-  const contents=[['01–04','Abertura e método'],['05–07','Visão geral e resultados'],['08–10','Seu Guardião'],['11–13','Sua ferida e defesas'],['14–16','Seu lugar de potência'],['17–21','Trabalho e áreas da vida'],['22–24','Ciclos, aprendizagem e objetivo'],['25–29','Orientações, práticas e síntese']];
+  const contents=[['01–04','Abertura e método'],['05–07','Visão geral e resultados'],['08–10','Seu Guardião'],['11–13','Sua ferida e defesas'],['14–16','Seu lugar de potência'],['17–21','Trabalho e áreas da vida'],['22–24','Ciclos, aprendizagem e objetivo'],hasMonths?['25–35','Meses, orientações e práticas']:['25–29','Orientações, práticas e síntese']];
   contents.forEach((it,i)=>{const row=Math.floor(i/2),col=i%2,x=45+col*385,y=173+row*86;box(doc,x,y,367,72,'paper');text(doc,it[0],x+16,y+14,88,16,'orange',true);text(doc,it[1],x+104,y+18,245,13,'dark',true);});
   // 4 — método
   page(doc,4,'Como ler o seu mapa','O MÉTODO');
@@ -306,31 +309,50 @@ async function renderReport(m,p){
   card(doc,'O QUE VOCÊ ESCREVEU',objetivo,43,166,751,79,{dark:true,font:14});
   card(doc,'A RESPOSTA DO MAPA',obj.leitura,43,259,471,244);
   card(doc,'SEU PRÓXIMO PASSO',obj.proximo_passo,526,259,268,244);
-  // 25
-  page(doc,25,'Os quatro pontos a trabalhar','RECONHECER');
+  // 25–30: os 12 meses calculados no servidor e interpretados uma única vez pelo Claude.
+  if(hasMonths){
+    const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const imageKeys=['forest','horizon','earth','sea','journey','portrait'];
+    for(let i=0;i<6;i++){
+      page(doc,25+i,'Seus próximos 12 meses · '+(i+1)+'/6','CICLOS SIMBÓLICOS');
+      for(let col=0;col<2;col++){
+        const m=r.meses[2*i+col],x=42+col*385,width=366;
+        panelPhoto(doc,images,imageKeys[i],x,170,106,82);
+        doc.rect(x+108,170,width-108,82).fill(HEX.dark);
+        sub(doc,monthNames[m.mes-1].toUpperCase()+' DE '+m.ano,x+122,183,width-133,'sand');
+        doc.font('Times-Bold').fontSize(18).fillColor(HEX.ivory)
+          .text(m.titulo,x+121,201,{width:width-141,height:44});
+        card(doc,'POTENCIAL DO MÊS',m.potencial,x,266,width,90,{font:10});
+        card(doc,'ONDE PEDE CUIDADO',m.cuidado,x,366,width,90,{font:10});
+        card(doc,'PASSO PRÁTICO',m.passo,x,466,width,68,{font:9.7});
+      }
+    }
+  }
+  // 25 ou 31
+  page(doc,hasMonths?31:25,'Os quatro pontos a trabalhar','RECONHECER');
   arr(r.trabalhar).slice(0,4).forEach((it,i)=>{
     const col=i%2, row=Math.floor(i/2);
     card(doc,'PONTO '+(i+1)+' — '+(it.titulo||'A trabalhar'),it.texto,42+col*384,166+row*171,368,160);
   });
   // 26
-  page(doc,26,'Honrar sem repetir o padrão','HONRAR');
+  page(doc,hasMonths?32:26,'Honrar sem repetir o padrão','HONRAR');
   card(doc,'O QUE MERECE ACOLHIMENTO',fer.crianca_precisou,42,166,365,122);
   card(doc,'O QUE FAZER',listText(com.fazer),420,166,373,122,{font:9.5});
   card(doc,'O QUE EVITAR',listText(com.evitar),42,301,365,201);
   card(doc,'CONVERSA COM O GUARDIÃO',r.conversa,420,301,373,201);
   // 27
-  page(doc,27,'Atualizar com um passo possível','ATUALIZAR');
+  page(doc,hasMonths?33:27,'Atualizar com um passo possível','ATUALIZAR');
   card(doc,'DECISÃO NAS PRÓXIMAS 72 HORAS',pl.h72,43,169,360,330);
   card(doc,'CINCO MINUTOS POR DIA',pl.min5,417,169,377,330);
   // 28
-  page(doc,28,'Sete dias para experimentar','PLANO DE AÇÃO');
+  page(doc,hasMonths?34:28,'Sete dias para experimentar','PLANO DE AÇÃO');
   arr(pl.dias).slice(0,7).forEach((item,i)=>{
     const col=i%4,row=Math.floor(i/4);
     card(doc,'DIA '+(i+1),item,40+col*193,171+row*166,180,156,{font:9.7});
   });
   panelPhoto(doc,images,'journey',40+3*193,337,180,156);
   // 29
-  page(doc,29,'Seu lugar não pede que você desapareça para caber','ENCERRAMENTO');
+  page(doc,hasMonths?35:29,'Seu lugar não pede que você desapareça para caber','ENCERRAMENTO');
   panelPhoto(doc,images,'horizon',434,158,358,341);
   card(doc,'FRASE DE ATUALIZAÇÃO',r.frase_nova,41,187,379,138,{font:17});
   card(doc,'UMA PERGUNTA PARA LEVAR',r.pergunta,41,341,379,158,{font:12});
