@@ -79,7 +79,7 @@ function wz() {
   if (s === 'loading') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Abrindo…</p></div></div>'; return; }
   if (s === 'sincronizar') {
     const total=Object.keys(D.ans||{}).length;
-    const complete=total>=12 && String(D.name||'').trim().length>=2 &&
+    const complete=total>=8 && String(D.name||'').trim().length>=2 &&
       /^\d{4}-\d{2}-\d{2}$/.test(D.birth||'') &&
       String(D.goal||'').trim().length>=5;
     R.innerHTML=`<div class="wz"><div class="wz-card"><span class="eyebrow">Suporte do Mapa do Guardião</span><h2>Recuperar meu questionário</h2><p class="lead">Você já fez a leitura. Esta tela envia somente os dados do questionário que estiverem salvos <b>neste navegador</b> para o suporte finalizar o PDF, sem refazer a interpretação e sem outra compra.</p><p class="wz-msg">Respostas encontradas: <b>${total}</b> · Conta: ${esc(W.user?.email||'')}</p><p class="wz-err" role="alert">${esc(W.err||'')}</p><p class="wz-msg" role="status">${esc(W.msg||'')}</p>${complete?'<button id="wzSyncNow" type="button">Enviar respostas ao suporte</button>':'<p class="wz-err">Não encontrei um questionário completo neste navegador. Abra este link no mesmo celular e navegador em que respondeu originalmente. Se não aparecer, procure o suporte.</p>'}<p class="gt-note">Os dados são enviados somente à sua conta no Campo Guardião. Não envie senha ou dados bancários.</p><div class="wz-nav"><button class="ghost" id="wzSyncBack" type="button">Voltar ao Mapa do Guardião</button></div></div></div>`;
@@ -200,7 +200,7 @@ function wzTeste(p, S) {
    Não envia o conteúdo para terceiros: o RPC escreve em tabela privada, ligada à conta. */
 async function guardarHistoricoGuardiao(options={}) {
   if(!sb||!W.user)throw new Error('Entre na sua conta para enviar os dados ao suporte.');
-  if(!D.ans||Object.keys(D.ans).length<12)
+  if(!D.ans||Object.keys(D.ans).length<8)
     throw new Error('O questionário não está completo neste navegador. Consulte o suporte para recuperar as respostas.');
   const S=options.S||gtScore(D.ans);
   const p={name:String(D.name||'').trim(),goal:String(D.goal||'').trim()};
