@@ -79,7 +79,7 @@ for label in ('const GT_Q =', 'const GT_LINK =', 'function gtScore(', 'const GT_
         raise SystemExit('Incomplete quiz source: ' + label)
 (out / 'questionario-motor.js').write_text(quiz_js + '\nwindow.GuardiaoQuestionario = { questions: GT_Q, score: gtScore, guardians: GT_G, wounds: GT_W, potentials: GT_P, learning: GT_L, work: GT_M };\n', encoding='utf-8')
 import subprocess
-verify_quiz = 'global.window={}; require(process.argv[1]); const q=window.GuardiaoQuestionario; if(!q||!Array.isArray(q.questions)||q.questions.length<12||typeof q.score!=="function") throw Error("motor do teste incompleto"); const sample={};q.questions.forEach((_,i)=>sample[i]=0);const s=q.score(sample);if(!s.rg?.length||!s.rp?.length)throw Error("pontuacao invalida");'
+verify_quiz = 'global.window={}; require(process.argv[1]); const q=window.GuardiaoQuestionario; if(!q||!Array.isArray(q.questions)||q.questions.length!==10||typeof q.score!=="function") throw Error("motor do teste incompleto"); const sample={};q.questions.forEach((_,i)=>sample[i]=0);const s=q.score(sample);if(!s.rg?.length||!s.rp?.length)throw Error("pontuacao invalida");'
 subprocess.run(['node','-e',verify_quiz,str(out / 'questionario-motor.js')], check=True)
 
 wizard_marker = "/* ===== MAPA DO GUARDIÃO · app em etapas, login (Supabase) e geração (servidor) ===== */"
