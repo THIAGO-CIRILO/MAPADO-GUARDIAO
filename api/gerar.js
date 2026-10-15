@@ -139,7 +139,15 @@ module.exports = async function handler(req, res) {
       }
       return out.json();
     };
-    const params = { p_fase: fase, p_assinatura: assinatura };
+    // A previous generation may have completed all five core phases without
+    // saving its map (for example after a site update). Recover ONLY when the
+    // same authenticated and paid account has all five original parts ready.
+    // The stored signature remains immutable; no stage A-E is re-generated.
+    const assinaturaExistente = await rpc('recuperar_assinatura_guardiao', {});
+    const recuperando = typeof assinaturaExistente === 'string' &&
+      /^[a-f0-9]{64}$/.test(assinaturaExistente) && assinaturaExistente !== assinatura;
+    const assinaturaEfetiva = recuperando ? assinaturaExistente : assinatura;
+    const params = { p_fase: fase, p_assinatura: assinaturaEfetiva };
     const gate = await rpc('iniciar_fase_guardiao', params);
     if (gate.estado === 'concluido')
       return res.status(409).json({ erro: 'Seu Mapa do Guardião já foi gerado. Acesse seu painel para visualizá-lo e baixar o PDF.', fase });
@@ -148,7 +156,7 @@ module.exports = async function handler(req, res) {
     if (gate.estado === 'questionario_ja_definido')
       return res.status(409).json({ erro: 'Este acesso já tem um questionário em geração. Entre em contato com o suporte se precisar recuperá-lo.', fase });
     if (gate.estado === 'pronta')
-      return res.status(200).json({ ok: true, parte: gate.parte, reutilizada: true });
+      return res.status(200).json({ ok: true, parte: gate.parte, reutilizada: true, recuperada: recuperando });
     if (gate.estado === 'processando')
       return res.status(409).json({ erro: 'Esta etapa já está sendo gerada. Aguarde um pouco antes de tentar novamente.', fase });
     if (gate.estado === 'limite')
