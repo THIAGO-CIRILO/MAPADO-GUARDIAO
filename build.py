@@ -68,6 +68,16 @@ def use_real_auth(html, filename):
 # Use the current tracked wizard.js, not the outdated copy embedded in the ZIP.
 index_page = out / "index.html"
 html = index_page.read_text(encoding="utf-8")
+# Prepare a standalone quiz motor for the administrator from the public site archive.
+quiz_begin = html.find('const GT_G = {')
+quiz_finish = html.find('const gtDraft =', quiz_begin)
+if quiz_begin < 0 or quiz_finish <= quiz_begin:
+    raise SystemExit('Quiz source not found in public site')
+quiz_js = html[quiz_begin:quiz_finish]
+for label in ('const GT_Q =', 'const GT_LINK =', 'function gtScore(', 'const GT_W =', 'const GT_P ='):
+    if label not in quiz_js:
+        raise SystemExit('Incomplete quiz source: ' + label)
+(out / 'questionario-motor.js').write_text(quiz_js + '\nwindow.GuardiaoQuestionario = { questions: GT_Q, score: gtScore, guardians: GT_G, wounds: GT_W, potentials: GT_P, learning: GT_L, work: GT_M };\n', encoding='utf-8')
 wizard_marker = "/* ===== MAPA DO GUARDIÃO · app em etapas, login (Supabase) e geração (servidor) ===== */"
 wizard_pos = html.find(wizard_marker)
 if wizard_pos < 0:
