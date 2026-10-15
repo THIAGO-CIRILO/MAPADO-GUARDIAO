@@ -80,7 +80,7 @@ function wz() {
   if (s === 'gerando') {
     R.innerHTML = `<div class="wz"><div class="wz-card wz-load"><span class="gt-dot"></span><h2>Montando o seu mapa</h2><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${esc(W.live || 'Lendo as suas respostas…')}</p><p class="wz-msg">Isso pode levar alguns minutos. Mantenha esta página aberta.</p></div></div>`; return;
   }
-  if (s === 'erro') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Não deu certo desta vez</h2><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzToObj" type="button">Voltar</button><button id="wzRetry" type="button">Tentar de novo</button></div></div></div>`; return; }
+  if (s === 'erro') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Não deu certo desta vez</h2><p class="wz-err" role="alert">${esc(W.err)}</p>${W.msg ? '<p class="wz-msg" role="status">'+esc(W.msg)+'</p>' : ''}<div class="wz-nav"><button class="ghost" id="wzToObj" type="button">Voltar</button><button id="wzRetry" type="button">Tentar de novo</button></div><button class="wz-link" id="wzSendHistory" type="button">Enviar meus dados ao suporte</button><p class="gt-note">Se a leitura já foi gerada, o suporte poderá recuperá-la sem cobrar outra compra. Não envie senha ou dados bancários.</p></div></div>`; return; }
   if (s === 'result') {
     const p = db.people.find(x => x.id === D.pid && x.gt && x.gt.res); if (!p) { W.screen = 'welcome'; return wz(); }
     gtResult(p);
@@ -181,6 +181,36 @@ function wzTeste(p, S) {
     objetivo_da_pessoa: p.goal
   };
 }
+
+/* O questionário é salvo antes da primeira chamada ao Claude.
+   Isso permite recuperação administrativa fiel em caso de erro após a interpretação.
+   Não envia o conteúdo para terceiros: o RPC escreve em tabela privada, ligada à conta. */
+async function guardarHistoricoGuardiao(options={}) {
+  if(!sb||!W.user)throw new Error('Entre na sua conta para enviar os dados ao suporte.');
+  if(!D.ans||Object.keys(D.ans).length<12)
+    throw new Error('O questionário não está completo neste navegador. Consulte o suporte para recuperar as respostas.');
+  const S=options.S||gtScore(D.ans);
+  const p={name:String(D.name||'').trim(),goal:String(D.goal||'').trim()};
+  const g=GT_G[S.rg?.[0]],pot=GT_P[S.rp?.[0]],fer=S.rw?.[0]?GT_W[S.rw[0]]:null;
+  if(!g||!pot)throw new Error('Pontuações principais não disponíveis.');
+  const perfil={
+    nome:p.name,nascimento:D.birth,hora:D.time||null,uf:D.uf||null,
+    cidade:D.city||null,lat:D.lat===''?null:D.lat,
+    lon:D.lon===''?null:D.lon,tz:D.tz===''?null:D.tz,
+    dst:!!D.dst,objetivo:p.goal,
+    guardiao:g[0],ferida:fer?.[0]||null,potencial:pot[0]
+  };
+  const teste=options.teste||wzTeste(p,S);
+  const {error}=await sb.rpc('guardiao_salvar_questionario',{
+    p_respostas:D.ans,p_scores:S,p_perfil:perfil,
+    p_teste:teste,
+    p_dossier:options.dossier||{},
+    p_dados_ciclos:{nascimento:D.birth,referencia:options.referencia||iso(todayObj)}
+  });
+  if(error)throw new Error('Não foi possível salvar o questionário no suporte: '+error.message);
+  return true;
+}
+
 async function gerar() {
   if (W.busy) return;
   W.busy = true;
@@ -218,6 +248,7 @@ async function gerar() {
     wz();
     try {
       const S=gtScore(D.ans);
+      await guardarHistoricoGuardiao({S,referencia:dataFixa});
       const perfil={
         nome:String(D.name||'').trim(),
         nascimento:String(D.birth||''),
@@ -259,6 +290,13 @@ async function gerar() {
   if (!dossier) { W.busy = false; W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
   delete dossier.areas; delete dossier.modo; delete dossier.elementos_autoavaliacao;
   const teste = wzTeste(p, S);
+  try { await guardarHistoricoGuardiao({S,teste,dossier,referencia:dataFixa}); }
+  catch(err){
+    W.busy=false;
+    W.err='Não consegui salvar a cópia de segurança do questionário antes de gerar a leitura. '+String(err?.message||'').slice(0,220);
+    W.msg='Nenhuma nova leitura foi solicitada ao Claude. Tente novamente.';
+    W.screen='erro';return wz();
+  }
   W.screen = 'gerando'; W.live = 'Lendo as suas respostas…'; wz();
   const frases = ['Calculando os seus ciclos…', 'Cruzando o seu Guardião com o seu momento de vida…', 'Escrevendo o seu mapa…', 'Montando o plano de ação…', 'Revisando os últimos detalhes…'];
   let k = 0; const tm = setInterval(() => { W.live = frases[Math.min(k++, frases.length - 1)]; const l = $('wzLive'); if (l) l.textContent = W.live; }, 9000);
@@ -396,6 +434,17 @@ document.addEventListener('click', async e => {
   if (id === 'wzManual') { D.manual = true; gtSave(); return wz(); }
   if (id === 'wzList') { D.manual = false; gtSave(); return wz(); }
   if (id === 'wzRetry') return gerar();
+  if (id === 'wzSendHistory') {
+    if(W.busy)return;
+    W.busy=true;W.msg='Enviando os dados do questionário ao suporte…';wz();
+    try{
+      await guardarHistoricoGuardiao();
+      W.msg='Dados enviados ao suporte com sucesso. A equipe poderá recuperar as interpretações já salvas e finalizar o mapa sem uma nova compra.';
+    }catch(err){
+      W.msg='Não foi possível enviar o questionário: '+String(err?.message||'').slice(0,190)+'. Não apague as respostas deste navegador.';
+    }
+    W.busy=false;return wz();
+  }
   if (id === 'wzToObj') { W.screen = 'step'; D.step = 'obj'; return wz(); }
   if (t.tagName === 'LI' && t.dataset.c !== undefined) { const L = (W.cities[D.uf] || [])[+t.dataset.c]; if (L) { D.city = L[0]; D.lat = L[1]; D.lon = L[2]; D.tz = L[3]; gtSave(); $('wzCity').value = L[0]; $('wzRes').hidden = true; } return; }
   if (id === 'wzNext') {
