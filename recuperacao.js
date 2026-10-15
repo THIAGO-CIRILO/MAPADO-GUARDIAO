@@ -157,7 +157,15 @@ async function copyRequest(c){
 }
 async function recover(c){
  if(!c.tem_questionario||c.etapas_prontas!==5)return status('Não há material suficiente para uma recuperação segura.',true);
- if(!window.confirm('Recuperar e registrar o mapa de '+c.email+' usando APENAS as cinco etapas já salvas, sem chamar o Claude?'))return;
+ let monthNotice='';
+ try {
+   const history=success(await db.rpc('guardiao_admin_detalhes',{p_user_id:c.user_id}));
+   const month=(Array.isArray(history?.etapas)?history.etapas:[]).find(x=>x.fase==='f');
+   if(month?.estado==='processando')return status('A leitura dos 12 meses ainda está em geração. Aguarde a conclusão antes de finalizar manualmente.',true);
+   if(month && month.estado!=='pronta')monthNotice=' A ETAPA MENSAL NÃO ESTÁ PRONTA. Esta recuperação gerará o relatório SEM os 12 meses; você precisará combinar essa entrega com a pessoa.';
+   else if(!month)monthNotice=' Se esta compra incluía os 12 meses, confira antes: não há etapa mensal salva e o relatório será de 29 páginas.';
+ }catch(err){return status('Não consegui verificar se há uma leitura mensal pendente: '+errText(err),true);}
+ if(!window.confirm('Recuperar e registrar o mapa de '+c.email+' com as etapas já salvas, SEM chamar o Claude?'+monthNotice))return;
  status('Reunindo as etapas existentes e registrando o mapa…');
  try{
   const id=success(await db.rpc('guardiao_admin_finalizar',{p_user_id:c.user_id}));
