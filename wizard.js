@@ -196,7 +196,7 @@ async function gerar() {
     const checkpoint=await sb.rpc('referencia_geracao_guardiao');
     if(checkpoint.error)throw checkpoint.error;
     andamentoAnterior=checkpoint.data;
-    if(andamentoAnterior?.referencia && !/^\\d{4}-\\d{2}-\\d{2}$/.test(andamentoAnterior.referencia))
+    if(andamentoAnterior?.referencia && !/^\d{4}-\d{2}-\d{2}$/.test(andamentoAnterior.referencia))
       throw new Error('Data de recuperação inválida.');
   }catch(e){
     W.busy=false;
