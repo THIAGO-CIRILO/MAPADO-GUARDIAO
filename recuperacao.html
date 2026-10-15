@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Recuperação de Mapas | Campo Guardião</title>
+<style>
+:root{--orange:#F04A12;--dark:#351A14;--ink:#252321;--ivory:#F7F1E9;--paper:#FFFCF7;--line:#DDCEC2;--muted:#705B50;--green:#2F6957}
+*[hidden]{display:none!important}*{box-sizing:border-box}
+body{margin:0;background:var(--ivory);color:var(--ink);font:15px/1.5 Inter,"Segoe UI",Arial,sans-serif}
+header{background:var(--dark);color:var(--ivory);padding:24px max(18px,5vw)}
+header>div{max-width:1150px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.eyebrow{font-size:11px;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:#FFB38E}
+h1{font-size:clamp(27px,4vw,44px);line-height:1.1;letter-spacing:-.04em;margin:4px 0}h2{font-size:21px;letter-spacing:-.025em;margin:0 0 8px}h3{margin:0 0 7px;font-size:17px}
+header a{color:var(--ivory);font-size:13px;padding:7px 12px;text-decoration:none;border:1px solid #8B6D63;border-radius:8px}
+main{max-width:1180px;margin:27px auto 60px;padding:0 18px;display:grid;gap:17px}
+section{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:22px;box-shadow:0 7px 28px #351A1408;min-width:0}
+p{margin:0 0 10px}.lead,.muted{color:var(--muted)}.small{font-size:12px}.muted{font-size:14px}
+label{display:grid;gap:5px;font-size:13px;font-weight:700}
+input{font:inherit;border:1px solid #C9B8A9;background:white;border-radius:8px;padding:10px 12px;max-width:100%;min-width:0}
+button{font:inherit;cursor:pointer;padding:10px 13px;border-radius:8px;background:var(--orange);color:white;border:0;font-size:13px;font-weight:750}
+button:disabled{cursor:not-allowed;opacity:.55}
+button.ghost{color:var(--dark);border:1px solid #D2C1B2;background:transparent}
+button.dark{background:var(--dark)}button.link{color:var(--dark);background:transparent;text-decoration:underline;padding:3px 0}
+button.small{padding:7px 10px;font-size:12px}
+.row{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.row>*{flex:1;min-width:150px}.row>.fit{flex:0 auto}
+#feedback{margin:0;font-weight:700;color:var(--dark)}#feedback.error{color:#AD342A}
+.tableScroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:780px}
+th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}
+th{color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.actions{display:flex;gap:6px;flex-wrap:wrap}.status{display:inline-block;border-radius:20px;font-size:11px;font-weight:800;padding:4px 8px;background:#ECE2DB;color:var(--dark)}.status.ok{background:#E0EFE5;color:#235940}.status.wait{background:#FFF0D8;color:#8C520B}.status.warn{background:#FBE1DE;color:#9C2822}
+.statrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0}
+.stat{background:#F8F1E9;padding:12px;border-radius:9px}.stat strong{display:block;font-size:21px}.stat span{font-size:11px;color:var(--muted)}
+.itemName{font-weight:750;color:var(--dark)}
+#detailPane{border:1px solid var(--line);background:#F9F4ED;padding:16px;border-radius:10px;margin-top:15px;overflow-wrap:anywhere}
+#answers{max-height:320px;overflow:auto;display:grid;gap:7px}
+.qa{border-bottom:1px solid var(--line);padding:7px 0}.qa strong{display:block;font-size:12px}.qa span{color:var(--muted);font-size:13px}
+.notice{background:#FFF2E6;border-left:3px solid var(--orange);padding:12px 15px;border-radius:8px}
+footer{font-size:12px;color:var(--muted);max-width:1180px;margin:0 auto 55px;padding:0 18px}
+@media(max-width:600px){section{padding:16px}.statrow{grid-template-columns:1fr}.row>*{min-width:100%}.row>.fit{flex:1}}
+</style></head><body>
+<header><div><div><span class="eyebrow">Área administrativa · Campo Guardião</span><h1>Central de recuperação</h1><div style="font-size:13px;opacity:.8">Entrega automática continua ativa · Recuperação manual em caso de falha</div></div><div class="row" style="gap:8px"><a href="/admin">Painel admin</a><a href="/biblioteca">Biblioteca</a></div></div></header>
+<main>
+<section id="loading"><h2>Conferindo suas permissões…</h2><p class="muted">Somente o administrador pode consultar e recuperar leituras de clientes.</p></section>
+<section id="login" hidden>
+<h2>Entrar como administrador</h2>
+<p class="lead">Use sua conta administrativa cadastrada no Campo Guardião.</p>
+<form id="loginForm" class="row"><label>E-mail<input type="email" id="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button type="submit" class="fit">Entrar</button></form>
+<p id="loginFeedback" class="small" role="alert"></p>
+</section>
+<div id="panel" hidden style="display:grid;gap:17px">
+<section>
+<div class="row" style="align-items:center"><div><h2>Casos e entregas</h2><p class="muted">Encontre uma pessoa pelo e-mail ou nome. Leia o histórico antes de finalizar um mapa manualmente.</p></div><button class="ghost fit" id="logout">Sair</button></div>
+<form id="searchForm" class="row"><label>Buscar cliente<input id="search" type="search" placeholder="E-mail ou nome" maxlength="150"></label><button type="submit" class="fit">Buscar</button><button class="ghost fit" id="refresh" type="button">Atualizar</button></form>
+<div class="statrow"><div class="stat"><strong id="count">—</strong><span>Registros mostrados</span></div><div class="stat"><strong id="blocked">—</strong><span>Leituras interrompidas</span></div><div class="stat"><strong id="complete">—</strong><span>Mapas concluídos</span></div></div>
+<p id="feedback" role="status"></p>
+<div class="tableScroll"><table><thead><tr><th>Cliente</th><th>Compra</th><th>Interpretações</th><th>Questionário</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="cases"><tr><td colspan="6">Carregando…</td></tr></tbody></table></div>
+</section>
+<section id="detailSection" hidden>
+<div class="row"><div><h2>Histórico do cliente</h2><p class="muted" id="detailTitle"></p></div><button id="closeDetail" class="ghost fit">Fechar</button></div>
+<div id="detailPane">
+<p id="detailSummary" class="notice"></p>
+<div id="answers"></div>
+</div>
+<p class="small muted" style="margin-top:10px">As respostas são privadas. Use-as somente para suporte autorizado, conferência e entrega do mapa contratado.</p>
+</section>
+<section>
+<h2>Como funciona a recuperação</h2>
+<p class="lead">O sistema automático continua sendo a entrega padrão. Quando a geração falha, esta central usa as etapas já salvas e o questionário da pessoa. Se tudo estiver completo, você finaliza o mapa e baixa o mesmo PDF que a cliente teria no painel.</p>
+<div class="notice"><strong>Sem chamar o Claude novamente:</strong> o botão de recuperar só aparece quando as cinco etapas principais estão prontas e o questionário está armazenado. Caso faltem respostas, peça à pessoa para acessar a conta e clicar em <strong>Enviar dados ao suporte</strong> na tela de erro. Se faltarem interpretações, o sistema não inventa conteúdo.</div>
+</section>
+</div>
+</main>
+<footer>Ações administrativas são registradas com data e conta responsável. Nenhum PDF é enviado automaticamente pelo WhatsApp ou e-mail; você pode baixá-lo e compartilhar depois.</footer>
+<script src="/config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/recuperacao.js?v=20261015-1"></script>
+</body></html>
