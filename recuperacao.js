@@ -5,6 +5,7 @@
 const $=id=>document.getElementById(id);
 const cfg=window.APP_CONFIG||{};
 let db=null,me=null,loading=false,items=[],selected=null;
+let manualCase=null,manualMeta=null;
 const el=(tag,txt,cls)=>{
  const e=document.createElement(tag);
  if(txt!==undefined&&txt!==null)e.textContent=String(txt);
@@ -99,7 +100,8 @@ async function load(){
    }else if(c.tem_questionario&&c.etapas_prontas===5&&c.pagamento!=='não_localizado'){
     action.append(button('Gerar PDF manualmente',async()=>recover(c),'dark'));
    }else if(!c.tem_questionario&&c.etapas_prontas===5){
-    action.append(button('Solicitar dados',async()=>copyRequest(c)));
+    action.append(button('Pedir sincronização',async()=>copyRequest(c)));
+    if(c.pagamento!=='não_localizado')action.append(button('Preencher respostas',async()=>startManual(c),'dark'));
    }
    ac.append(action);tr.append(ac);body.append(tr);
   }
