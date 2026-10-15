@@ -1,0 +1,1 @@
+(()=>{'use strict';window.startManual=async function(){throw new Error('Formulário ainda em preparação');};})();
