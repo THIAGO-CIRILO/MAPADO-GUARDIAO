@@ -58,6 +58,7 @@ function statusFor(c){
  if(c.tem_mapa)return {label:'Mapa disponível',kind:'ok'};
  if(c.etapas_prontas===5 && c.tem_questionario)return {label:'Recuperável',kind:'ok'};
  if(c.etapas_prontas===5)return {label:'Aguardando questionário',kind:'wait'};
+ if(c.etapas_prontas===0 && !c.tem_questionario)return {label:'Sem leitura salva · pode recomeçar',kind:'wait'};
  return {label:'Leitura em andamento',kind:'warn'};
 }
 function statusPayment(c){
@@ -104,7 +105,7 @@ async function load(){
     action.append(button('Pedir sincronização',async()=>copyRequest(c)));
     if(c.pagamento!=='não_localizado')action.append(button('Preencher respostas',async()=>startManual(c),'dark'));
    }
-   if(c.pagamento!=='não_localizado' && (c.tem_mapa || c.etapas_prontas>0 || c.tem_questionario))
+   if(c.pagamento!=='não_localizado')
      action.append(button('Zerar cadastro',async()=>openReset(c),'dangerButton'));
    ac.append(action);tr.append(ac);body.append(tr);
   }
@@ -205,6 +206,22 @@ async function showDetails(c){
     answers.append(box);
    }
   } else answers.append(el('p','As respostas individuais ainda não foram armazenadas no servidor. A pessoa poderá enviá-las pelo próprio questionário, se ainda estiverem no navegador.','muted'));
+  const adminEvents=Array.isArray(hist.acoes_administrativas)?hist.acoes_administrativas:[];
+  if(adminEvents.length){
+    answers.append(el('h3','Histórico administrativo'));
+    adminEvents.forEach(action=>{
+      const box=el('div',null,'qa');
+      const title=action.acao==='cadastro_zerado'?'Cadastro zerado para novo teste':
+        action.acao==='recuperado'?'Leitura recuperada':
+        action.acao==='entrega_registrada'?'PDF entregue':
+        action.acao==='questionario_reconstituido'?'Respostas cadastradas manualmente':
+        'Atendimento registrado';
+      const date=action.data?new Date(action.data).toLocaleString('pt-BR'):'';
+      box.append(el('strong',title+(date?' · '+date:'')));
+      if(action.nota)box.append(el('span',action.nota));
+      answers.append(box);
+    });
+  }
   const legend=el('div',null,'qa');
   legend.append(el('strong','Dados para diagramação'));
   legend.append(el('span','Guardião: '+(profile.guardiao||'não cadastrado')+' · Potencial: '+(profile.potencial||'não cadastrado')+' · Ferida: '+(profile.ferida||'não informada')));
