@@ -3,6 +3,7 @@
 const { buildPrompt } = require('./_prompt.js');
 const { obterContextoBibliografico } = require('./_biblioteca.js');
 const { calcularCiclos } = require('./_ciclos.js');
+const { avaliarEditorial } = require('./_editorial.js');
 const { createHash } = require('node:crypto');
 const T = { type: 'string' };
 const obj = props => ({ type: 'object', properties: props, required: Object.keys(props), additionalProperties: false });
@@ -241,6 +242,15 @@ module.exports = async function handler(req, res) {
     let parte;
     try { parte = JSON.parse(text); }
     catch (e) { return fail(502, 'O Claude retornou uma resposta incompleta. Tente novamente.'); }
+    // Revisão editorial ANTES da gravação no Supabase.
+    // Não removemos trechos arbitrariamente, pois isso poderia destruir a leitura.
+    // Se o Claude insistir em ressalvas ou abertura genérica, a etapa não é publicada.
+    const problemasEditoriais = avaliarEditorial(parte, fase, teste);
+    if (problemasEditoriais.length) {
+      console.warn('Guardiao editorial gate blocked phase', fase,
+        problemasEditoriais.map(x => x.campo + ':' + x.problema).slice(0,8));
+      return fail(502, 'A redação desta etapa não passou pela revisão de qualidade. Suas respostas estão salvas; tente novamente para gerar um texto melhor.');
+    }
     if (fase === 'f') {
       if (!Array.isArray(parte?.meses) || parte.meses.length !== 12 ||
           parte.meses.some(v => !v || ['titulo','potencial','cuidado','passo'].some(k => typeof v[k] !== 'string' || v[k].trim().length < 12))) {
