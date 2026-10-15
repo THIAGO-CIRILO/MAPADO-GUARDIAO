@@ -95,7 +95,7 @@ function wz() {
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
     root().insertAdjacentHTML('beforeend', extra);
     if ($('gtRedo')) $('gtRedo').remove();
-    // The 29-page report is assembled from the saved Supabase record, never from a new Claude call.
+    // Essential PDF: 14 pages (18 with 12 months), composed only from the saved map.
     if ($('gtPdf')) {
       $('gtPdf').id = 'wzPdf29';
       $('wzPdf29').textContent = 'Baixar PDF essencial (14 a 18 páginas)';
@@ -431,7 +431,7 @@ document.addEventListener('click', async e => {
     const status = $('gtPdfSt');
     const btn = $('wzPdf29');
     if (btn) btn.disabled = true;
-    if (status) status.textContent = 'Preparando seu PDF de 29 páginas…';
+    if (status) status.textContent = 'Preparando seu PDF essencial de 14 a 18 páginas…';
     try {
       const mapId = W.activeMapId || W.maps[0]?.id;
       if (!mapId) throw new Error('Aguarde o mapa ser salvo no painel antes de baixar.');
@@ -457,11 +457,11 @@ document.addEventListener('click', async e => {
       setTimeout(() => URL.revokeObjectURL(href), 30000);
       if (status) status.textContent = 'Seu PDF está pronto.';
     } catch (err) {
-      // If only the PDF server fails, compose the SAME saved map in-browser.
+      // If the server fails, compose the SAME 14/18-page essential PDF in-browser (never the old 53-page report).
       // Never bypass a 401/403 payment/session rejection.
-      if ((!err?.status || err.status >= 500) && window.guardiaoPdf29?.download && W.activeMapId) {
+      if ((!err?.status || err.status >= 500) && window.guardiaoPdfEssencial?.download && W.activeMapId) {
         if (status) status.textContent = 'O servidor demorou. Montando o PDF no navegador…';
-        try { await window.guardiaoPdf29.download(btn || { disabled: false }, status || { textContent: '' }); }
+        try { await window.guardiaoPdfEssencial.download(btn || { disabled: false }, status || { textContent: '' }); }
         catch (fallbackErr) { if (status) status.textContent = 'Não foi possível baixar agora. Seu mapa continua salvo.'; }
       } else if (status) {
         status.textContent = err?.message || 'O download falhou. Seu mapa continua salvo.';
