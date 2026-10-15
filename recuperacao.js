@@ -6,6 +6,7 @@ const $=id=>document.getElementById(id);
 const cfg=window.APP_CONFIG||{};
 let db=null,me=null,loading=false,items=[],selected=null;
 let manualCase=null,manualMeta=null;
+let resetCase=null,resetBusy=false;
 const el=(tag,txt,cls)=>{
  const e=document.createElement(tag);
  if(txt!==undefined&&txt!==null)e.textContent=String(txt);
@@ -103,12 +104,77 @@ async function load(){
     action.append(button('Pedir sincronização',async()=>copyRequest(c)));
     if(c.pagamento!=='não_localizado')action.append(button('Preencher respostas',async()=>startManual(c),'dark'));
    }
+   if(c.pagamento!=='não_localizado' && (c.tem_mapa || c.etapas_prontas>0 || c.tem_questionario))
+     action.append(button('Zerar cadastro',async()=>openReset(c),'dangerButton'));
    ac.append(action);tr.append(ac);body.append(tr);
   }
   status(rows.length+' registro(s) encontrados. Nenhuma consulta desta página gera chamadas ao Claude.');
  }catch(e){status('Falha ao carregar os casos: '+errText(e),true);}
  finally{loading=false;$('refresh').disabled=false;}
 }
+async function openReset(c){
+ if(!c?.user_id || !c.email || c.pagamento==='não_localizado')
+   throw new Error('Selecione um cliente com compra registrada.');
+ resetCase=c;
+ $('resetClient').textContent='Cliente selecionado: '+(c.nome||'Nome não registrado')+' · '+c.email;
+ $('resetEmail').value='';
+ $('resetWord').value='';
+ $('resetUnderstand').checked=false;
+ $('resetSubmit').disabled=false;
+ $('resetFeedback').textContent='Nada será excluído até você digitar o e-mail exato, ZERAR e confirmar.';
+ show('resetSection',true);
+ $('resetSection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeReset(){
+ if(resetBusy)return;
+ resetCase=null;
+ show('resetSection',false);
+ $('resetEmail').value='';
+ $('resetWord').value='';
+ $('resetUnderstand').checked=false;
+ $('resetFeedback').textContent='';
+}
+async function executeReset(event){
+ event.preventDefault();
+ if(resetBusy || !resetCase)return;
+ const typedEmail=$('resetEmail').value.trim();
+ const word=$('resetWord').value.trim();
+ if(typedEmail.toLowerCase()!==resetCase.email.toLowerCase()){
+   $('resetFeedback').textContent='O e-mail digitado não corresponde à conta selecionada.';
+   return;
+ }
+ if(word!=='ZERAR' || !$('resetUnderstand').checked){
+   $('resetFeedback').textContent='É necessário digitar ZERAR e confirmar que entende a exclusão.';
+   return;
+ }
+ resetBusy=true;
+ $('resetSubmit').disabled=true;
+ $('resetFeedback').textContent='Reiniciando a leitura no servidor. Aguarde…';
+ try{
+   const result=success(await db.rpc('guardiao_admin_zerar_cliente',{
+     p_user_id:resetCase.user_id,
+     p_email_confirmacao:typedEmail,
+     p_confirmacao:'ZERAR'
+   }));
+   if(result?.ok!==true || result?.email?.toLowerCase()!==resetCase.email.toLowerCase())
+     throw new Error('O servidor não confirmou o reinício.');
+   const message='Cadastro da conta '+resetCase.email+' zerado. '
+     +'Leituras anteriores apagadas ('+(result.etapas_excluidas||0)+' etapas e '
+     +(result.mapas_excluidos||0)+' mapas). Login e compra preservados. '
+     +'A pessoa deve atualizar o site e entrar novamente para responder tudo.';
+   resetCase=null;
+   show('resetSection',false);
+   await load();
+   status(message);
+ }catch(err){
+   $('resetFeedback').textContent='Não foi possível zerar: '+errText(err)+'. Nenhum reinício foi confirmado.';
+   status('O reinício não foi concluído. Confira a mensagem abaixo.',true);
+ }finally{
+   resetBusy=false;
+   $('resetSubmit').disabled=false;
+ }
+}
+
 async function showDetails(c){
  selected=c;
  show('detailSection',true);
@@ -216,6 +282,9 @@ function ready(){
  $('refresh').addEventListener('click',load);
  $('logout').addEventListener('click',async()=>{if(db)await db.auth.signOut();me=null;items=[];await showLogin();});
  $('closeDetail').addEventListener('click',()=>show('detailSection',false));
+ $('resetClose').addEventListener('click',closeReset);
+ $('resetCancel').addEventListener('click',closeReset);
+ $('resetForm').addEventListener('submit',executeReset);
  auth();
 }
 ready();
