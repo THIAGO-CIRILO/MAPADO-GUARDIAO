@@ -118,7 +118,7 @@ for filename in ("index.html", "admin.html"):
         file.write_text(use_real_auth(file.read_text(encoding="utf-8"), filename), encoding="utf-8")
 
 # Private knowledge library: static admin shell, protected by Supabase auth + database RLS.
-for filename in ("biblioteca.html", "biblioteca.js", "recuperacao.html", "recuperacao.js"):
+for filename in ("biblioteca.html", "biblioteca.js", "recuperacao.html", "recuperacao.js", "recuperacao-manual.js"):
     src = root / filename
     if not src.is_file():
         raise SystemExit("Missing library asset: " + filename)
