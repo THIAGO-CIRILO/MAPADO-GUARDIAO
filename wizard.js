@@ -209,6 +209,47 @@ async function gerar() {
   const recuperacaoLegada=!!(andamentoAnterior?.etapas_prontas===5 &&
     andamentoAnterior?.etapas_registradas===5 &&
     andamentoAnterior.referencia<='2026-10-14');
+  // Uma leitura antiga já paga e concluída NÃO deve chamar Claude de novo.
+  // O PostgreSQL reúne as cinco partes originais e grava perfil/mapa numa
+  // transação indivisível, verificando usuário, pagamento e integridade.
+  if (recuperacaoLegada) {
+    W.screen='gerando';
+    W.live='Recuperando as cinco partes já concluídas do seu mapa…';
+    wz();
+    try {
+      const S=gtScore(D.ans);
+      const perfil={
+        nome:String(D.name||'').trim(),
+        nascimento:String(D.birth||''),
+        hora:D.time||null,
+        uf:D.uf||null,
+        cidade:D.city||null,
+        lat:D.lat===''?null:D.lat,
+        lon:D.lon===''?null:D.lon,
+        tz:D.tz===''?null:D.tz,
+        dst:!!D.dst,
+        objetivo:String(D.goal||'').trim()
+      };
+      const {data:mapId,error:recoverError}=await sb.rpc(
+        'finalizar_mapa_guardiao_recuperado',
+        {p_respostas:D.ans,p_scores:S,p_perfil:perfil}
+      );
+      if (recoverError)throw recoverError;
+      if (!mapId)throw new Error('O servidor não retornou a identificação do mapa recuperado.');
+      await loadMaps();
+      W.busy=false;
+      return await openMap(mapId,false);
+    }catch(e){
+      console.error('Falha ao finalizar mapa recuperado:',e?.code||'indefinido',e?.message||'sem detalhe');
+      W.busy=false;
+      const detail=String(e?.message||'').slice(0,180);
+      W.err='As cinco leituras estão salvas, mas não foi possível concluir o cadastro do mapa.'
+        +(detail?' Detalhe: '+detail:'')
+        +' Você não precisa comprar novamente nem gerar as leituras de novo.';
+      W.screen='erro';
+      return wz();
+    }
+  }
   const c = { uf: D.uf, nome: D.city };
   let p = db.people.find(x => x.id === D.pid && x.gt); if (!p) { p = { id: 'gt' + Date.now(), events: [], elem: {} }; db.people.push(p); }
   Object.assign(p, { name: D.name.trim(), birth: D.birth, goal: D.goal.trim(), time: D.time || '', dst: !!D.dst, city: D.city ? `${D.city}, ${D.uf}` : '', lat: parseFloat(D.lat), lon: parseFloat(D.lon), tz: parseFloat(D.tz) });
