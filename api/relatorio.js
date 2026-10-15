@@ -1,6 +1,7 @@
 // Relatório editorial 29 páginas do Campo Guardião, a partir do mapa JÁ SALVO.
 // Este endpoint não chama Anthropic e jamais cria um segundo mapa.
 const PDFDocument = require('pdfkit');
+const { renderCompact } = require('./_relatorio_compacto.js');
 const { URL } = require('node:url');
 const W = 841.89, H = 595.28;
 const HEX={dark:'#2C1A17',ink:'#35241E',muted:'#75665E',orange:'#F04A12',burnt:'#A94324',ivory:'#F7F1E9',paper:'#FFFCF7',sand:'#E6DBCE',light:'#F0E7DD',line:'#D7C9BA',white:'#FFFFFF'};
@@ -385,7 +386,7 @@ module.exports=async function handler(req,res){
     if(!m)return res.status(404).json({erro:'Mapa não encontrado para esta conta.'});
     const profile=await fetch(base+'/rest/v1/perfis?id=eq.'+encodeURIComponent(m.user_id)+'&select=*',{headers,signal:AbortSignal.timeout(9000)});
     const profiles=profile.ok?await profile.json():[];
-    const pdf=await renderReport(m,profiles?.[0]||{});
+    const pdf=await renderCompact(m,profiles?.[0]||{});
     const filename='Mapa_do_Guardiao_'+String(profiles?.[0]?.nome||'Meu_Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,60)+'.pdf';
     res.setHeader('Content-Type','application/pdf');
     res.setHeader('Content-Disposition','attachment; filename="'+filename+'"');
