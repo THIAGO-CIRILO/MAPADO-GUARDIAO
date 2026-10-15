@@ -176,9 +176,9 @@ function generate(p){
  blocks(q.title,50,519,489,39,{size:17,heading:"Nome"});
  text("DATA DA LEITURA",590,510,9,"muted","helvetica","bold");text(q.dated.split("-").reverse().join("/"),589,536,12,"ink");
  // 02
- newPage("Antes de começar","CARTA DE ABERTURA");
- blocks("Você não precisa se consertar. Precisa se reconhecer.",47,154,354,164,{font:"times",size:35});
- blocks("Este relatório reúne hipóteses de reflexão. Não é diagnóstico, sentença nem previsão.",48,369,349,91,{size:12});
+ newPage("O encontro entre proteção e potência","CARTA DE ABERTURA");
+ blocks("O que a sua proteção está guardando?",47,154,354,164,{font:"times",size:35});
+ blocks("No seu teste, "+q.gp+" aparece como Guardião principal. "+q.pp+" é o potencial que começa a conversar com essa proteção.",48,369,349,91,{size:12});
  card(439,166,356,324,"Uma mensagem para você",R.abertura,{size:11.4});
  // 03
  newPage("Um percurso, não um rótulo","SEU SUMÁRIO");
@@ -186,7 +186,7 @@ function generate(p){
  toc.forEach(([a,b,c],i)=>{const x=41+(i%3)*258,y=164+Math.floor(i/3)*171;card(x,y,240,153,a,c+"\n\nPáginas "+b,{size:11.2})});
  // 04
  newPage("O mapa tem três movimentos","COMO LER ESTA ENTREGA");
- blocks("Um percurso para reconhecer a proteção, honrar sua função e atualizar a maneira de agir. A leitura é simbólica e convida você a testar o que faz sentido.",43,155,751,74,{size:13});
+ blocks("Reconhecer o padrão que protege, honrar o que ele tentou preservar e experimentar uma nova resposta nas situações em que você pode escolher diferente.",43,155,751,74,{size:13});
  [["01 · RECONHECER","Perceber onde a proteção se ativa e o que tenta evitar."],["02 · HONRAR","Acolher a intenção da defesa, mesmo quando ela já custa caro."],["03 · ATUALIZAR","Dar ao Guardião uma nova referência, com um gesto possível."]].forEach((v,i)=>card(42+i*257,254,244,225,v[0],v[1],{size:14}));
  // 05
  newPage("Seu campo em um olhar","VISÃO GERAL");
