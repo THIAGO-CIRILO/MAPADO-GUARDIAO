@@ -134,7 +134,7 @@ admin_code = admin_html.read_text(encoding="utf-8")
 library_link = '<a id="guardiaoLibraryLink" href="/biblioteca" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#F04A12;color:#fff;padding:11px 17px;border-radius:10px;text-decoration:none;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px #351A1444">Biblioteca de livros</a>'
 if admin_code.count("</body>") != 1:
     raise SystemExit("Could not safely add the private library navigation to admin")
-recovery_link = '<a id="guardiaoRecoveryLink" href="/recuperacao" style="position:fixed;bottom:73px;right:18px;z-index:9999;background:#351A14;color:#fff;padding:11px 17px;border-radius:10px;text-decoration:none;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px #351A1444">Recuperar mapas</a>'
+recovery_link = '<a id="guardiaoRecoveryLink" href="/recuperacao" style="position:fixed;bottom:73px;right:18px;z-index:9999;background:#351A14;color:#fff;padding:11px 17px;border-radius:10px;text-decoration:none;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px #351A1444">Gerenciar / zerar cadastro</a>'
 admin_html.write_text(admin_code.replace("</body>", recovery_link + "\n" + library_link + "\n</body>", 1), encoding="utf-8")
 
 # The Supabase URL and publishable key are safe for browser configuration.
