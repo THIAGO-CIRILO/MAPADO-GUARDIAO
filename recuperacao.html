@@ -34,6 +34,7 @@ th{color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercas
 #answers{max-height:320px;overflow:auto;display:grid;gap:7px}
 .qa{border-bottom:1px solid var(--line);padding:7px 0}.qa strong{display:block;font-size:12px}.qa span{color:var(--muted);font-size:13px}
 .notice{background:#FFF2E6;border-left:3px solid var(--orange);padding:12px 15px;border-radius:8px}
+.dangerBox{border:1px solid #E9AAA1;background:#FFF7F5;border-radius:12px;padding:17px;margin-top:10px}.dangerBox strong{color:#942B23}.dangerButton{background:#A83A30}.dangerButton:hover{background:#84231F}.dangerHint{font-size:13px;color:#803830}.checkRow{display:flex;align-items:start;gap:9px;font-size:13px}.checkRow input{width:18px;min-width:18px;max-width:18px;margin-top:2px}.dangerTitle{color:#8C2B24}
 footer{font-size:12px;color:var(--muted);max-width:1180px;margin:0 auto 55px;padding:0 18px}
 #manualFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:12px 0}#manualFields label.full{grid-column:1/-1}.manualQ{background:#F9F4ED;border:1px solid var(--line);border-radius:10px;padding:13px;margin:9px 0}.manualQ select{margin-top:8px;font-size:13px}#manualStatus{font-size:13px;font-weight:700;white-space:pre-line}@media(max-width:600px){section{padding:16px}.statrow{grid-template-columns:1fr}.row>*{min-width:100%}.row>.fit{flex:1}#manualFields{grid-template-columns:1fr}}
 </style></head><body>
@@ -62,6 +63,21 @@ footer{font-size:12px;color:var(--muted);max-width:1180px;margin:0 auto 55px;pad
 </div>
 <p class="small muted" style="margin-top:10px">As respostas são privadas. Use-as somente para suporte autorizado, conferência e entrega do mapa contratado.</p>
 </section>
+<section id="resetSection" hidden>
+ <div class="row"><div><h2 class="dangerTitle">Zerar cadastro e leitura</h2><p class="muted" id="resetClient"></p></div><button class="ghost fit" id="resetClose" type="button">Cancelar</button></div>
+ <div class="dangerBox">
+  <strong>Atenção: esta operação não pode ser desfeita.</strong>
+  <p>Serão apagados o mapa, as etapas A–F já escritas, o questionário salvo, as pontuações, o perfil da leitura e as solicitações de geração anteriores. O Claude precisará gerar a leitura novamente, e isso pode consumir novos créditos.</p>
+  <p><b>Serão preservados:</b> a conta de login, a senha, o pagamento da Kiwify e o histórico administrativo de reinícios. A cliente poderá responder tudo outra vez com o mesmo e-mail enquanto o acesso estiver ativo.</p>
+  <form id="resetForm">
+   <label>Digite o e-mail completo da cliente para confirmar<input id="resetEmail" type="email" autocomplete="off" placeholder="nome@exemplo.com" required></label>
+   <label>Digite ZERAR para confirmar<input id="resetWord" autocomplete="off" placeholder="ZERAR" required></label>
+   <label class="checkRow"><input id="resetUnderstand" type="checkbox" required><span>Eu entendo que vou excluir definitivamente a leitura anterior desta pessoa e que uma nova geração poderá consumir créditos.</span></label>
+   <p id="resetFeedback" role="status" class="dangerHint"></p>
+   <div class="row"><button id="resetSubmit" type="submit" class="dangerButton">Confirmar exclusão e liberar novo teste</button><button id="resetCancel" class="ghost fit" type="button">Não excluir</button></div>
+  </form>
+ </div>
+</section>
 <section id="manualSection" hidden>
 <div class="row"><div><h2>Registrar respostas para recuperar o PDF</h2><p class="muted" id="manualClient"></p></div><button type="button" class="ghost fit" id="closeManual">Fechar</button></div>
 <div class="notice"><strong>Use somente as respostas reais da cliente.</strong> Este formulário reproduz as perguntas e a pontuação original. Não escolha alternativas por suposição ou para tentar combinar com as interpretações já produzidas.</div>
@@ -88,6 +104,6 @@ footer{font-size:12px;color:var(--muted);max-width:1180px;margin:0 auto 55px;pad
 <footer>Ações administrativas são registradas com data e conta responsável. Nenhum PDF é enviado automaticamente pelo WhatsApp ou e-mail; você pode baixá-lo e compartilhar depois.</footer>
 <script src="/config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/questionario-motor.js?v=20261015"></script>
-<script src="/recuperacao.js?v=20261015-4"></script>
+<script src="/recuperacao.js?v=20261015-5"></script>
 <script src="/recuperacao-manual.js?v=20261015-2"></script>
 </body></html>
