@@ -98,7 +98,7 @@ function wz() {
     // The 29-page report is assembled from the saved Supabase record, never from a new Claude call.
     if ($('gtPdf')) {
       $('gtPdf').id = 'wzPdf29';
-      $('wzPdf29').textContent = 'Baixar meu PDF completo (29 páginas)';
+      $('wzPdf29').textContent = 'Baixar PDF essencial (14 a 18 páginas)';
     }
     return;
   }
