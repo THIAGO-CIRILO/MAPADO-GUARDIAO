@@ -387,7 +387,7 @@ module.exports=async function handler(req,res){
     const profile=await fetch(base+'/rest/v1/perfis?id=eq.'+encodeURIComponent(m.user_id)+'&select=*',{headers,signal:AbortSignal.timeout(9000)});
     const profiles=profile.ok?await profile.json():[];
     const pdf=await renderCompact(m,profiles?.[0]||{});
-    const filename='Mapa_do_Guardiao_'+String(profiles?.[0]?.nome||'Meu_Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,60)+'.pdf';
+    const filename='Mapa_do_Guardiao_Edicao_Essencial_'+String(profiles?.[0]?.nome||'Meu_Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,60)+'.pdf';
     res.setHeader('Content-Type','application/pdf');
     res.setHeader('Content-Disposition','attachment; filename="'+filename+'"');
     res.setHeader('Content-Length',pdf.length);
