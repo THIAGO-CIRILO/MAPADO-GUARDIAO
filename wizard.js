@@ -188,10 +188,31 @@ async function gerar() {
   if (W.maps.length) { W.busy = false; return openMap(W.maps[0].id, false); }
   const sess = (await sb.auth.getSession()).data.session;
   if (!sess) { W.busy = false; W.screen = 'auth'; W.mode = 'login'; W.err = 'Entre de novo para continuar.'; return wz(); }
+  // O questionário é único: se uma geração foi iniciada anteriormente,
+  // preservamos a mesma data de referência para recuperar a assinatura original.
+  // Sem isso, os cálculos do dia seguinte geram outro hash e bloqueiam partes já pagas.
+  let andamentoAnterior=null;
+  try {
+    const checkpoint=await sb.rpc('referencia_geracao_guardiao');
+    if(checkpoint.error)throw checkpoint.error;
+    andamentoAnterior=checkpoint.data;
+    if(andamentoAnterior?.referencia && !/^\\d{4}-\\d{2}-\\d{2}$/.test(andamentoAnterior.referencia))
+      throw new Error('Data de recuperação inválida.');
+  }catch(e){
+    W.busy=false;
+    W.err='Não consegui recuperar a leitura já iniciada. Nenhuma resposta foi apagada. Atualize a página e tente novamente.';
+    W.screen='erro';return wz();
+  }
+  const dataFixa=andamentoAnterior?.referencia || iso(todayObj);
+  // Leituras que já tinham cinco fases concluídas ANTES da publicação do
+  // calendário mensal devem poder ser finalizadas sem consumir créditos novos.
+  const recuperacaoLegada=!!(andamentoAnterior?.etapas_prontas===5 &&
+    andamentoAnterior?.etapas_registradas===5 &&
+    andamentoAnterior.referencia<='2026-10-14');
   const c = { uf: D.uf, nome: D.city };
   let p = db.people.find(x => x.id === D.pid && x.gt); if (!p) { p = { id: 'gt' + Date.now(), events: [], elem: {} }; db.people.push(p); }
   Object.assign(p, { name: D.name.trim(), birth: D.birth, goal: D.goal.trim(), time: D.time || '', dst: !!D.dst, city: D.city ? `${D.city}, ${D.uf}` : '', lat: parseFloat(D.lat), lon: parseFloat(D.lon), tz: parseFloat(D.tz) });
-  p.gt = { ans: Object.assign({}, D.ans) }; D.pid = p.id; db.cur = p.id; refStr = iso(todayObj); gtSave();
+  p.gt = { ans: Object.assign({}, D.ans) }; D.pid = p.id; db.cur = p.id; refStr = dataFixa; gtSave();
   fillForm(); render();
   const S = gtScore(D.ans), dossier = buildDossier('atual');
   if (!dossier) { W.busy = false; W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
@@ -200,7 +221,7 @@ async function gerar() {
   W.screen = 'gerando'; W.live = 'Lendo as suas respostas…'; wz();
   const frases = ['Calculando os seus ciclos…', 'Cruzando o seu Guardião com o seu momento de vida…', 'Escrevendo o seu mapa…', 'Montando o plano de ação…', 'Revisando os últimos detalhes…'];
   let k = 0; const tm = setInterval(() => { W.live = frases[Math.min(k++, frases.length - 1)]; const l = $('wzLive'); if (l) l.textContent = W.live; }, 9000);
-  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: iso(todayObj) } }) })
+  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: dataFixa } }) })
     .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'erro'), { status: r.status, j }); return j.parte; });
   try {
     // Reuse completed stages after an error. Limit concurrency to two API calls.
@@ -209,7 +230,7 @@ async function gerar() {
       W.assinaturaGeracao = assinatura;
       W.partesGeradas = {};
     }
-    const fases = ['a', 'b', 'c', 'd', 'e', 'f'];
+    const fases = recuperacaoLegada ? ['a', 'b', 'c', 'd', 'e'] : ['a', 'b', 'c', 'd', 'e', 'f'];
     const partes = new Array(fases.length);
     for (let i = 0; i < fases.length; i += 2) {
       const lote = fases.slice(i, i + 2);
@@ -228,7 +249,7 @@ async function gerar() {
     const res = Object.assign({}, ...partes);
     res.trabalhar = (res.trabalhar || []).slice(0, 4); if (res.plano && res.plano.dias) res.plano.dias = res.plano.dias.slice(0, 7);
     if (!gtOk(res)) throw Object.assign(new Error('incompleto'), { status: 0 });
-    p.gt.S = S; p.gt.res = res; p.gt.when = iso(todayObj); save();
+    p.gt.S = S; p.gt.res = res; p.gt.when = dataFixa; save();
     // Only show a completed map after the database confirms it was saved.
     const { error: profileError } = await sb.from('perfis').upsert({ id: W.user.id, email: W.user.email, nome: p.name, nascimento: D.birth, hora: D.time || null, uf: D.uf || null, cidade: D.city || null, lat: p.lat, lon: p.lon, tz: p.tz, dst: !!D.dst, objetivo: p.goal, aceite_lgpd_em: new Date().toISOString() });
     if (profileError) console.warn('Perfil não atualizado; mapa continua salvo se inserção funcionar.');
@@ -248,7 +269,10 @@ async function gerar() {
     const detalhe = (typeof e?.message === 'string' && e.message.length < 300 && !['erro','incompleto'].includes(e.message))
       ? e.message : 'Não foi possível gerar o mapa agora. Suas respostas estão salvas; tente novamente.';
     W.err = e.status === 401 ? 'Sua sessão expirou. Entre de novo.' : detalhe;
-    if (e.j?.fase) W.err += ' (Etapa ' + String(e.j.fase).toUpperCase() + ')';
+    if(e.j?.fase) W.err += ' (Etapa ' + String(e.j.fase).toUpperCase() + ')';
+    if (e.message?.includes('questionário em geração') || e.message?.includes('questionário anterior')) {
+      W.err = 'Sua leitura anterior está preservada, mas as respostas atuais não correspondem ao questionário original. Não refaça a compra. Procure o suporte para recuperar o questionário correto.';
+    }
     W.screen = 'erro'; wz();
   } finally { W.busy = false; }
 }
