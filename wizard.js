@@ -146,8 +146,40 @@ async function liberarAcesso() {
   if (data !== true) { W.err = ''; W.screen = 'aguardando'; wz(); return false; }
   return true;
 }
+// A leitura pode ser reiniciada pelo administrador sem excluir a conta da cliente.
+// Ao entrar, a pessoa recebe a revisão do servidor e limpa cópias locais antigas.
+async function aplicarReinicioAdministrativo(){
+  if(!sb || !W.user)return;
+  const {data,error}=await sb.rpc('guardiao_consultar_reinicio');
+  if(error)throw new Error('Não consegui conferir o estado do seu mapa. Atualize a página e tente novamente.');
+  const revisao=Number(data||0);
+  if(!Number.isSafeInteger(revisao)||revisao<0)
+    throw new Error('Estado de reinício inválido; entre novamente.');
+  const antiga=(db.gtResetUser===W.user.id)?Number(db.gtResetRevision||0):0;
+  if(revisao>antiga){
+    // Retira também o mapa e as respostas antigas do armazenamento neste navegador.
+    db.people=db.people.filter(x=>!x.gt);
+    db.cur=null;
+    W.viewing=null;W.activeMapId=null;W.assinaturaGeracao=null;W.partesGeradas=null;
+    resetDraft(false);
+    W.resetNotice='Seu cadastro de leitura foi reiniciado pelo suporte. Você pode responder novamente usando esta mesma conta, sem pagar outra vez enquanto seu acesso estiver ativo.';
+  }
+  db.gtResetUser=W.user.id;
+  db.gtResetRevision=revisao;
+  save();
+}
 async function afterLogin() {
-  syncLocal(); await loadMaps();
+  syncLocal();
+  try{
+    await aplicarReinicioAdministrativo();
+    W.resetError=false;
+  }catch(err){
+    W.err=String(err?.message||'Não consegui verificar o reinício da leitura.');
+    W.msg='Nenhuma resposta foi alterada. Tente novamente.';
+    W.resetError=true;
+    W.screen='erro';return wz();
+  }
+  await loadMaps();
   if (new URLSearchParams(location.search).get('ver')) return;
   if (new URLSearchParams(location.search).get('sincronizar')==='1') {
     if(W.maps.length)return openMap(W.maps[0].id,false);
@@ -446,7 +478,7 @@ document.addEventListener('click', async e => {
   if (t.dataset && t.dataset.opt !== undefined) { const i = +/^q(\d+)$/.exec(D.step)[1]; D.ans[i] = +t.dataset.opt; gtSave(); return wz(); }
   if (id === 'wzManual') { D.manual = true; gtSave(); return wz(); }
   if (id === 'wzList') { D.manual = false; gtSave(); return wz(); }
-  if (id === 'wzRetry') return gerar();
+  if (id === 'wzRetry') return W.resetError ? afterLogin() : gerar();
   if (id === 'wzSyncBack') {
     history.replaceState(null,'','/');
     W.screen='step';D.step=D.step||'dados1';W.err='';W.msg='';return wz();
