@@ -74,7 +74,7 @@ function collected(){
   if(!Number.isInteger(pos)||pos<0||pos>=questions[i][2].length)throw Error('Alternativa inválida na pergunta '+(i+1));
   data[i]=pos;
  }
- if(Object.keys(data).length<12)throw Error('Há poucas respostas preenchidas para reconstruir as pontuações.');
+ if(Object.keys(data).length<8)throw Error('Há poucas respostas preenchidas para reconstruir as pontuações.');
  return data;
 }
 async function createReport(mapId,personName,email){
