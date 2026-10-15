@@ -105,7 +105,7 @@ function wz() {
   // etapas
   const st = D.step;
   if (st === 'dados1') {
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Vamos começar</h2><label>Seu nome completo<input id="wzName" autocomplete="name" value="${esc(D.name)}"></label><label>Data de nascimento<input id="wzBirth" type="date" value="${esc(D.birth)}"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzNext" type="button">Próximo</button></div></div></div>`; return;
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Vamos começar</h2>${W.resetNotice?'<p class="wz-msg" role="status">'+esc(W.resetNotice)+'</p>':''}<label>Seu nome completo<input id="wzName" autocomplete="name" value="${esc(D.name)}"></label><label>Data de nascimento<input id="wzBirth" type="date" value="${esc(D.birth)}"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzNext" type="button">Próximo</button></div></div></div>`; return;
   }
   if (st === 'dados2') {
     R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Onde e a que horas você nasceu?</h2><label>Hora de nascimento (se souber)<input id="wzTime" type="time" value="${esc(D.time)}"></label><p class="wz-hint">Sem a hora o mapa funciona do mesmo jeito, só com menos detalhes.</p>
