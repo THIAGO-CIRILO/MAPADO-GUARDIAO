@@ -62,6 +62,22 @@ footer{font-size:12px;color:var(--muted);max-width:1180px;margin:0 auto 55px;pad
 </div>
 <p class="small muted" style="margin-top:10px">As respostas são privadas. Use-as somente para suporte autorizado, conferência e entrega do mapa contratado.</p>
 </section>
+<section id="manualSection" hidden>
+<div class="row"><div><h2>Registrar respostas para recuperar o PDF</h2><p class="muted" id="manualClient"></p></div><button type="button" class="ghost fit" id="closeManual">Fechar</button></div>
+<div class="notice"><strong>Use somente as respostas reais da cliente.</strong> Este formulário reproduz as perguntas e a pontuação original. Não escolha alternativas por suposição ou para tentar combinar com as interpretações já produzidas.</div>
+<form id="manualForm">
+<div id="manualFields">
+<label>Nome completo<input id="manualName" minlength="2" maxlength="160" required></label>
+<label>Data de nascimento<input id="manualBirth" type="date" required></label>
+<label class="full">Objetivo informado no questionário<textarea id="manualGoal" minlength="5" maxlength="1500" required></textarea></label>
+<label>Hora de nascimento (se houver)<input id="manualTime" type="time"></label>
+<label>UF (se houver)<input id="manualUF" maxlength="2" placeholder="SP"></label>
+<label>Cidade (se houver)<input id="manualCity" maxlength="180"></label>
+</div><h3>Perguntas respondidas</h3>
+<p class="muted">Selecione o que a pessoa realmente respondeu. Se pulou alguma pergunta, marque essa opção.</p>
+<div id="manualQuestions"></div><p id="manualStatus" role="status"></p>
+<div class="row"><button id="manualSubmit" type="submit">Salvar respostas e preparar mapa</button><button type="button" class="ghost fit" id="cancelManual">Cancelar</button></div>
+</form></section>
 <section>
 <h2>Como funciona a recuperação</h2>
 <p class="lead">O sistema automático continua sendo a entrega padrão. Quando a geração falha, esta central usa as etapas já salvas e o questionário da pessoa. Se tudo estiver completo, você finaliza o mapa e baixa o mesmo PDF que a cliente teria no painel.</p>
