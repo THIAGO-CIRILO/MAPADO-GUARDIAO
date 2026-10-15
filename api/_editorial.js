@@ -17,6 +17,8 @@ const frasesDefensivas = [
   { tipo:'autorreferência ao produto', re:/\b(?:este|esse|o seu) (?:mapa|relatorio|material|documento) (?:foi escrito|foi feito|e um espelho|e uma lente|e um convite|nao pretende|nao e)\b/ },
   { tipo:'apresentacao generica', re:/\b(?:esse|este) mapa (?:nasceu|existe|chegou) para (?:voce|te)\b|\b(?:este|esse) mapa (?:reune|foi criado a partir d[ao]) (?:o que voce|suas respostas)\b/ },
   { tipo:'hipotese autorreferente', re:/\b(?:sao apenas hipoteses|sao hipoteses|feito de hipoteses|um conjunto de hipoteses)\b/ },
+  { tipo:'metafora generica que substitui interpretacao', re:/\be (?:apenas |somente )?um espelho(?: de hipoteses| para voce)?\b/ },
+  { tipo:'prefacio explicando como o mapa foi produzido', re:/\b(?:este|esse|o seu) (?:mapa|relatorio) (?:foi (?:criado|preparado|construido|elaborado) (?:a partir|com base|usando)|se baseia nas suas respostas)\b/ },
   { tipo:'responsabilidade transferida ao leitor', re:/\b(?:veja o que ressoa|fique com o que ressoa|deixe de lado o que nao serve|descarte o que nao fizer sentido|aproveite apenas o que fizer sentido)\b/ }
 ];
 
@@ -46,6 +48,20 @@ function avaliarEditorial(parte, fase, teste={}) {
         avisos.push({campo:caminho,problema:tipo});
         break;
       }
+    }
+  }
+  // Evita que uma mesma frase extensa apareça em diversos capítulos do mapa.
+  const jaVistas=new Map();
+  for(const {caminho,conteudo} of fields){
+    for(const sentence of normalizar(conteudo).split(/[.!?]+\s+/)){
+      const normalized=sentence.replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+      if(normalized.length<120)continue;
+      const anterior=jaVistas.get(normalized);
+      if(anterior && anterior!==caminho){
+        avisos.push({campo:caminho,problema:'frase extensa identica repetida em '+anterior});
+        break;
+      }
+      jaVistas.set(normalized,caminho);
     }
   }
   if(fase==='a'){
