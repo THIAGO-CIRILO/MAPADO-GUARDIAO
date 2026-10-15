@@ -82,6 +82,15 @@ function monthCard(doc,m,x,y){
   text(doc,short(labels[j][1],24),xx,y+65,216,10.5,'ink',false,43);
  }
 }
+async function coverImage(){
+ try{
+  const r=await fetch('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1100&q=74&fit=crop&fm=jpg',
+   {signal:AbortSignal.timeout(2300)});
+  if(!r.ok)return null;
+  const image=Buffer.from(await r.arrayBuffer());
+  return image.length>0&&image.length<2500000?image:null;
+ }catch(_){return null;}
+}
 async function renderCompact(m,p={}){
  const r=m.resultado||{},s=m.scores||{},sg=s.g||{},sw=s.w||{},sp=s.p||{};
  const guard=r.guardiao||{},wound=r.ferida||{},power=r.potencial||{},money=r.dinheiro||{},
@@ -94,6 +103,7 @@ async function renderCompact(m,p={}){
  const objective=plain(p.objetivo||''),date=m.created_at?new Date(m.created_at).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'}):'';
  const months=Array.isArray(r.meses)&&r.meses.length===12&&r.meses.every(a=>Number.isInteger(a?.ano)&&Number.isInteger(a?.mes)&&a.mes>=1&&a.mes<=12);
  const total=months?18:14;
+ const photograph=await coverImage();
  const doc=new PDFDocument({autoFirstPage:false,layout:'landscape',size:'A4',margin:0,compress:true,
   info:{Title:'Mapa do Guardião · Edição Essencial · '+name,Author:'Campo Guardião'}});
  const pieces=[];let count=0;doc.on('data',x=>pieces.push(x));doc.on('pageAdded',()=>count++);
@@ -101,7 +111,15 @@ async function renderCompact(m,p={}){
  // 1 — capa
  doc.addPage({size:'A4',layout:'landscape',margin:0});
  doc.rect(0,0,W,H).fill(C.dark);doc.rect(0,0,9,H).fill(C.orange);
- for(let i=0;i<15;i++)doc.circle(670,222,35+i*21).opacity(.1).lineWidth(1.1).strokeColor(i%2?C.orange:C.ivory).stroke();
+ if(photograph){
+  try{
+   doc.save();doc.rect(460,0,W-460,334).clip();
+   doc.image(photograph,460,0,{cover:[W-460,334]});
+   doc.restore();
+   doc.rect(460,0,W-460,334).fillOpacity(.20).fill(C.dark).fillOpacity(1);
+  }catch(_){try{doc.restore()}catch(__){}}
+ }
+ if(!photograph)for(let i=0;i<15;i++)doc.circle(670,222,35+i*21).opacity(.1).lineWidth(1.1).strokeColor(i%2?C.orange:C.ivory).stroke();
  doc.opacity(1);
  kicker(doc,'CAMPO GUARDIÃO · EDIÇÃO ESSENCIAL',47,52,520);
  doc.font('Times-Bold').fontSize(69).fillColor(C.ivory).text('MAPA DO',41,144,{width:595});
