@@ -97,16 +97,21 @@ redo_button = '<button id="gtRedo" class="ghost" type="button">Refazer o teste</
 if html.count(redo_button) != 1:
     raise SystemExit("Unexpected number of retake buttons in original site")
 html = html.replace(redo_button, '', 1)
-# Publish the 29-page PDF composer as a separate, browser-only script.
-pdf_source = root / "pdf29.js"
-if not pdf_source.exists():
-    raise SystemExit("Missing pdf29.js editorial PDF composer")
-(out / "pdf29.js").write_text(pdf_source.read_text(encoding="utf-8"), encoding="utf-8")
+# The same essential 14/18-page edition must be used in the browser
+# when the PDF server temporarily fails. Never deploy the old 29/35-page
+# composer that expanded to 53+ pages through appended text continuations.
+pdf_source = root / "pdf-essencial.js"
+if not pdf_source.is_file():
+    raise SystemExit("Missing the essential PDF composer")
+(out / "pdf-essencial.js").write_text(pdf_source.read_text(encoding="utf-8"), encoding="utf-8")
+legacy_pdf = out / "pdf29.js"
+if legacy_pdf.exists():
+    legacy_pdf.unlink()
 if html.count("<script>\n" + wizard_source) != 1:
-    raise SystemExit("Cannot place pdf29.js before the wizard")
+    raise SystemExit("Cannot place the essential PDF module before the wizard")
 html = html.replace(
     "<script>\n" + wizard_source,
-    '<script src="/pdf29.js"></script>\n<script>\n' + wizard_source,
+    '<script src="/pdf-essencial.js?v=20261015-compact"></script>\n<script>\n' + wizard_source,
     1,
 )
 index_page.write_text(html, encoding="utf-8")
