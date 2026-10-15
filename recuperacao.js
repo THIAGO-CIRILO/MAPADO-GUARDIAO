@@ -147,7 +147,7 @@ async function showDetails(c){
  $('detailSection').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function copyRequest(c){
- const msg='Olá! Sua leitura do Mapa do Guardião está salva, mas o questionário precisa ser sincronizado com a nossa equipe. Entre no site https://mapado-guardiao.vercel.app/ com o mesmo e-mail da compra e, se aparecer a tela de erro, toque em "Enviar dados ao suporte". Não precisa comprar de novo nem gerar uma nova leitura. Depois me avise.';
+ const msg='Olá! Sua leitura do Mapa do Guardião está salva, mas o questionário precisa ser sincronizado com a nossa equipe. Abra https://mapado-guardiao.vercel.app/?sincronizar=1 no MESMO celular e navegador em que respondeu, entre com a mesma conta e toque em "Enviar respostas ao suporte". Não precisa comprar de novo nem gerar uma nova leitura. Depois me avise.';
  try{
   if(navigator.clipboard?.writeText){
    await navigator.clipboard.writeText(msg);
