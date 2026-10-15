@@ -77,6 +77,14 @@ function wz() {
     R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Meu Mapa do Guardião</h2><p class="lead">Seu mapa é único. Você pode consultá-lo e baixar o PDF sempre que quiser.</p><div class="wz-list">${W.maps.map(m => `<button type="button" data-map="${m.id}">Mapa de ${fdate(m.created_at)}<small>${esc(m.guardiao || '')} · ${esc(m.potencial || '')}</small></button>`).join('')}</div></div></div>`; return;
   }
   if (s === 'loading') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Abrindo…</p></div></div>'; return; }
+  if (s === 'sincronizar') {
+    const total=Object.keys(D.ans||{}).length;
+    const complete=total>=12 && String(D.name||'').trim().length>=2 &&
+      /^\d{4}-\d{2}-\d{2}$/.test(D.birth||'') &&
+      String(D.goal||'').trim().length>=5;
+    R.innerHTML=`<div class="wz"><div class="wz-card"><span class="eyebrow">Suporte do Mapa do Guardião</span><h2>Recuperar meu questionário</h2><p class="lead">Você já fez a leitura. Esta tela envia somente os dados do questionário que estiverem salvos <b>neste navegador</b> para o suporte finalizar o PDF, sem refazer a interpretação e sem outra compra.</p><p class="wz-msg">Respostas encontradas: <b>${total}</b> · Conta: ${esc(W.user?.email||'')}</p><p class="wz-err" role="alert">${esc(W.err||'')}</p><p class="wz-msg" role="status">${esc(W.msg||'')}</p>${complete?'<button id="wzSyncNow" type="button">Enviar respostas ao suporte</button>':'<p class="wz-err">Não encontrei um questionário completo neste navegador. Abra este link no mesmo celular e navegador em que respondeu originalmente. Se não aparecer, procure o suporte.</p>'}<p class="gt-note">Os dados são enviados somente à sua conta no Campo Guardião. Não envie senha ou dados bancários.</p><div class="wz-nav"><button class="ghost" id="wzSyncBack" type="button">Voltar ao Mapa do Guardião</button></div></div></div>`;
+    return;
+  }
   if (s === 'gerando') {
     R.innerHTML = `<div class="wz"><div class="wz-card wz-load"><span class="gt-dot"></span><h2>Montando o seu mapa</h2><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${esc(W.live || 'Lendo as suas respostas…')}</p><p class="wz-msg">Isso pode levar alguns minutos. Mantenha esta página aberta.</p></div></div>`; return;
   }
@@ -141,6 +149,11 @@ async function liberarAcesso() {
 async function afterLogin() {
   syncLocal(); await loadMaps();
   if (new URLSearchParams(location.search).get('ver')) return;
+  if (new URLSearchParams(location.search).get('sincronizar')==='1') {
+    if(W.maps.length)return openMap(W.maps[0].id,false);
+    if(!(await liberarAcesso()))return;
+    W.screen='sincronizar';W.err='';W.msg='';return wz();
+  }
   if (W.maps.length) return openMap(W.maps[0].id, false);
   if (!(await liberarAcesso())) return;
   W.screen = 'step'; D.step = D.step || 'dados1'; wz();
@@ -434,6 +447,22 @@ document.addEventListener('click', async e => {
   if (id === 'wzManual') { D.manual = true; gtSave(); return wz(); }
   if (id === 'wzList') { D.manual = false; gtSave(); return wz(); }
   if (id === 'wzRetry') return gerar();
+  if (id === 'wzSyncBack') {
+    history.replaceState(null,'','/');
+    W.screen='step';D.step=D.step||'dados1';W.err='';W.msg='';return wz();
+  }
+  if (id === 'wzSyncNow') {
+    if(W.busy)return;
+    W.busy=true;W.msg='Sincronizando suas respostas com a conta…';W.err='';wz();
+    try{
+      await guardarHistoricoGuardiao();
+      W.msg='Questionário recebido pelo suporte! Suas interpretações já existentes serão aproveitadas. Aguarde o contato para receber o PDF.';
+    }catch(e){
+      W.err='Falha no envio: '+String(e?.message||e).slice(0,220);
+      W.msg='Nenhum mapa foi apagado. Tente novamente ou fale com o suporte.';
+    }
+    W.busy=false;return wz();
+  }
   if (id === 'wzSendHistory') {
     if(W.busy)return;
     W.busy=true;W.msg='Enviando os dados do questionário ao suporte…';wz();
