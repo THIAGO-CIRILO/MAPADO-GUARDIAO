@@ -141,6 +141,36 @@ for filename in ("index.html", "admin.html"):
     if file.exists():
         file.write_text(use_real_auth(file.read_text(encoding="utf-8"), filename), encoding="utf-8")
 
+# Keep licensed, public Unsplash photographs as local static assets whenever
+# the deployment builder can reach the CDN. Failing downloads never break sales.
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.request import Request, urlopen
+photo_ids = {
+    'cover': 'photo-1470770841072-f978cf4d019e',
+    'forest': 'photo-1441974231531-c6227db76b6e',
+    'mountain': 'photo-1464822759023-fed622ff2c3b',
+    'water': 'photo-1518837695005-2083093ee35b',
+    'light': 'photo-1470252649378-9c29740c9fa8',
+    'landscape': 'photo-1500534623283-312aade485b7'
+}
+photo_dir = out / 'imagens'
+photo_dir.mkdir(exist_ok=True)
+def download_photo(item):
+    key, photo_id = item
+    try:
+        url = 'https://images.unsplash.com/' + photo_id + '?w=1000&q=74&fit=crop&fm=jpg'
+        req = Request(url, headers={'User-Agent':'CampoGuardiaoPDF/1.0'})
+        with urlopen(req, timeout=7) as remote:
+            data = remote.read(2600001)
+        if 2000 < len(data) < 2600000 and data.startswith(bytes.fromhex('ffd8ff')):
+            (photo_dir / (key + '.jpg')).write_bytes(data)
+            return key
+    except Exception:
+        pass
+    return None
+with ThreadPoolExecutor(max_workers=6) as pool:
+    saved_photos = [r for r in pool.map(download_photo, photo_ids.items()) if r]
+print('Photographic assets saved at build:',len(saved_photos),'of',len(photo_ids))
 # Private knowledge library: static admin shell, protected by Supabase auth + database RLS.
 for filename in ("biblioteca.html", "biblioteca.js", "recuperacao.html", "recuperacao.js", "recuperacao-manual.js"):
     src = root / filename
