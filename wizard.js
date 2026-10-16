@@ -95,10 +95,18 @@ function wz() {
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
     root().insertAdjacentHTML('beforeend', extra);
     if ($('gtRedo')) $('gtRedo').remove();
-    // Essential PDF: 14 pages (18 with 12 months), composed only from the saved map.
+    // Duas saídas distintas: leitura completa imprimível e resumo fotográfico.
     if ($('gtPdf')) {
       $('gtPdf').id = 'wzPdf29';
-      $('wzPdf29').textContent = 'Baixar PDF essencial (14 a 18 páginas)';
+      $('wzPdf29').textContent = 'Baixar PDF essencial com imagens (14 a 18 páginas)';
+      const full = document.createElement('button');
+      full.type='button';full.id='wzPrintFull';full.className='ghost';
+      full.textContent='Guardar esta página · PDF / Imprimir';
+      $('wzPdf29').parentNode.insertBefore(full,$('wzPdf29'));
+      const note=document.createElement('span');
+      note.id='gtPrintSt';note.className='note';
+      note.textContent='Os dois formatos usam a leitura já salva e não consomem novos créditos do Claude.';
+      $('wzPdf29').parentNode.appendChild(note);
     }
     return;
   }
@@ -425,6 +433,17 @@ document.addEventListener('click', async e => {
   if (id === 'wzToLogin') { W.screen = 'auth'; W.mode = 'login'; return wz(); }
   if (id === 'wzSetPass') { const v = $('wzPass').value; if (v.length < 6) { W.err = 'A senha precisa ter pelo menos 6 caracteres.'; return wz(); } const { error } = await sb.auth.updateUser({ password: v }); if (error) { W.err = msgAuth(error); return wz(); } history.replaceState(null, '', '/'); const { data } = await sb.auth.getSession(); W.user = data.session ? data.session.user : null; return afterLogin(); }
   if (id === 'wzOut') { await sb.auth.signOut(); W.user = null; W.maps = []; W.screen = 'welcome'; return wz(); }
+  if (id === 'wzPrintFull') {
+    try{
+      if(!window.guardiaoImprimirLeitura?.save)
+        throw new Error('Recurso de impressão indisponível. Atualize a página.');
+      window.guardiaoImprimirLeitura.save();
+    }catch(err){
+      const note=$('gtPrintSt')||$('gtPdfSt');
+      if(note)note.textContent=err?.message||'A impressão não pôde ser aberta.';
+    }
+    return;
+  }
   if (id === 'wzPdf29') {
     if (W.pdfDownloading) return;
     W.pdfDownloading = true;
