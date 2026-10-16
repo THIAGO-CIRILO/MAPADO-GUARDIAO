@@ -82,14 +82,48 @@ function monthCard(doc,m,x,y){
   text(doc,short(labels[j][1],24),xx,y+65,216,10.5,'ink',false,43);
  }
 }
-async function coverImage(){
- try{
-  const r=await fetch('https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1100&q=74&fit=crop&fm=jpg',
-   {signal:AbortSignal.timeout(2300)});
-  if(!r.ok)return null;
-  const image=Buffer.from(await r.arrayBuffer());
-  return image.length>0&&image.length<2500000?image:null;
- }catch(_){return null;}
+// Fotografias editoriais do banco Unsplash, carregadas em paralelo.
+// Se uma fonte estiver indisponível, o PDF continua válido sem chamar a IA.
+const SOURCES={
+ cover:'photo-1470770841072-f978cf4d019e',
+ forest:'photo-1441974231531-c6227db76b6e',
+ mountain:'photo-1464822759023-fed622ff2c3b',
+ water:'photo-1518837695005-2083093ee35b',
+ light:'photo-1470252649378-9c29740c9fa8',
+ landscape:'photo-1500534623283-312aade485b7'
+};
+async function loadPhotos(){
+ const entries=await Promise.all(Object.entries(SOURCES).map(async ([name,id])=>{
+  try{
+   const url='https://images.unsplash.com/'+id+'?w=1000&q=72&fit=crop&fm=jpg';
+   const r=await fetch(url,{signal:AbortSignal.timeout(3500)});
+   if(!r.ok)return[name,null];
+   const blob=Buffer.from(await r.arrayBuffer());
+   return[name,blob.length>2000&&blob.length<2600000?blob:null];
+  }catch(_){return[name,null]}
+ }));
+ return Object.fromEntries(entries);
+}
+function photoPanel(doc,images,key,x,y,w,h){
+ const buf=images[key];
+ if(buf){
+  try{
+   doc.save();
+   doc.rect(x,y,w,h).clip();
+   doc.image(buf,x,y,{cover:[w,h]});
+   doc.restore();
+   return true;
+  }catch(_){try{doc.restore()}catch(__){}}
+ }
+ // Local elegant graphic, kept only if photograph fetch fails.
+ doc.save();
+ doc.rect(x,y,w,h).fill(C.dark);
+ for(let i=0;i<10;i++){
+  doc.opacity(.14).strokeColor(i%2?C.orange:C.ivory).lineWidth(1.1)
+   .circle(x+w*.68,y+h*.65,9+i*16).stroke();
+ }
+ doc.opacity(1).restore();
+ return false;
 }
 async function renderCompact(m,p={}){
  const r=m.resultado||{},s=m.scores||{},sg=s.g||{},sw=s.w||{},sp=s.p||{};
@@ -103,7 +137,8 @@ async function renderCompact(m,p={}){
  const objective=plain(p.objetivo||''),date=m.created_at?new Date(m.created_at).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'}):'';
  const months=Array.isArray(r.meses)&&r.meses.length===12&&r.meses.every(a=>Number.isInteger(a?.ano)&&Number.isInteger(a?.mes)&&a.mes>=1&&a.mes<=12);
  const total=months?18:14;
- const photograph=await coverImage();
+ const images=await loadPhotos();
+ const photograph=images.cover;
  const doc=new PDFDocument({autoFirstPage:false,layout:'landscape',size:'A4',margin:0,compress:true,
   info:{Title:'Mapa do Guardião · Edição Essencial · '+name,Author:'Campo Guardião'}});
  const pieces=[];let count=0;doc.on('data',x=>pieces.push(x));doc.on('pageAdded',()=>count++);
@@ -139,6 +174,7 @@ async function renderCompact(m,p={}){
  bar(doc,'POTENCIAL · '+pp,pct(sp,s.rp?.[0]),446,314,345);
  bar(doc,'FERIDA · '+fp,pct(sw,s.rw?.[0]),53,391,345);
  text(doc,'Pontuações relativas ao próprio teste.',448,395,316,11,'muted',false,47);
+ photoPanel(doc,images,'mountain',43,464,750,66);
  // 4 — eixo de proteção
  add(doc,4,total,'Guardião e ferida','RECONHECER');
  card(doc,'GUARDIÃO PRINCIPAL · '+gp,guard.leitura,43,166,365,248,{limit:94,font:12});
@@ -155,7 +191,8 @@ async function renderCompact(m,p={}){
  // 6 — potencia
  add(doc,6,total,'Sua potência guardada','ATUALIZAR');
  card(doc,'POTENCIAL PRINCIPAL · '+pp,power.leitura,43,166,488,231,{limit:98,font:12.3});
- card(doc,'POTENCIAL SECUNDÁRIO',ps||'Sem segundo resultado acima de zero',543,166,250,231,{limit:25,dark:true,font:21});
+ card(doc,'POTENCIAL SECUNDÁRIO',ps||'Sem segundo resultado acima de zero',543,166,250,111,{limit:22,dark:true,font:19});
+ photoPanel(doc,images,'light',543,285,250,112);
  card(doc,'PRIMEIRO GESTO POSSÍVEL',power.primeiro_gesto||power.quando_livre,43,409,750,92,{limit:42});
  // 7 — trabalho dinheiro
  add(doc,7,total,'Trabalho e dinheiro','ESCOLHAS NA VIDA REAL');
@@ -163,18 +200,22 @@ async function renderCompact(m,p={}){
  card(doc,'DINHEIRO',money.leitura,424,167,369,220,{limit:82,font:11.8});
  card(doc,'UM GESTO NO TRABALHO',area.trabalho?.gesto,43,400,365,101,{limit:35});
  card(doc,'UM MOVIMENTO COM O DINHEIRO',money.primeiro_passo,424,400,369,101,{limit:35});
+ photoPanel(doc,images,'forest',43,515,750,25);
  // 8 — corpo vínculos
  add(doc,8,total,'Relacionamentos e autocuidado','ÁREAS DA VIDA');
  card(doc,'RELACIONAMENTOS',area.relacionamentos?.texto,43,167,365,220,{limit:82,font:11.8});
  card(doc,'SAÚDE E ROTINA',area.saude?.texto,424,167,369,220,{limit:82,font:11.8});
  card(doc,'UM GESTO NOS VÍNCULOS',area.relacionamentos?.gesto,43,400,365,101,{limit:35});
  card(doc,'UM CUIDADO POSSÍVEL',area.saude?.gesto,424,400,369,101,{limit:35});
+ photoPanel(doc,images,'water',43,515,750,25);
  // 9 — espiritualidade e modo
  add(doc,9,total,'Espiritualidade e aprendizagem','SENTIDO E RECURSOS');
  card(doc,'ESPIRITUALIDADE',area.espiritualidade?.texto,43,167,365,226,{limit:83,font:11.8});
  card(doc,'COMO VOCÊ APRENDE',yr.aprende?.leitura,424,167,369,226,{limit:83,font:11.8});
  card(doc,'PREFERÊNCIA DE APRENDIZAGEM',learn||'Não indicada',43,406,365,95,{limit:22,font:14});
+ photoPanel(doc,images,'mountain',320,415,80,77);
  card(doc,'PREFERÊNCIA DE TRABALHO',work||'Não indicada',424,406,369,95,{limit:22,font:14});
+ photoPanel(doc,images,'forest',705,415,80,77);
  // 10 — momento
  add(doc,10,total,'Seu momento de vida','CICLOS E CONTEXTO');
  card(doc,'TEMA DO ANO',yr.energia,43,166,242,98,{limit:24,font:13});
@@ -183,6 +224,7 @@ async function renderCompact(m,p={}){
  card(doc,'O QUE ESSE MOMENTO PEDE',yr.leitura,501,166,292,98,{limit:37,font:10.8});
  card(doc,'O QUE FAVORECE',list(yr.favorece,3),43,280,365,221,{limit:90});
  card(doc,'ONDE PEDE CUIDADO',list(yr.cuidado,3),424,280,369,221,{limit:90});
+ photoPanel(doc,images,'landscape',43,516,750,24);
  let index=11;
  // 11 a 14 se houver leituras mensais
  if(months)for(let part=0;part<4;part++){
@@ -203,11 +245,17 @@ async function renderCompact(m,p={}){
   const x=43+(day%4)*192,y=166+Math.floor(day/4)*173;
   card(doc,'DIA '+(day+1),Array.isArray(plan.dias)?plan.dias[day]:'',x,y,179,153,{limit:43,font:10.7});
  }
- card(doc,'LEMBRETE','Pequenas ações repetidas podem construir uma nova referência para o seu Guardião.',43+3*192,339,179,153,{dark:true,limit:35});
+ photoPanel(doc,images,'light',43+3*192,339,179,153);
+ doc.save();
+ doc.fillOpacity(.79).rect(43+3*192,339,179,153).fill(C.dark).fillOpacity(1);
+ kicker(doc,'LEMBRETE',43+3*192+15,354,149,'ivory');
+ text(doc,'Pequenas ações possíveis criam espaço para escolhas diferentes.',43+3*192+15,382,149,12,'ivory',false,90);
+ doc.restore();
  // final
  add(doc,index++,total,'O que você escolhe sustentar','ENCERRAMENTO');
  card(doc,'SUA FRASE DE ATUALIZAÇÃO',r.frase_nova,43,166,750,151,{limit:65,font:17,dark:true});
  card(doc,'UMA PERGUNTA PARA LEVAR',r.pergunta,43,331,750,170,{limit:65,font:16});
+ photoPanel(doc,images,'water',43,516,750,25);
  kicker(doc,'LEITURA COMPLETA DISPONÍVEL NA SUA CONTA',45,520,733,'muted');
  if(count!==total)throw Error('Paginação essencial inconsistente: '+count+' / '+total);
  doc.end();return ended;
