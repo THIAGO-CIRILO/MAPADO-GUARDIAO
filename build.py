@@ -92,6 +92,15 @@ if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
+# Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
+# in the old archive. Editorial responsibility is handled by the new server prompt.
+old_disclaimer = ('Este mapa é um convite à reflexão, não um diagnóstico nem uma previsão. '
+                  'As ideias do Guardião e das feridas de infância são lentes simbólicas para '
+                  'conversar sobre os seus padrões. Não substituem acompanhamento de saúde '
+                  'mental, jurídico ou financeiro. Gerado em ')
+if html.count(old_disclaimer) != 1:
+    raise SystemExit("Expected one archived on-screen disclaimer")
+html = html.replace(old_disclaimer, 'Leitura pessoal do Campo Guardião. Preparado em ', 1)
 # Remove the legacy retake button while preserving the PDF download.
 redo_button = '<button id="gtRedo" class="ghost" type="button">Refazer o teste</button>'
 if html.count(redo_button) != 1:
@@ -104,6 +113,11 @@ pdf_source = root / "pdf-essencial.js"
 if not pdf_source.is_file():
     raise SystemExit("Missing the essential PDF composer")
 (out / "pdf-essencial.js").write_text(pdf_source.read_text(encoding="utf-8"), encoding="utf-8")
+# O cliente pode salvar a leitura COMPLETA pela impressão nativa (sem IA / geração).
+print_source = root / "imprimir-leitura.js"
+if not print_source.is_file():
+    raise SystemExit("Missing full-page print module")
+shutil.copyfile(print_source,out / "imprimir-leitura.js")
 legacy_pdf = out / "pdf29.js"
 if legacy_pdf.exists():
     legacy_pdf.unlink()
@@ -111,7 +125,8 @@ if html.count("<script>\n" + wizard_source) != 1:
     raise SystemExit("Cannot place the essential PDF module before the wizard")
 html = html.replace(
     "<script>\n" + wizard_source,
-    '<script src="/pdf-essencial.js?v=20261015-compact"></script>\n<script>\n' + wizard_source,
+    '<script src="/imprimir-leitura.js?v=20261015-full-print"></script>\n'
+    '<script src="/pdf-essencial.js?v=20261015-photo-2"></script>\n<script>\n' + wizard_source,
     1,
 )
 index_page.write_text(html, encoding="utf-8")
