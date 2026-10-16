@@ -11,6 +11,45 @@ const POWER={exp:'Expressão',rec:'Recebimento',exs:'Expansão',lid:'Liderança'
 const LEARN={lvi:'Vendo',lau:'Ouvindo',lpr:'Fazendo',lle:'Lendo e organizando',lco:'Conversando'};
 const WORK={msv:'Atendendo pessoas',mco:'Ensinando e produzindo conteúdo',mve:'Vendendo e negociando',mlh:'Liderando e empreendendo',mes:'Organizando e dando segurança',mcr:'Criando com as próprias mãos'};
 const MONTH=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const PHOTO_SOURCES={
+ cover:'photo-1470770841072-f978cf4d019e',
+ forest:'photo-1441974231531-c6227db76b6e',
+ mountain:'photo-1464822759023-fed622ff2c3b',
+ water:'photo-1518837695005-2083093ee35b',
+ light:'photo-1470252649378-9c29740c9fa8',
+ landscape:'photo-1500534623283-312aade485b7'
+};
+let loadedPhotos={};
+async function preloadPhotos(){
+ const keys=Object.keys(PHOTO_SOURCES);
+ await Promise.all(keys.map(key=>new Promise(resolve=>{
+  if(loadedPhotos[key])return resolve();
+  const img=new Image();img.crossOrigin='anonymous';
+  const timer=setTimeout(()=>resolve(),4200);
+  img.onload=()=>{clearTimeout(timer);loadedPhotos[key]=img;resolve()};
+  img.onerror=()=>{clearTimeout(timer);resolve()};
+  img.src='https://images.unsplash.com/'+PHOTO_SOURCES[key]+'?w=900&q=70&fit=crop&fm=jpg';
+ })));
+}
+function photo(doc,key,x,y,w,h){
+ const img=loadedPhotos[key];
+ if(!img)return false;
+ try{
+  const canvas=document.createElement('canvas');
+  const iw=img.naturalWidth,ih=img.naturalHeight,aspect=w/h,original=iw/ih;
+  canvas.width=Math.max(1,Math.round(w*1.5));
+  canvas.height=Math.max(1,Math.round(h*1.5));
+  const ctx=canvas.getContext('2d');
+  if(original>aspect){
+   const width=ih*aspect;ctx.drawImage(img,(iw-width)/2,0,width,ih,0,0,canvas.width,canvas.height);
+  }else{
+   const height=iw/aspect;ctx.drawImage(img,0,(ih-height)/2,iw,height,0,0,canvas.width,canvas.height);
+  }
+  doc.addImage(canvas.toDataURL('image/jpeg',.76),'JPEG',x,y,w,h,undefined,'FAST');
+  return true;
+ }catch(_){return false}
+}
+
 const normalize=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 function plain(v) {
  if(v==null)return '';
@@ -122,8 +161,10 @@ function compile(input){
  const list=(arr,max=3)=>Array.isArray(arr)?arr.slice(0,max).map((x,i)=>(i+1)+'. '+excerpt(x,23)).join('  '):'';
  // 01 Capa
  rect(0,0,W,H,'dark');rect(0,0,8,H,'orange');
- setColor('orange','setDrawColor');doc.setLineWidth(1);
- for(let i=0;i<10;i++)doc.circle(677,212,24+i*23,'S');
+ if(!photo(doc,'cover',460,0,381,334)){
+  setColor('orange','setDrawColor');doc.setLineWidth(1);
+  for(let i=0;i<10;i++)doc.circle(677,212,24+i*23,'S');
+ }
  word('CAMPO GUARDIÃO  /  EDIÇÃO ESSENCIAL',47,55,11,'orange','bold');
  word('MAPA DO',44,190,68,'ivory','bold','times');
  word('GUARDIÃO',44,272,70,'ivory','bold','times');
@@ -142,6 +183,7 @@ function compile(input){
  bar('POTENCIAL · '+pp,rating(ps,state.rp),443,323,340);
  bar('FERIDA · '+fp,rating(ws,state.rw),53,404,340);
  place('Pontuações relativas às respostas do próprio teste.',448,400,322,53,{size:10,limit:21});
+ photo(doc,'mountain',43,464,750,66);
  // 04 Guardião
  section('Guardião e ferida','RECONHECER');
  card('GUARDIÃO · '+gp,gd.leitura,43,167,365,248,{limit:88,size:12});
@@ -158,7 +200,8 @@ function compile(input){
  // 06 Potência
  section('Sua potência guardada','ATUALIZAR');
  card('POTENCIAL PRINCIPAL · '+pp,pot.leitura,43,166,488,231,{limit:105,size:12.3});
- card('POTENCIAL SECUNDÁRIO',secondaryP||'Sem segundo resultado positivo',543,166,250,231,{dark:true,limit:25,size:19});
+ card('POTENCIAL SECUNDÁRIO',secondaryP||'Sem segundo resultado positivo',543,166,250,111,{dark:true,limit:22,size:18});
+ photo(doc,'light',543,285,250,112);
  card('UM PRIMEIRO MOVIMENTO',pot.primeiro_gesto||pot.quando_livre,43,408,750,93,{limit:39});
  // 07 Atuação
  section('Trabalho e dinheiro','ÁREAS DA VIDA');
@@ -166,18 +209,22 @@ function compile(input){
  card('DINHEIRO',money.leitura,424,167,369,220,{limit:82});
  card('UMA ATITUDE PROFISSIONAL',nested(area,'trabalho.gesto'),43,398,365,103,{limit:34});
  card('UMA DECISÃO COM O DINHEIRO',money.primeiro_passo,424,398,369,103,{limit:34});
+ photo(doc,'forest',43,515,750,25);
  // 08 Vínculos
  section('Relacionamentos e autocuidado','ÁREAS DA VIDA');
  card('RELACIONAMENTOS',nested(area,'relacionamentos.texto'),43,167,365,220,{limit:83});
  card('SAÚDE E ROTINA',nested(area,'saude.texto'),424,167,369,220,{limit:83});
  card('UM GESTO NOS VÍNCULOS',nested(area,'relacionamentos.gesto'),43,398,365,103,{limit:34});
  card('UM CUIDADO POSSÍVEL',nested(area,'saude.gesto'),424,398,369,103,{limit:34});
+ photo(doc,'water',43,515,750,25);
  // 09 Aprender
  section('Espiritualidade e aprendizagem','SENTIDO E RECURSOS');
  card('ESPIRITUALIDADE',nested(area,'espiritualidade.texto'),43,167,365,226,{limit:85});
  card('COMO VOCÊ APRENDE',nested(year,'aprende.leitura'),424,167,369,226,{limit:85});
  card('PREFERÊNCIA DE APRENDIZAGEM',label(lsa,state.rl,LEARN)||'Não indicada',43,404,365,97,{limit:16,size:15});
+ photo(doc,'mountain',320,414,80,79);
  card('PREFERÊNCIA DE TRABALHO',label(wsa,state.rm,WORK)||'Não indicada',424,404,369,97,{limit:16,size:15});
+ photo(doc,'forest',705,414,80,79);
  // 10 Tempo
  section('Seu momento de vida','CICLOS E CONTEXTO');
  card('TEMA DO ANO',year.energia,43,165,241,99,{limit:23,size:13});
@@ -186,6 +233,7 @@ function compile(input){
  card('O QUE O ANO PEDE',year.leitura,501,165,292,99,{limit:39});
  card('O QUE FAVORECE',list(year.favorece),43,278,365,223,{limit:87});
  card('ONDE TER ATENÇÃO',list(year.cuidado),424,278,369,223,{limit:87});
+ photo(doc,'landscape',43,516,750,24);
  // 11–14 quando há calendário
  if(hasMonths)for(let i=0;i<4;i++){
   section('Seus próximos 12 meses · '+(i+1)+'/4','CICLOS SIMBÓLICOS');
@@ -205,11 +253,13 @@ function compile(input){
   const xx=43+(day%4)*192,yy=166+Math.floor(day/4)*171;
   card('DIA '+(day+1),Array.isArray(plan.dias)?plan.dias[day]:'',xx,yy,178,151,{limit:42,size:10.6});
  }
- card('LEMBRETE','Uma ação viável sustenta mudanças melhor do que uma promessa impossível.',619,337,178,151,{dark:true,limit:29});
+ card('LEMBRETE','Uma ação viável sustenta mudanças melhor do que uma promessa impossível.',619,337,178,75,{dark:true,limit:19,size:10.1});
+ photo(doc,'light',619,419,178,69);
  // Fechamento
  section('O que você escolhe sustentar','ENCERRAMENTO');
  card('SUA FRASE DE ATUALIZAÇÃO',r.frase_nova,43,166,750,151,{dark:true,limit:57,size:16});
  card('UMA PERGUNTA PARA LEVAR',r.pergunta,43,330,750,169,{limit:63,size:16});
+ photo(doc,'water',43,516,750,24);
  word('A LEITURA COMPLETA PERMANECE DISPONÍVEL NA SUA CONTA',48,529,9,'muted','bold');
  if(pages!==total)throw Error('Paginação essencial inconsistente: '+pages+'/'+total);
  doc.setProperties({title:'Mapa do Guardião · Edição Essencial',author:'Campo Guardião',subject:'Resumo visual personalizado'});
@@ -228,6 +278,7 @@ async function essentialDownload(btn,status){
  if(btn)btn.disabled=true;
  try{
   if(status)status.textContent='Montando a Edição Essencial com os dados já salvos…';
+  await preloadPhotos();
   const result=compile(p);
   download(result.doc,'Mapa_do_Guardiao_Edicao_Essencial_'+name+'.pdf');
   if(status)status.textContent='PDF essencial pronto: '+result.pages+' páginas. Sua leitura completa continua no site.';
@@ -236,5 +287,5 @@ async function essentialDownload(btn,status){
   if(status)status.textContent='Não foi possível montar o PDF. Tente novamente; seu mapa permanece salvo.';
  }finally{if(btn)btn.disabled=false}
 }
-window.guardiaoPdfEssencial={generate:compile,download:essentialDownload,version:'14-18-essencial-1'};
+window.guardiaoPdfEssencial={generate:compile,download:essentialDownload,version:'14-18-fotografico-2'};
 })();
