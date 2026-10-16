@@ -94,13 +94,20 @@ const SOURCES={
 };
 async function loadPhotos(){
  const entries=await Promise.all(Object.entries(SOURCES).map(async ([name,id])=>{
-  try{
-   const url='https://images.unsplash.com/'+id+'?w=1000&q=72&fit=crop&fm=jpg';
-   const r=await fetch(url,{signal:AbortSignal.timeout(3500)});
-   if(!r.ok)return[name,null];
-   const blob=Buffer.from(await r.arrayBuffer());
-   return[name,blob.length>2000&&blob.length<2600000?blob:null];
-  }catch(_){return[name,null]}
+  const urls=[
+   'https://mapado-guardiao.vercel.app/imagens/'+name+'.jpg',
+   'https://images.unsplash.com/'+id+'?w=1000&q=72&fit=crop&fm=jpg'
+  ];
+  for(let i=0;i<urls.length;i++){
+   try{
+    const r=await fetch(urls[i],{signal:AbortSignal.timeout(i===0?1800:3200)});
+    if(!r.ok)continue;
+    const blob=Buffer.from(await r.arrayBuffer());
+    if(blob.length>2000&&blob.length<2600000&&blob[0]===255&&blob[1]===216)
+      return[name,blob];
+   }catch(_){}
+  }
+  return[name,null];
  }));
  return Object.fromEntries(entries);
 }
