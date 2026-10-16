@@ -25,10 +25,22 @@ async function preloadPhotos(){
  await Promise.all(keys.map(key=>new Promise(resolve=>{
   if(loadedPhotos[key])return resolve();
   const img=new Image();img.crossOrigin='anonymous';
-  const timer=setTimeout(()=>resolve(),4200);
-  img.onload=()=>{clearTimeout(timer);loadedPhotos[key]=img;resolve()};
-  img.onerror=()=>{clearTimeout(timer);resolve()};
-  img.src='https://images.unsplash.com/'+PHOTO_SOURCES[key]+'?w=900&q=70&fit=crop&fm=jpg';
+  const urls=[
+   '/imagens/'+key+'.jpg',
+   'https://images.unsplash.com/'+PHOTO_SOURCES[key]+'?w=900&q=70&fit=crop&fm=jpg'
+  ];
+  let attempt=0,done=false;
+  const finish=()=>{
+   if(done)return;done=true;clearTimeout(timer);resolve();
+  };
+  const timer=setTimeout(finish,5500);
+  img.onload=()=>{loadedPhotos[key]=img;finish()};
+  img.onerror=()=>{
+   if(done)return;
+   if(++attempt<urls.length)img.src=urls[attempt];
+   else finish();
+  };
+  img.src=urls[0];
  })));
 }
 function photo(doc,key,x,y,w,h){
