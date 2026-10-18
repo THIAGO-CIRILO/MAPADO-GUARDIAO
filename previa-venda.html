@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#fbfbfa">
+<title>Prévia visual | Mapa do Guardião</title>
+<style>
+:root{--ink:#111;--paper:#fbfbfa;--light:#eee;--gray:#626262}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+.preview-label{background:#111;color:white;padding:12px 15px;text-align:center;font-size:11px;letter-spacing:.11em;font-weight:800}
+.nav{max-width:1150px;margin:auto;padding:24px 22px 10px;display:flex;justify-content:space-between;align-items:center;gap:15px}
+.nav-logo{font-size:12px;font-weight:900;letter-spacing:.3em}
+.nav-link{font-weight:750;font-size:12px;text-decoration:underline;text-underline-offset:6px}
+.hero{text-align:center;max-width:1140px;margin:auto;padding:38px 22px 78px;overflow:hidden}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.47em;text-transform:uppercase}
+h1{font-size:clamp(52px,9.7vw,119px);font-weight:950;line-height:.95;letter-spacing:-.078em;max-width:1100px;margin:29px auto 22px;text-wrap:balance}
+h1 span{background:#050505;color:#fff;display:inline-block;padding:0 .08em .07em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hero-lead{font-size:clamp(17px,2.3vw,24px);line-height:1.4;max-width:790px;margin:0 auto;font-weight:500;letter-spacing:-.02em}
+.hero-lead strong{font-weight:900}
+.cards{position:relative;isolation:isolate;max-width:960px;height:clamp(320px,42vw,478px);margin:29px auto 4px}
+.cards:before{content:"";position:absolute;bottom:4%;left:13%;width:76%;height:10%;border-radius:50%;background:#0003;filter:blur(22px)}
+.card{width:34%;height:90%;position:absolute;top:5%;display:flex;flex-direction:column;justify-content:space-between;align-items:center;overflow:hidden;border-radius:15px;background:linear-gradient(145deg,#f1f1ef,#fff 55%,#ececeb);border:1px solid #d8d8d5;box-shadow:0 12px 38px #0003;padding:22px 8px 19px;transition:transform .2s ease}
+.card:nth-child(1){left:4%;z-index:1;transform:translateY(8%) rotate(-8deg)}
+.card:nth-child(2){left:33%;z-index:3;transform:translateY(0deg);box-shadow:0 15px 45px #0004}
+.card:nth-child(3){left:62%;z-index:2;transform:translateY(8%) rotate(8deg)}
+.card h3{font-size:clamp(11px,1.6vw,15px);letter-spacing:.25em;margin:0;font-weight:900;white-space:nowrap}
+.art{width:100%;height:68%;display:block;color:#141414}
+.art ellipse,.art path{fill:none;stroke:currentColor;stroke-width:1;stroke-opacity:.50}
+.card p{font-size:clamp(13px,1.9vw,21px);font-weight:900;line-height:1.1;letter-spacing:-.04em;margin:0;max-width:210px}
+.card p span{display:block}
+.after{font-size:clamp(21px,3vw,31px);font-weight:900;letter-spacing:-.052em;margin:37px auto 6px;max-width:840px;line-height:1.15}
+.detail{font-size:15px;line-height:1.55;color:#4b4b4b;max-width:700px;margin:10px auto 23px}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:25px auto}
+.chips b{border-radius:40px;border:1px solid #d4d4d4;background:#fff;padding:9px 13px;font-size:12px}
+.cta{background:#050505;color:white;display:inline-flex;justify-content:center;align-items:center;gap:14px;width:min(100%,750px);min-height:73px;padding:14px 20px;font-size:clamp(17px,2.5vw,26px);font-weight:900;letter-spacing:-.04em;line-height:1.15}
+.cta:hover{background:#292929}
+.price{font-size:35px;letter-spacing:-.055em;font-weight:900;margin-top:15px}
+.installments{font-size:17px;font-weight:750}
+.small-note{font-size:11px;color:#555;margin:12px auto 0;letter-spacing:.03em}
+.dark{background:#111;color:white;padding:105px 22px}
+.wrap{max-width:1100px;margin:auto}
+.kicker{font-size:11px;letter-spacing:.3em;font-weight:900;margin-bottom:18px}
+h2{font-size:clamp(39px,6.5vw,73px);font-weight:900;line-height:1.03;letter-spacing:-.065em;margin:0 0 26px;max-width:940px}
+.dark>div>p:not(.kicker){color:#c9c9c9;font-size:19px;line-height:1.5;max-width:710px}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:34px}
+.tile{border:1px solid #3a3a3a;background:#1d1d1d;padding:23px 18px 26px;min-height:250px}
+.tile .number{font-size:12px;color:#9c9c9c;font-weight:800}
+.tile h3{font-size:23px;line-height:1.1;letter-spacing:-.05em;margin:48px 0 13px}
+.tile p{font-size:13px;color:#bdbdbd;line-height:1.48;margin:0}
+.sample{background:#efefed;padding:104px 22px}
+.sample-top{display:flex;align-items:end;justify-content:space-between;gap:15px}
+.sample-top h2{margin-bottom:30px;max-width:780px}
+.sample-top b{font-size:11px;letter-spacing:.2em;color:#555;white-space:nowrap;margin-bottom:40px}
+.spread{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:17px;background:white;box-shadow:0 22px 42px #0002;border:1px solid #dcdcdc}
+.page{aspect-ratio:1.47;padding:25px;background:white;border:1px solid #e8e8e8;overflow:hidden;position:relative;min-height:280px}
+.page.black{background:#161616;color:white;border-color:#111}
+.page .top{font-size:11px;font-weight:850;letter-spacing:.25em}
+.page h3{font-size:clamp(29px,4.3vw,52px);letter-spacing:-.07em;line-height:1.07;max-width:420px;margin:37px 0 21px}
+.page p{font-size:14px;color:#686868;line-height:1.5;max-width:340px}
+.page.black p{color:#cacaca}
+.orbit{position:absolute;width:200px;height:200px;border:1px solid #aaa;border-radius:50%;right:-55px;bottom:-70px;box-shadow:0 0 0 15px #aaa2,0 0 0 30px #aaa2,0 0 0 45px #aaa2,0 0 0 60px #aaa2}
+.metrics{background:#f0efeb;margin-top:27px;padding:17px;display:grid;gap:3px}
+.metrics b{display:block;font-size:22px;letter-spacing:-.03em}
+.metrics span{font-size:10px;letter-spacing:.2em}
+.sample-note{font-size:13px;color:#636363;line-height:1.5;margin-top:20px}
+.final{padding:100px 22px 110px;text-align:center;background:#fff}
+.final h2{margin:0 auto 27px;max-width:940px}
+.final p{color:#555;max-width:580px;margin:0 auto 30px;line-height:1.5;font-size:18px}
+footer{max-width:1100px;margin:auto;padding:26px 22px 42px;border-top:1px solid #dedede;display:flex;justify-content:space-between;gap:20px;color:#6d6d6d;font-size:10px;font-weight:800;letter-spacing:.17em}
+@media(max-width:850px){.four{grid-template-columns:repeat(2,1fr)}.tile{min-height:200px}.tile h3{margin-top:25px}.sample-top{display:block}.sample-top b{display:block;margin-bottom:20px}}
+@media(max-width:600px){.preview-label{font-size:9px;padding:10px 8px}.nav{padding:22px 17px 4px}.nav-logo{font-size:9px;letter-spacing:.19em}.nav-link{font-size:11px}.hero{padding:15px 17px 48px}.eyebrow{font-size:9px;letter-spacing:.26em}h1{font-size:clamp(49px,12vw,70px);text-align:left;letter-spacing:-.075em;line-height:.96;margin:24px 0 22px}h1 span{margin-top:4px;padding:2px 6px 8px}.hero-lead{text-align:left;font-size:16px}.cards{height:clamp(235px,64vw,325px);margin:23px -3px 6px}.card{width:35%;height:88%;top:3%;border-radius:10px;padding:12px 3px 12px}.card:nth-child(1){left:1%}.card:nth-child(2){left:32.5%}.card:nth-child(3){left:63%}.card h3{font-size:9px;letter-spacing:.09em}.card p{font-size:12px;max-width:118px}.after{text-align:left;font-size:23px;margin-top:19px}.detail{text-align:left;font-size:14px}.chips{justify-content:flex-start;margin:20px 0}.chips b{padding:7px 9px;font-size:11px}.cta{font-size:19px;min-height:67px;padding:12px}.price{font-size:29px}.dark{padding:72px 17px}.dark>div>p:not(.kicker){font-size:16px}h2{font-size:42px}.four{gap:8px}.tile{min-height:207px;padding:17px 12px}.tile h3{font-size:19px}.tile p{font-size:12px}.sample{padding:73px 17px}.spread{grid-template-columns:1fr;padding:11px}.page{min-height:270px}.page h3{font-size:42px}.final{padding:75px 17px 90px}.final p{font-size:16px}footer{flex-direction:column;gap:10px;padding:25px 17px 35px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.card{transition:none}}
+</style>
+</head><body>
+<div class="preview-label">PRÉVIA PARA APROVAÇÃO — SUA PÁGINA DE VENDAS ATUAL CONTINUA NO AR</div>
+<header class="nav"><div class="nav-logo">CAMPO GUARDIÃO</div><a class="nav-link" href="/venda">Ver página atual ↗</a></header>
+<main>
+<section class="hero">
+<div class="eyebrow">MAPA DO GUARDIÃO · LEITURA PERSONALIZADA</div>
+<h1>Descubra onde você <span>tem mais potência.</span></h1>
+<p class="hero-lead">Entenda <strong>como sua energia funciona melhor</strong>, reconheça recursos que talvez ainda não esteja aproveitando e encontre uma direção mais coerente para suas escolhas.</p>
+<div class="cards">
+<div class="card"><h3>SEU LUGAR</h3><svg class="art" data-art="nest" viewBox="0 0 240 220" aria-hidden="true"></svg><p>Onde sua energia <span>rende mais</span></p></div>
+<div class="card"><h3>SEUS RECURSOS</h3><svg class="art" data-art="flower" viewBox="0 0 240 220" aria-hidden="true"></svg><p>O que você tem <span>de melhor</span></p></div>
+<div class="card"><h3>SUA DIREÇÃO</h3><svg class="art" data-art="flow" viewBox="0 0 240 220" aria-hidden="true"></svg><p>Como começar <span>a aplicar</span></p></div>
+</div>
+<p class="after">Você não precisa se esforçar para caber em qualquer lugar.</p>
+<p class="detail">O mapa conecta o que te protege, os recursos que você pode desenvolver e os passos para ocupar um lugar mais coerente com seu jeito de funcionar.</p>
+<div class="chips"><b>Questionário de 5 minutos</b><b>Leitura em PDF</b><b>Plano de 72 horas</b></div>
+<a class="cta" href="https://pay.kiwify.com.br/vT6ZxZd" target="_blank" rel="noopener noreferrer">Quero descobrir meu lugar de potência ↗</a>
+<div class="price">R$ 37,00 à vista</div><div class="installments">ou 8x de R$ 5,38</div>
+<div class="small-note">DEPOIS DA COMPRA, ACESSE O QUESTIONÁRIO COM O E-MAIL DO PEDIDO</div>
+</section>
+<section class="dark"><div class="wrap"><div class="kicker">O QUE VOCÊ VAI DESCOBRIR</div><h2>Talvez você tenha força. Só esteja usando parte dela para se proteger.</h2><p>O Mapa do Guardião conecta os resultados do seu teste para mostrar padrões, potenciais e escolhas que merecem uma nova perspectiva.</p>
+<div class="four">
+<div class="tile"><div class="number">01 · PROTEÇÃO</div><h3>Seu Guardião</h3><p>O padrão que aparece quando você tenta se proteger — e o custo que ele pode ter.</p></div>
+<div class="tile"><div class="number">02 · POTÊNCIA</div><h3>Seus recursos</h3><p>Capacidades e potenciais que merecem mais espaço na sua vida.</p></div>
+<div class="tile"><div class="number">03 · COERÊNCIA</div><h3>Seu lugar</h3><p>Onde seus talentos podem conversar melhor com trabalho, relações e escolhas.</p></div>
+<div class="tile"><div class="number">04 · MOVIMENTO</div><h3>Seu plano</h3><p>Primeiros passos concretos para começar a agir, inclusive nas próximas 72 horas.</p></div>
+</div></div></section>
+<section class="sample"><div class="wrap"><div class="sample-top"><div><div class="kicker">POR DENTRO DA SUA LEITURA</div><h2>Não é só descobrir. É entender o que fazer com isso.</h2></div><b>EXEMPLO ILUSTRATIVO</b></div>
+<div class="spread">
+<div class="page black"><div class="top">MAPA DO GUARDIÃO · SEU PADRÃO</div><h3>O que te protege também pode te limitar.</h3><p>Reconheça os mecanismos que tentam te manter em segurança e veja quando eles deixam de ajudar.</p><div class="orbit"></div></div>
+<div class="page"><div class="top">EXEMPLO DE INTERPRETAÇÃO</div><h3>Proteção e potência, lado a lado.</h3><div class="metrics"><span>GUARDIÃO</span><b>Perfeccionismo</b><span>POTENCIAL</span><b>Recebimento</b></div><p>O próximo passo começa quando você diferencia qualidade de cobrança e encontra espaço para receber.</p></div>
+</div>
+<p class="sample-note">Composição ilustrativa para mostrar o tipo de informação recebida. Os resultados reais dependem das respostas de cada pessoa.</p>
+</div></section>
+<section class="final"><div class="wrap"><div class="kicker">CAMPO GUARDIÃO</div><h2>Seu lugar de potência merece deixar de ser uma pergunta.</h2><p>Responda em cerca de cinco minutos. Receba uma leitura personalizada e uma direção prática para começar.</p><a class="cta" href="https://pay.kiwify.com.br/vT6ZxZd" target="_blank" rel="noopener noreferrer">Quero meu Mapa do Guardião ↗</a><div class="price">R$ 37,00 à vista</div><div class="installments">ou 8x de R$ 5,38</div></div></section>
+</main>
+<footer><span>CAMPO GUARDIÃO · MAPA DO GUARDIÃO</span><span>PRÉVIA VISUAL PARA APROVAÇÃO</span></footer>
+<script>
+(function(){
+ const ns='http://www.w3.org/2000/svg';
+ function append(svg,type,attrs){const e=document.createElementNS(ns,type);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,String(v)));svg.appendChild(e)}
+ for(const svg of document.querySelectorAll('.art')){
+  const kind=svg.dataset.art;
+  if(kind==='nest')for(let k=0;k<42;k++){const t=k/41;append(svg,'ellipse',{cx:120+5*Math.sin(t*5),cy:112+7*Math.cos(t*5),rx:43+38*t,ry:43+17*t,transform:'rotate('+(-19+55*t)+' 120 112)'})}
+  if(kind==='flower'){
+   for(let k=0;k<45;k++){const t=k/44;const x=48+90*t;append(svg,'path',{d:'M '+(130+t*9)+' 226 C '+(87+65*t)+' '+(155+20*t)+' '+(x-20)+' '+(79-20*t)+' '+x+' '+(35+17*t)+' C '+(170+20*t)+' '+(3+55*t)+' '+(192-13*t)+' 96 '+(153-20*t)+' 139'})}
+   for(let k=0;k<18;k++){const t=k/17;append(svg,'path',{d:'M '+(137+t*8)+' 223 C '+(138+t*50)+' 158 '+(191+23*t)+' 140 '+(192+18*t)+' '+(37+t*48)})}
+  }
+  if(kind==='flow')for(let k=0;k<56;k++){const t=k/55;append(svg,'path',{d:'M '+(-35+77*t)+' 226 C '+(70+45*t)+' '+(228-125*t)+' '+(178+45*t)+' '+(123-59*t)+' '+(245+9*t)+' '+(27+82*t)})}
+ }
+})();
+</script>
+</body></html>
