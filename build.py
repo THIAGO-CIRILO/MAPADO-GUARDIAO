@@ -198,6 +198,15 @@ client_config = {
     "window.APP_CONFIG = " + json.dumps(client_config, ensure_ascii=False) + ";\n",
     encoding="utf-8",
 )
+# Visual redesign preview: publish for approval, without changing /venda.
+preview_file = root / "previa-venda.html"
+if not preview_file.is_file():
+    raise SystemExit("Missing sales-page visual preview")
+preview_html = preview_file.read_text(encoding="utf-8")
+if preview_html.count('class="cards"') != 1 or preview_html.count('class="cta"') < 1:
+    raise SystemExit("Incomplete sales-page preview")
+shutil.copyfile(preview_file, out / "previa-venda.html")
+
 # The sales page uses the creator's actual photograph from this repository.
 photo = root / "foto-thiago.webp"
 sales_page = out / "venda.html"
