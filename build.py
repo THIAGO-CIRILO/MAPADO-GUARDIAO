@@ -429,7 +429,7 @@ def replace_sales_paragraph(search_phrase, new_paragraph):
     sales_html = sales_html[:open_end + 1] + new_paragraph + sales_html[end:]
 
 replace_sales_paragraph(
-    "No Campo Guardião, chamamos de Guardião",
+    "No Campo Guardião, chamamos de",
     "No Campo Guardião, damos o nome de Guardião a um padrão de proteção: antecipar erros, agradar, controlar, adiar ou assumir tudo sozinho, por exemplo. Ele pode ter sido útil em outros momentos, mas também pode cobrar energia nas decisões de hoje. O teste identifica o padrão principal, e a leitura mostra seu benefício, seu custo e os recursos que podem ganhar mais espaço."
 )
 replace_sales_paragraph(
