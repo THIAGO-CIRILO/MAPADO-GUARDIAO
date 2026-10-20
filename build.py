@@ -346,6 +346,141 @@ for previous, revised in sales_copy_updates:
         raise SystemExit('Unexpected original sales copy or duplicate occurrence: ' + previous[:95])
     sales_html = sales_html.replace(previous, revised, 1)
 
+
+# Conversion improvements for the ORIGINAL published /venda page (not /previa-venda).
+# Replacements target the already-normalized copy after sales_copy_updates above.
+sales_conversion_updates = [
+  (
+    "Você pode estar se esforçando muito para caber em lugares que não combinam com o seu jeito de funcionar. O Mapa do Guardião ajuda você a reconhecer a proteção por trás das suas escolhas, identificar potenciais e encontrar passos mais coerentes para sua vida. São cerca de 5 minutos para responder ao questionário; a leitura é gerada em seguida.",
+    "Você se cobra além do necessário? Sente que tem recursos, mas adia decisões importantes ou se adapta demais ao que esperam de você? Em cerca de 5 minutos, você responde ao questionário. O Mapa identifica seu Guardião, os potenciais que merecem espaço e um primeiro plano de ação para as próximas 72 horas."
+  ),
+  (
+    "Todo mundo tem um lugar na vida onde as coisas fluem: um jeito de trabalhar, de ganhar dinheiro, de se relacionar, de cuidar do corpo e de viver a espiritualidade. Quando você está nele, rende mais e se cansa menos. Quando está fora dele, faz muito e recebe pouco, e nem sempre sabe por quê.",
+    "Seu lugar de potência não é uma profissão mágica nem um destino pronto. É onde suas capacidades encontram mais espaço para funcionar, sem que você precise se cobrar ou se adaptar o tempo inteiro. O Mapa ajuda a reconhecer esses recursos e perceber quais padrões podem estar exigindo energia demais."
+  ),
+  (
+    "O Mapa do Guardião mostra onde fica o seu, em linguagem simples. Você recebe:",
+    "Você não recebe apenas o nome de um perfil. A leitura conecta o que apareceu no teste às suas escolhas e mostra por onde começar. Você recebe:"
+  ),
+  (
+    "Nos dois casos a raiz é a mesma: o lugar onde você está foi escolhido por uma proteção antiga, e não pelo seu potencial.",
+    "Em situações diferentes, uma mesma proteção pode aparecer: o jeito que você aprendeu a se defender passa a influenciar escolhas que poderiam ser feitas de outra maneira."
+  ),
+  (
+    "No Campo Guardião, chamamos de Guardião a proteção que você aprendeu cedo. Ela não é um defeito. Ela te protegeu e, sem você perceber, passou a decidir onde você se coloca: quanto cobra, quanto aparece, a quem se abre e até onde se permite ir. O Mapa mostra quem ele é e para onde ele pode te levar.",
+    "No Campo Guardião, damos o nome de Guardião a um padrão de proteção: antecipar erros, agradar, controlar, adiar ou assumir tudo sozinho, por exemplo. Ele pode ter sido útil em outros momentos, mas também pode cobrar energia nas decisões de hoje. O teste identifica o padrão principal, e a leitura mostra seu benefício, seu custo e os recursos que podem ganhar mais espaço."
+  ),
+  (
+    "Além das suas respostas, o Mapa olha para a data, a hora e o local do seu nascimento: a numerologia, o mapa natal e as fases de sete em sete anos. Isso mostra em que momento você está e que tipo de passo faz sentido agora.",
+    "O questionário identifica padrões de proteção e potenciais. A data de nascimento acrescenta referências de ciclos numéricos e fases de vida, que ajudam a contextualizar o momento atual e organizar os próximos passos."
+  ),
+  (
+    "O Mapa trabalha com hipóteses para você observar, e não com certezas. Ele não faz diagnóstico, não afirma o que aconteceu na sua história e não substitui acompanhamento terapêutico ou médico. Funciona como um espelho organizado para você se reconhecer e escolher o próximo passo.",
+    "O valor está em conectar as peças: como sua proteção aparece nas decisões, o que ela tenta preservar, onde pode estar cobrando energia demais e quais recursos você pode experimentar na prática. A leitura transforma esses cruzamentos em orientações possíveis para o seu momento."
+  ),
+  (
+    "<h2>Agora você tem dois caminhos.</h2>",
+    "<h2>Você pode começar por uma escolha mais consciente.</h2>"
+  ),
+  (
+    "Continuar ocupando o lugar que a sua proteção escolheu, repetindo o mesmo ciclo no trabalho, no dinheiro e nas relações.",
+    "Em vez de tentar mudar tudo de uma vez, comece reconhecendo onde a sua proteção influencia as decisões e quanto esforço isso exige."
+  ),
+  (
+    "Reconhecer onde a sua energia rende mais e custa menos e começar a fazer escolhas mais coerentes com você.",
+    "O Mapa organiza essa leitura e propõe passos concretos para você experimentar caminhos diferentes nas próximas 72 horas."
+  ),
+  (
+    "Você sabe qual é a escolha que cuida de você.",
+    "Seu próximo passo não precisa ser perfeito. Precisa fazer sentido para a sua realidade."
+  ),
+  (
+    "Você pode fazer o Mapa sem a hora. A leitura do seu Guardião, da ferida e do potencial vem das suas respostas. Só os detalhes que dependem da hora ficam de fora.",
+    "Pode. O Guardião, a ferida e os potenciais vêm das respostas ao questionário. Os ciclos numéricos usam a data de nascimento, por isso a hora não é obrigatória para receber a leitura."
+  ),
+  (
+    "É o lugar da sua vida onde a sua energia rende mais e custa menos: o jeito de trabalhar e ganhar dinheiro, de se relacionar, de cuidar do corpo e de viver a espiritualidade que combina com você.",
+    "É o nome que damos às situações em que suas capacidades encontram espaço para funcionar e contribuir. O Mapa explora como isso pode aparecer no trabalho, nas relações, nas decisões e na forma de cuidar de você."
+  ),
+  (
+    "Não. É uma ferramenta de autoconhecimento. Ela não diagnostica nada e não substitui acompanhamento psicológico ou médico.",
+    "É uma leitura de autoconhecimento, com interpretações simbólicas e orientações práticas. Não substitui avaliação ou acompanhamento de profissionais de saúde."
+  ),
+  (
+    "Sou terapeuta e tarólogo em Ribeirão Preto e crio o Campo Guardião, o método que sustenta este Mapa. No meu trabalho com pessoas, um padrão se repete: quem briga com o próprio comportamento quase sempre perde, e quem entende de que ele protege consegue escolher diferente e ocupar o lugar onde tem mais potência.",
+    "Sou terapeuta em Ribeirão Preto e criador do Campo Guardião, método que sustenta este Mapa. No meu trabalho, observo como tentar mudar um comportamento apenas pela cobrança pode aumentar o desgaste. Meu ponto de partida é entender o que esse comportamento tenta proteger e quais escolhas se tornam possíveis a partir daí."
+  ),
+  (
+    "O Mapa nasceu para entregar isso logo no começo, antes de você gastar mais meses tentando se corrigir. Parto de uma ideia simples: a ferramenta vem depois da pessoa.",
+    "O Mapa nasceu para transformar esse reconhecimento em orientações que você consegue colocar em prática. Primeiro a pessoa e seus padrões; depois, a ferramenta e os próximos passos."
+  )
+]
+for old_text, new_text in sales_conversion_updates:
+    if sales_html.count(old_text) != 1:
+        raise SystemExit("Sales-page copy check failed: " + old_text[:100])
+    sales_html = sales_html.replace(old_text, new_text, 1)
+
+# No unverified WhatsApp number: use the verified public contact address
+# already configured for this project, and make it clickable.
+old_contact_html = 'Falta alguma resposta? Fale comigo: <b data-contato>seu WhatsApp aqui</b>'
+new_contact_html = ('Precisa de ajuda antes ou depois da compra? Escreva para '
+                    '<a href="mailto:contato.energystudio@gmail.com" '
+                    'style="color:#F04A12;text-decoration:underline;font-weight:700">'
+                    'contato.energystudio@gmail.com</a>')
+if sales_html.count(old_contact_html) != 1:
+    raise SystemExit("Unrecognized support placeholder on original sales page")
+sales_html = sales_html.replace(old_contact_html, new_contact_html, 1)
+old_contact_config = "contato: 'seu WhatsApp aqui'"
+if sales_html.count(old_contact_config) != 1:
+    raise SystemExit("Original sales contact configuration not found")
+sales_html = sales_html.replace(old_contact_config, "contato: 'contato.energystudio@gmail.com'", 1)
+
+# Show a legible chain of interpretation, not only the labels in the phone mockup.
+sample_anchor = "<h2>Veja tudo o que está dentro do seu Mapa</h2>"
+if sales_html.count(sample_anchor) != 1:
+    raise SystemExit("Could not locate the product-deliverables section")
+sample_html = """<div class="cgSalesSample" aria-label="Exemplo fictício de leitura do Mapa do Guardião">
+  <p class="cgSalesSampleKicker">EXEMPLO ILUSTRATIVO · COMO A LEITURA CONECTA AS INFORMAÇÕES</p>
+  <h3>Não basta saber que seu Guardião é o Perfeccionismo. O que ele está impedindo você de mostrar?</h3>
+  <p class="cgSalesSampleIntro">Imagine Ana Paula: o resultado aponta Perfeccionismo como Guardião e <strong>Ensinar o que já viveu</strong> como lugar de potência. O cruzamento não termina nesses nomes.</p>
+  <div class="cgSalesSampleCols">
+    <div><span>O PADRÃO QUE PROTEGE</span><p>Se tudo precisa estar impecável antes de ser compartilhado, aquilo que ela já aprendeu pode continuar guardado, esperando uma segurança que nunca parece suficiente.</p></div>
+    <div><span>O RECURSO QUE PODE CRESCER</span><p>Seu repertório não depende de saber tudo. Pode começar a ganhar espaço quando ela transforma uma experiência real em algo útil para outra pessoa.</p></div>
+  </div>
+  <div class="cgSalesSampleAction"><span>UMA AÇÃO PARA AS PRÓXIMAS 72 HORAS</span><p>Escolher um aprendizado da própria trajetória, escrever sobre ele em poucas linhas e compartilhar com alguém, sem revisar indefinidamente.</p></div>
+  <p class="cgSalesSampleFoot">Exemplo fictício para mostrar o tipo de correlação e orientação. Cada leitura é construída a partir do questionário individual.</p>
+  <a class="cgSalesSampleLink" href="https://pay.kiwify.com.br/vT6ZxZd" data-checkout>Quero descobrir o meu lugar de potência →</a>
+</div>"""
+sales_html = sales_html.replace(sample_anchor, sample_anchor + "\n" + sample_html, 1)
+sample_css = """
+.cgSalesSample{margin:30px auto 40px;max-width:960px;background:#F7F1E9;color:#351A14;border:1px solid #D8CBC0;border-radius:19px;padding:clamp(20px,4vw,37px);box-shadow:0 18px 50px rgba(53,26,20,.08);text-align:left}
+.cgSalesSample .cgSalesSampleKicker{font-size:11px;font-weight:800;letter-spacing:.11em;color:#A94728;margin:0 0 16px}
+.cgSalesSample h3{font-size:clamp(24px,3vw,37px);line-height:1.16;letter-spacing:-.025em;margin:0 0 17px;color:#351A14}
+.cgSalesSample .cgSalesSampleIntro{font-size:16px;line-height:1.65;margin:0 0 22px;max-width:780px}
+.cgSalesSampleCols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.cgSalesSampleCols>div{border:1px solid #DDCEC2;border-radius:12px;background:#FFFCF7;padding:19px}
+.cgSalesSampleCols span,.cgSalesSampleAction span{display:block;font-size:11px;letter-spacing:.09em;font-weight:800;color:#A94728;margin-bottom:9px}
+.cgSalesSampleCols p,.cgSalesSampleAction p{margin:0;line-height:1.65;font-size:15px}
+.cgSalesSampleAction{background:#351A14;color:#F7F1E9;border-radius:12px;padding:20px;margin-top:14px}
+.cgSalesSampleAction span{color:#FFAC82}
+.cgSalesSampleFoot{font-size:12px;line-height:1.5;color:#725E54;margin:13px 0 20px}
+.cgSalesSampleLink{display:inline-block;background:#F04A12;color:#FFFDFC!important;text-decoration:none!important;font-weight:800;padding:13px 19px;border-radius:10px;line-height:1.3}
+.cgSalesSampleLink:hover{filter:brightness(.93)}
+@media(max-width:700px){.cgSalesSample{padding:22px 16px}.cgSalesSampleCols{grid-template-columns:1fr}.cgSalesSampleLink{display:block;text-align:center}}
+"""
+if sales_html.count("</style>") != 1:
+    raise SystemExit("Original sales CSS could not be extended safely")
+sales_html = sales_html.replace("</style>", sample_css + "\n</style>", 1)
+
+# Never leak placeholder or the inaccurate natal-chart assertion to customers.
+for forbidden in ("seu WhatsApp aqui", "Nos dois casos a raiz é a mesma:",
+                  "Você sabe qual é a escolha que cuida de você.",
+                  "a numerologia, o mapa natal e as fases de sete em sete anos"):
+    if forbidden in sales_html:
+        raise SystemExit("Unsafe sales-page copy remains: " + forbidden)
+if sales_html.count('data-checkout') < 2 or sales_html.count('href="mailto:contato.energystudio@gmail.com"') != 1:
+    raise SystemExit("Checkout or contact verification failed")
+
 sales_page.write_text(sales_html, encoding="utf-8")
 
 print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
