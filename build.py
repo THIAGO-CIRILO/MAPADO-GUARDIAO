@@ -366,18 +366,12 @@ sales_conversion_updates = [
     "Nos dois casos a raiz é a mesma: o lugar onde você está foi escolhido por uma proteção antiga, e não pelo seu potencial.",
     "Em situações diferentes, uma mesma proteção pode aparecer: o jeito que você aprendeu a se defender passa a influenciar escolhas que poderiam ser feitas de outra maneira."
   ),
-  (
-    "No Campo Guardião, chamamos de Guardião a proteção que você aprendeu cedo. Ela não é um defeito. Ela te protegeu e, sem você perceber, passou a decidir onde você se coloca: quanto cobra, quanto aparece, a quem se abre e até onde se permite ir. O Mapa mostra quem ele é e para onde ele pode te levar.",
-    "No Campo Guardião, damos o nome de Guardião a um padrão de proteção: antecipar erros, agradar, controlar, adiar ou assumir tudo sozinho, por exemplo. Ele pode ter sido útil em outros momentos, mas também pode cobrar energia nas decisões de hoje. O teste identifica o padrão principal, e a leitura mostra seu benefício, seu custo e os recursos que podem ganhar mais espaço."
-  ),
+
   (
     "Além das suas respostas, o Mapa olha para a data, a hora e o local do seu nascimento: a numerologia, o mapa natal e as fases de sete em sete anos. Isso mostra em que momento você está e que tipo de passo faz sentido agora.",
     "O questionário identifica padrões de proteção e potenciais. A data de nascimento acrescenta referências de ciclos numéricos e fases de vida, que ajudam a contextualizar o momento atual e organizar os próximos passos."
   ),
-  (
-    "O Mapa trabalha com hipóteses para você observar, e não com certezas. Ele não faz diagnóstico, não afirma o que aconteceu na sua história e não substitui acompanhamento terapêutico ou médico. Funciona como um espelho organizado para você se reconhecer e escolher o próximo passo.",
-    "O valor está em conectar as peças: como sua proteção aparece nas decisões, o que ela tenta preservar, onde pode estar cobrando energia demais e quais recursos você pode experimentar na prática. A leitura transforma esses cruzamentos em orientações possíveis para o seu momento."
-  ),
+
   (
     "<h2>Agora você tem dois caminhos.</h2>",
     "<h2>Você pode começar por uma escolha mais consciente.</h2>"
@@ -419,6 +413,30 @@ for old_text, new_text in sales_conversion_updates:
     if sales_html.count(old_text) != 1:
         raise SystemExit("Sales-page copy check failed: " + old_text[:100])
     sales_html = sales_html.replace(old_text, new_text, 1)
+
+# These two source paragraphs have inline <strong> formatting in the archived
+# HTML. Replace the paragraph by a semantic text anchor, not a flat text match.
+def replace_sales_paragraph(search_phrase, new_paragraph):
+    global sales_html
+    if sales_html.count(search_phrase) != 1:
+        raise SystemExit("Sales paragraph was not found uniquely: " + search_phrase[:65])
+    hit = sales_html.index(search_phrase)
+    begin = sales_html.rfind("<p", 0, hit)
+    open_end = sales_html.find(">", begin)
+    end = sales_html.find("</p>", hit)
+    if begin < 0 or open_end < 0 or not (open_end < hit < end) or end < 0:
+        raise SystemExit("Malformed original sales paragraph: " + search_phrase[:65])
+    sales_html = sales_html[:open_end + 1] + new_paragraph + sales_html[end:]
+
+replace_sales_paragraph(
+    "No Campo Guardião, chamamos de Guardião",
+    "No Campo Guardião, damos o nome de Guardião a um padrão de proteção: antecipar erros, agradar, controlar, adiar ou assumir tudo sozinho, por exemplo. Ele pode ter sido útil em outros momentos, mas também pode cobrar energia nas decisões de hoje. O teste identifica o padrão principal, e a leitura mostra seu benefício, seu custo e os recursos que podem ganhar mais espaço."
+)
+replace_sales_paragraph(
+    "O Mapa trabalha com",
+    "O valor está em conectar as peças: como sua proteção aparece nas decisões, o que ela tenta preservar, onde pode estar cobrando energia demais e quais recursos você pode experimentar na prática. A leitura transforma esses cruzamentos em orientações possíveis para o seu momento."
+)
+
 
 # No unverified WhatsApp number: use the verified public contact address
 # already configured for this project, and make it clickable.
