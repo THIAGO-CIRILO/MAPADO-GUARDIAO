@@ -31,3 +31,8 @@
 .consulta-promise{font-size:19px;line-height:1.5;margin:0 0 26px}.consulta-promise strong{display:block;color:#a35330;font-weight:700}.consulta-power-label{display:block;font:700 11px/1.4 Figtree,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#75675d;margin-bottom:12px}.consulta-card--potencia h3{font-size:32px!important}.wz-promise em{font-style:normal;color:var(--accent)}.wz-test-topics{margin:0;padding-left:20px;display:grid;gap:8px}.wz-question-topic{margin:0;color:var(--accent);font-weight:600}.wz-input-summary{padding:12px 14px;background:var(--accent-soft);color:var(--fg);border-radius:6px;font-size:13px;line-height:1.6}
 
 .wz-review{font-size:13px;line-height:1.5}.wz-review summary{cursor:pointer;color:var(--accent)}.wz-review ol{padding-left:20px}.wz-review li{margin:14px 0}.wz-review li span{display:block;color:var(--muted);margin-top:5px}
+
+/* Paleta da marca: marrom, laranja e bege no fluxo de perguntas. */
+:root{--bg:#F0E8DB;--surface:#FAF6EE;--fg:#3A2C26;--muted:#6B5A50;--line:#DACDBA;--accent:#B04F1E;--accent-soft:#EEE0D2;--mark:#B04F1E;--mark-soft:#F0DFCE;--b1:#EEE0D2;--b2:#F0DFCE;--b3:#E9DED4;--b4:#E7DBCF}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#241A15;--surface:#34251E;--fg:#F6EEE4;--muted:#D2C2B1;--line:#6B5142;--accent:#E39565;--accent-soft:#4C352B;--mark:#F0B17F;--mark-soft:#513624;--b1:#493325;--b2:#4A3528;--b3:#46332B;--b4:#3B2B24;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#241A15;--surface:#34251E;--fg:#F6EEE4;--muted:#D2C2B1;--line:#6B5142;--accent:#E39565;--accent-soft:#4C352B;--mark:#F0B17F;--mark-soft:#513624;--b1:#493325;--b2:#4A3528;--b3:#46332B;--b4:#3B2B24;color-scheme:dark}

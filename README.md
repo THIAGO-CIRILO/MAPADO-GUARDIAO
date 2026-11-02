@@ -118,6 +118,7 @@ disponível até a conclusão da atualização.
 Validação local: `npm ci` e `npm test`. Os testes usam dados fictícios e respostas
 simuladas da IA; não fazem compras nem gastam créditos reais do Claude.
 
-A página `/venda` usa `venda.html` como fonte, com a paleta do questionário
-(verde #1D6B66, fundo #EEF1EC e dourado #B8862A). Preço, checkout, garantia e acesso
+A página `/venda` usa `venda.html` como fonte, com a paleta da marca
+(marrom #3A2C26, laranja #B04F1E e bege #F0E8DB). O fluxo de perguntas usa
+a mesma paleta, inclusive nas cores de seleção e no tema escuro. Preço, checkout, garantia e acesso
 continuam os mesmos. Exemplos de leitura são identificados como fictícios.

@@ -74,6 +74,11 @@ shutil.copytree(root / 'assets/audio', out / 'audio', dirs_exist_ok=True)
 # Use the current tracked wizard.js, not the outdated copy embedded in the ZIP.
 index_page = out / "index.html"
 html = index_page.read_text(encoding="utf-8")
+html=html.replace('<meta name="theme-color" content="#1D6B66">','<meta name="theme-color" content="#B04F1E">',1)
+manifest_file=out/'manifest.json'
+manifest=json.loads(manifest_file.read_text(encoding='utf-8'))
+manifest.update(theme_color='#B04F1E',background_color='#F0E8DB')
+manifest_file.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 old_description='<meta name="description" content="Em 10 minutos, descubra o seu lugar de potência para ganhar ainda mais dinheiro. Mapa do Guardião, do Campo Guardião.">'
 if html.count(old_description)!=1:raise SystemExit('Unexpected app description in the archive')
 html=html.replace(old_description,'<meta name="description" content="Traga uma questão, responda ao teste e receba um mapa pessoal de 20 páginas, com recursos, 12 áreas da vida e um próximo passo possível.">',1)
@@ -103,7 +108,7 @@ wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
 consulta_scripts = ''.join('<script src="/'+name+'?v=20261102-contexto3"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
 
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
-html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261102-contexto3"></head>', 1)
+html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261102-paleta-quente"></head>', 1)
 
 # Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
 # in the old archive. Editorial responsibility is handled by the new server prompt.
