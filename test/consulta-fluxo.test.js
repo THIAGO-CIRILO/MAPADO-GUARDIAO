@@ -48,7 +48,7 @@ test('questionário completo salva contexto, mostra meditação e reabre as 20 p
   for(const c of require('../consulta-contexto.js').campos){const opt=w.document.querySelector('[data-apoio="'+c.key+'"][data-escolha="0"]');assert.ok(opt);opt.click();click('wzNext');}
   assert.equal($('wzGoal').value,entrada.questao);$('wzAceite').checked=true;click('wzGo');
   await waitFor(()=>saved.length===1&&$('wzOpenReading')&&!$('wzOpenReading').disabled);
-  assert.ok($('wzMeditation'));assert.match($('wzMeditation').src,/preparacao-5min.mp3\?v=20261102-enviada/);assert.equal($('wzMeditation').autoplay,false);assert.equal(w.document.querySelectorAll('.consulta-page').length,0);
+  assert.ok($('wzMeditation'));assert.match($('wzMeditation').src,/preparacao-5min.mp3\?v=20261102-enviada-estereo/);assert.equal($('wzMeditation').autoplay,false);assert.equal(w.document.querySelectorAll('.consulta-page').length,0);
   assert.equal(calls.length,6);assert.equal(backups.length,1);
   assert.equal(Object.keys(backups[0].p_respostas).length,10);
   assert.deepEqual(backups[0].p_teste.contexto_atual,entrada);

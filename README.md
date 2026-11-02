@@ -82,7 +82,7 @@ calculados no servidor; a IA recebe os valores e escreve a interpretação.
 
 A tela de preparação toca `/audio/preparacao-5min.mp3` antes da abertura do mapa.
 O áudio é a gravação de cinco minutos enviada pelo Thiago em 02/11/2026,
-convertida para MP3 de 64 kbps mono para entrega na web. A duração é de cerca de
+convertida para MP3 de 128 kbps estéreo, preservando os dois canais do original para entrega na web. A duração é de cerca de
 300 segundos. Não há reprodução automática nem bloqueio para quem prefere ler
 sem ouvir. A pessoa pode repetir em `/meditacao`. O roteiro anterior foi retirado
 da tela de áudio para não ser confundido com a gravação enviada.
