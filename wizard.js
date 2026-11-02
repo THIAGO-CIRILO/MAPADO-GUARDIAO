@@ -12,7 +12,16 @@ window.claude = { use: async n => n === 'downloads' ? { save: async ({ filename,
 
 const D = gtDraft;
 const W = { screen: 'boot', mode: 'signup', msg: '', err: '', user: null, maps: [], cities: null, busy: false, results: [], viewing: null };
-const STEPS = ['dados1', 'dados2', ...GT_Q.map((_, i) => 'q' + i), 'obj'];
+const Entrada = window.GuardiaoEntrada;
+// Drafts already answered keep their original signature and generation format.
+D.flowVersion = D.flowVersion || (GT_Q.some((_,i)=>D.ans[i]!==undefined) ? 1 : 2);
+let STEPS = [...(D.flowVersion===2 ? Entrada.campos.map(c=>'ctx_'+c.key) : []), 'dados1', 'dados2', ...GT_Q.map((_, i) => 'q' + i), 'obj'];
+function intake(){return Entrada.contexto(D.ans?._consulta);}
+function saveIntake(key,value){D.ans._consulta={versao:2,...intake(),[key]:String(value).slice(0,Entrada.campos.find(c=>c.key===key).max)};if(key==='questao')D.goal=value;gtSave();}
+function newFirstStep(){return D.flowVersion===2?'ctx_questao':'dados1';}
+function prepareReading(asAdmin=false){W.mapReady=true;W.screen=asAdmin||W.preparedMaps?.has(W.activeMapId)?'result':'preparar';wz();window.scrollTo(0,0);}
+function pauseMeditation(){const a=$('wzMeditation');if(a)a.pause();}
+
 const UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const isAdmin = () => W.user && (W.user.email || '').toLowerCase() === ADMIN;
@@ -22,10 +31,11 @@ let bar = null;
 function resetDraft(keepPerson) {
   const keep = keepPerson ? { name: D.name, birth: D.birth, time: D.time, uf: D.uf, city: D.city, lat: D.lat, lon: D.lon, tz: D.tz, dst: D.dst, manual: D.manual } : {};
   Object.keys(D).forEach(k => delete D[k]);
-  Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'dados1', manual: false }, keep);
+  Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'ctx_questao', flowVersion: 2, manual: false }, keep);
+  STEPS = [...Entrada.campos.map(c=>'ctx_'+c.key),'dados1','dados2',...GT_Q.map((_,i)=>'q'+i),'obj'];
   gtSave();
 }
-if (!D.step) { D.step = 'dados1'; if (D.city === 'Ribeirão Preto, SP') { D.city = ''; D.lat = ''; D.lon = ''; } D.uf = D.uf || ''; D.tz = D.tz ?? -3; }
+if (!D.step) { D.step = newFirstStep(); if (D.city === 'Ribeirão Preto, SP') { D.city = ''; D.lat = ''; D.lon = ''; } D.uf = D.uf || ''; D.tz = D.tz ?? -3; }
 function syncLocal() {
   if (!W.user) return;
   if (db.gtUser !== W.user.id) { db.people = db.people.filter(x => !x.gt); db.gtUser = W.user.id; resetDraft(false); save(); }
@@ -56,7 +66,7 @@ function wz() {
   if (s === 'boot') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Carregando…</p></div></div>'; return; }
   if (s === 'config') { R.innerHTML = '<div class="wz"><div class="wz-card"><h2>Falta configurar</h2><p class="lead">Preencha o arquivo <b>config.js</b> com o endereço e a chave pública do seu Supabase (veja o README) e publique de novo.</p></div></div>'; return; }
   if (s === 'welcome') {
-    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">Descubra o bloqueio emocional por trás do seu comportamento.</p><p class="wz-sub">Em cerca de 5 minutos: o que protege você, o que ficou guardado, um plano de ação e o lugar onde você trabalha melhor.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
+    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">Descubra o bloqueio emocional por trás do seu comportamento.</p><p class="wz-sub">Conte sua questão e responda ao teste. A leitura reúne suas respostas, as 12 áreas da vida e um próximo passo possível.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
   }
   if (s === 'auth') {
     const m = W.mode;
@@ -85,38 +95,50 @@ function wz() {
     R.innerHTML=`<div class="wz"><div class="wz-card"><span class="eyebrow">Suporte do Mapa do Guardião</span><h2>Recuperar meu questionário</h2><p class="lead">Você já fez a leitura. Esta tela envia somente os dados do questionário que estiverem salvos <b>neste navegador</b> para o suporte finalizar o PDF, sem refazer a interpretação e sem outra compra.</p><p class="wz-msg">Respostas encontradas: <b>${total}</b> · Conta: ${esc(W.user?.email||'')}</p><p class="wz-err" role="alert">${esc(W.err||'')}</p><p class="wz-msg" role="status">${esc(W.msg||'')}</p>${complete?'<button id="wzSyncNow" type="button">Enviar respostas ao suporte</button>':'<p class="wz-err">Não encontrei um questionário completo neste navegador. Abra este link no mesmo celular e navegador em que respondeu originalmente. Se não aparecer, procure o suporte.</p>'}<p class="gt-note">Os dados são enviados somente à sua conta no Campo Guardião. Não envie senha ou dados bancários.</p><div class="wz-nav"><button class="ghost" id="wzSyncBack" type="button">Voltar ao Mapa do Guardião</button></div></div></div>`;
     return;
   }
+  if(s==='preparar'){
+    R.innerHTML=`<div class="wz"><div class="wz-card"><span class="eyebrow">Antes da sua leitura</span><h2>Cinco minutos antes da leitura</h2><p>Encontre uma posição confortável. Ouça no seu ritmo. Você pode manter os olhos abertos, pausar ou interromper a prática.</p><audio id="wzMeditation" controls preload="metadata" aria-label="Meditação de preparação de cinco minutos" src="/audio/preparacao-5min.mp3"></audio><p id="wzAudioStatus" role="status"></p><details class="wz-med-transcript"><summary>Ler a prática</summary>${window.GuardiaoConsulta.meditacao.map(([t,x])=>`<h3>${esc(t)}</h3><p>${esc(x)}</p>`).join('')}</details><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${W.mapReady?'Seu mapa está pronto. Abra quando quiser.':esc(W.live||'Montando seu mapa…')}</p><button id="wzOpenReading" type="button"${W.mapReady?'':' disabled'}>${W.mapReady?'Abrir meu mapa':'Preparando a leitura…'}</button><p class="wz-hint">Você também pode abrir o mapa sem ouvir agora e voltar à meditação depois.</p></div></div>`;
+    $('wzMeditation').addEventListener('error',()=>{const st=$('wzAudioStatus');if(st)st.textContent='O áudio não carregou. Você pode ler a prática abaixo.';});return;
+  }
   if (s === 'gerando') {
     R.innerHTML = `<div class="wz"><div class="wz-card wz-load"><span class="gt-dot"></span><h2>Montando o seu mapa</h2><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${esc(W.live || 'Lendo as suas respostas…')}</p><p class="wz-msg">Isso pode levar alguns minutos. Mantenha esta página aberta.</p></div></div>`; return;
   }
   if (s === 'erro') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Não deu certo desta vez</h2><p class="wz-err" role="alert">${esc(W.err)}</p>${W.msg ? '<p class="wz-msg" role="status">'+esc(W.msg)+'</p>' : ''}<div class="wz-nav"><button class="ghost" id="wzToObj" type="button">Voltar</button><button id="wzRetry" type="button">Tentar de novo</button></div><button class="wz-link" id="wzSendHistory" type="button">Enviar meus dados ao suporte</button><p class="gt-note">Se a leitura já foi gerada, o suporte poderá recuperá-la sem cobrar outra compra. Não envie senha ou dados bancários.</p></div></div>`; return; }
   if (s === 'result') {
     const p = db.people.find(x => x.id === D.pid && x.gt && x.gt.res); if (!p) { W.screen = 'welcome'; return wz(); }
-    gtResult(p);
+    if(p.gt.res.versao_consulta===2)window.GuardiaoConsultaView.render({...p,guardiao:GT_G[p.gt.S.rg[0]][0],potencial:GT_P[p.gt.S.rp[0]][0]});else gtResult(p);
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
     root().insertAdjacentHTML('beforeend', extra);
     if ($('gtRedo')) $('gtRedo').remove();
     // Duas saídas distintas: leitura completa imprimível e resumo fotográfico.
     if ($('gtPdf')) {
       $('gtPdf').id = 'wzPdf29';
-      $('wzPdf29').textContent = 'Baixar PDF essencial com imagens (14 a 18 páginas)';
+      $('wzPdf29').textContent = p.gt.res.versao_consulta===2?'Baixar meu mapa · 20 páginas':'Baixar PDF essencial com imagens (14 a 18 páginas)';
+      if(p.gt.res.versao_consulta!==2){
       const full = document.createElement('button');
       full.type='button';full.id='wzPrintFull';full.className='ghost';
       full.textContent='Guardar esta página · PDF / Imprimir';
       $('wzPdf29').parentNode.insertBefore(full,$('wzPdf29'));
+      }
       const note=document.createElement('span');
       note.id='gtPrintSt';note.className='note';
-      note.textContent='Os dois formatos usam a leitura já salva e não consomem novos créditos do Claude.';
+      note.textContent=p.gt.res.versao_consulta===2?'O mapa está salvo na sua conta. Você pode consultar e baixar quando precisar.':'Os dois formatos usam a leitura já salva e não consomem novos créditos do Claude.';
       $('wzPdf29').parentNode.appendChild(note);
     }
     return;
   }
   // etapas
   const st = D.step;
+  if(st.startsWith('ctx_')){
+    const field=Entrada.campos.find(c=>'ctx_'+c.key===st);
+    if(!field){D.step=newFirstStep();return wz();}
+    const value=intake()[field.key];
+    R.innerHTML=`<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Sua questão atual</span><h2>${esc(field.titulo)}</h2><p class="wz-hint">${esc(field.ajuda)}</p><label>Sua resposta<textarea aria-label="${esc(field.titulo)}" id="wzContext" data-field="${field.key}" maxlength="${field.max}" rows="5" placeholder="${esc(field.exemplo)}">${esc(value)}</textarea></label><span class="wz-field-count">Até ${field.max} caracteres. Escreva do seu jeito.</span><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button">Próximo</button></div></div></div>`;return;
+  }
   if (st === 'dados1') {
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Vamos começar</h2>${W.resetNotice?'<p class="wz-msg" role="status">'+esc(W.resetNotice)+'</p>':''}<label>Seu nome completo<input id="wzName" autocomplete="name" value="${esc(D.name)}"></label><label>Data de nascimento<input id="wzBirth" type="date" value="${esc(D.birth)}"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzNext" type="button">Próximo</button></div></div></div>`; return;
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Vamos começar</h2>${W.resetNotice?'<p class="wz-msg" role="status">'+esc(W.resetNotice)+'</p>':''}<label>Seu nome completo<input id="wzName" maxlength="120" autocomplete="name" value="${esc(D.name)}"></label><label>Data de nascimento<input id="wzBirth" type="date" value="${esc(D.birth)}"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzNext" type="button">Próximo</button></div></div></div>`; return;
   }
   if (st === 'dados2') {
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Onde e a que horas você nasceu?</h2><label>Hora de nascimento (se souber)<input id="wzTime" type="time" value="${esc(D.time)}"></label><p class="wz-hint">Sem a hora o mapa funciona do mesmo jeito, só com menos detalhes.</p>
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Onde e a que horas você nasceu?</h2><label>Hora de nascimento (se souber)<input id="wzTime" type="time" value="${esc(D.time)}"></label><p class="wz-hint">Sem a hora, a leitura usa casas solares e posições aproximadas. O Ascendente fica de fora.</p>
       ${D.manual ? `<div class="row2"><label>Latitude<input id="wzLat" inputmode="decimal" value="${esc(D.lat)}" placeholder="-21.17"></label><label>Longitude<input id="wzLon" inputmode="decimal" value="${esc(D.lon)}" placeholder="-47.81"></label></div><label>Fuso em relação a Greenwich<input id="wzTz" inputmode="decimal" value="${esc(D.tz)}" placeholder="-3"></label><button class="wz-link" id="wzList" type="button">Voltar para a lista de cidades</button>`
       : `<label>Estado<select id="wzUf"><option value="">Escolha o estado</option>${UFS.map(u => `<option${u === D.uf ? ' selected' : ''}>${u}</option>`).join('')}</select></label><label>Cidade<input id="wzCity" autocomplete="off" placeholder="Digite o nome da cidade" value="${esc(D.city)}"></label><ul class="wz-res" id="wzRes" hidden></ul><button class="wz-link" id="wzManual" type="button">Minha cidade não está na lista (ou nasci fora do Brasil)</button>`}
       <label class="check"><input id="wzDst" type="checkbox"${D.dst ? ' checked' : ''}> Nasci em época de horário de verão</label>
@@ -128,9 +150,9 @@ function wz() {
     R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Pergunta ${i + 1} de ${GT_Q.length}</span><p class="wz-q">${esc(q[0])}</p>${q[1] ? `<p class="wz-hint">${esc(q[1])}</p>` : ''}<div class="wz-opts">${q[2].map((o, j) => `<button type="button" class="wz-opt" data-opt="${j}" aria-pressed="${D.ans[i] === j}">${esc(o[0])}</button>`).join('')}</div><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button"${D.ans[i] === undefined ? ' disabled' : ''}>Próximo</button></div></div></div>`; return;
   }
   if (st === 'obj') {
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Qual é o seu objetivo agora?</h2><label>O que você quer mudar ou conquistar? Escreva do seu jeito.<textarea id="wzGoal" rows="4" placeholder="Ex.: Quero cobrar o que meu trabalho vale, sem culpa.">${esc(D.goal)}</textarea></label>
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Confira sua questão antes de gerar</h2><label>Esta é a questão que vai orientar a leitura. Ajuste se precisar.<textarea id="wzGoal" rows="4" maxlength="350" placeholder="Ex.: Quero cobrar o que meu trabalho vale, sem culpa.">${esc(D.goal)}</textarea></label>
       <label class="check" style="align-items:flex-start"><input id="wzAceite" type="checkbox"${D.aceite ? ' checked' : ''} style="margin-top:3px"> <span>Concordo em enviar as minhas respostas para gerar o mapa e que o terapeuta responsável tenha acesso a elas.</span></label>
-      <details><summary class="wz-link">Como usamos os seus dados</summary><p class="wz-msg">Os dados informados (nome, nascimento, respostas e objetivo) são usados apenas para gerar o seu mapa e ficam guardados para você consultar e para o acompanhamento com o terapeuta. O texto é gerado por inteligência artificial. Você pode pedir a exclusão dos seus dados a qualquer momento pelo contato do terapeuta.</p></details>
+      <details><summary class="wz-link">Como usamos os seus dados</summary><p class="wz-msg">Os dados informados (nome, nascimento, respostas do teste, situação relatada e objetivo) são usados apenas para gerar o seu mapa e ficam guardados para você consultar e para o acompanhamento com o terapeuta. O texto é gerado por inteligência artificial. Você pode pedir a exclusão dos seus dados a qualquer momento pelo contato do terapeuta.</p></details>
       <p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzGo" type="button">Gerar o meu mapa</button></div></div></div>`;
   }
 }
@@ -196,7 +218,7 @@ async function afterLogin() {
   }
   if (W.maps.length) return openMap(W.maps[0].id, false);
   if (!(await liberarAcesso())) return;
-  W.screen = 'step'; D.step = D.step || 'dados1'; wz();
+  W.screen = 'step'; D.step = D.step || newFirstStep(); wz();
 }
 async function doAuth() {
   const email = ($('wzEmail').value || '').trim(), m = W.mode; W.email = email; W.err = ''; W.msg = '';
@@ -231,6 +253,7 @@ function wzTeste(p, S) {
     estilo_de_aprender: { principal: GT_L[S.rl[0]][0] + ': ' + GT_L[S.rl[0]][1], secundario: S.rl[1] && Number(S.l[S.rl[1]]) > 0 ? GT_L[S.rl[1]][0] : null },
     fonte_de_renda_preferida: { principal: GT_M[S.rm[0]][0] + ': ' + GT_M[S.rm[0]][1], secundaria: S.rm[1] && Number(S.m[S.rm[1]]) > 0 ? GT_M[S.rm[1]][0] : null },
     respostas: GT_Q.map((q, i) => ({ pergunta: q[0], resposta: q[2][D.ans[i]] ? q[2][D.ans[i]][0] : 'não respondeu' })),
+    ...(D.flowVersion===2?{versao_consulta:2,contexto_atual:intake()}:{}),
     objetivo_da_pessoa: p.goal
   };
 }
@@ -341,7 +364,9 @@ async function gerar() {
   fillForm(); render();
   const S = gtScore(D.ans), dossier = buildDossier('atual');
   if (!dossier) { W.busy = false; W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
-  delete dossier.areas; delete dossier.modo; delete dossier.elementos_autoavaliacao;
+  if(D.flowVersion!==2)delete dossier.areas;
+  else {dossier.pessoa.nome=p.name;dossier.pessoa.cidade=p.city;dossier.pessoa.nascimento_iso=D.birth;dossier.pessoa.hora_informada=!!D.time;dossier.arcano_pessoal=Entrada.arcanoPessoal(D.birth);}
+  delete dossier.modo; delete dossier.elementos_autoavaliacao;
   const teste = wzTeste(p, S);
   try { await guardarHistoricoGuardiao({S,teste,dossier,referencia:dataFixa}); }
   catch(err){
@@ -350,7 +375,7 @@ async function gerar() {
     W.msg='Nenhuma nova leitura foi solicitada ao Claude. Tente novamente.';
     W.screen='erro';return wz();
   }
-  W.screen = 'gerando'; W.live = 'Lendo as suas respostas…'; wz();
+  W.mapReady=false;W.screen='preparar'; W.live = 'Lendo as suas respostas…'; wz();
   const frases = ['Calculando os seus ciclos…', 'Cruzando o seu Guardião com o seu momento de vida…', 'Escrevendo o seu mapa…', 'Montando o plano de ação…', 'Revisando os últimos detalhes…'];
   let k = 0; const tm = setInterval(() => { W.live = frases[Math.min(k++, frases.length - 1)]; const l = $('wzLive'); if (l) l.textContent = W.live; }, 9000);
   const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: dataFixa } }) })
@@ -381,6 +406,10 @@ async function gerar() {
     const res = Object.assign({}, ...partes);
     res.trabalhar = (res.trabalhar || []).slice(0, 4); if (res.plano && res.plano.dias) res.plano.dias = res.plano.dias.slice(0, 7);
     if (!gtOk(res)) throw Object.assign(new Error('incompleto'), { status: 0 });
+    if(teste.versao_consulta===2&&res.areas_vida&&res.tabela_consulta?.length===6){
+      res.versao_consulta=2;res.entrada_consulta=intake();
+      res.dados_pessoa={nome:p.name,nascimento:D.birth,hora:D.time||'',cidade:p.city,lat:p.lat,lon:p.lon,tz:p.tz,dst:p.dst,data_referencia:dataFixa};
+    }
     p.gt.S = S; p.gt.res = res; p.gt.when = dataFixa; save();
     // Only show a completed map after the database confirms it was saved.
     const { error: profileError } = await sb.from('perfis').upsert({ id: W.user.id, email: W.user.email, nome: p.name, nascimento: D.birth, hora: D.time || null, uf: D.uf || null, cidade: D.city || null, lat: p.lat, lon: p.lon, tz: p.tz, dst: !!D.dst, objetivo: p.goal, aceite_lgpd_em: new Date().toISOString() });
@@ -395,9 +424,10 @@ async function gerar() {
     }
     await loadMaps();
     W.activeMapId = W.maps[0]?.id || null;
-    clearInterval(tm); W.viewing = null; W.screen = 'result'; wz(); window.scrollTo(0, 0);
+    clearInterval(tm); W.viewing=null;W.mapReady=true;
+    if(W.screen==='preparar'&&$('wzOpenReading')){$('wzOpenReading').disabled=false;$('wzOpenReading').textContent='Abrir meu mapa';$('wzLive').textContent='Seu mapa está pronto. Abra quando quiser.';}else prepareReading();
   } catch (e) {
-    clearInterval(tm);
+    clearInterval(tm);pauseMeditation();
     const detalhe = (typeof e?.message === 'string' && e.message.length < 300 && !['erro','incompleto'].includes(e.message))
       ? e.message : 'Não foi possível gerar o mapa agora. Suas respostas estão salvas; tente novamente.';
     W.err = e.status === 401 ? 'Sua sessão expirou. Entre de novo.' : detalhe;
@@ -415,15 +445,17 @@ async function openMap(id, asAdmin) {
   const { data: pf } = await sb.from('perfis').select('*').eq('id', m.user_id).maybeSingle(); const f = pf || {};
   const p = { id: 'gtv' + m.id, events: [], elem: {}, name: f.nome || '', birth: f.nascimento, time: f.hora || '', tz: f.tz ?? -3, dst: !!f.dst, city: f.cidade ? `${f.cidade}, ${f.uf || ''}` : '', lat: f.lat, lon: f.lon, goal: f.objetivo || '', gt: { ans: m.respostas, S: m.scores, res: m.resultado } };
   db.people = db.people.filter(x => x.id !== p.id); db.people.push(p); db.cur = p.id; D.pid = p.id; refStr = (m.created_at || '').slice(0, 10) || iso(todayObj);
-  fillForm(); render(); W.viewing = asAdmin ? m : null; W.activeMapId = m.id; W.screen = 'result'; wz(); window.scrollTo(0, 0);
+  p.goal=m.resultado?.entrada_consulta?.questao||p.goal;
+  fillForm(); render(); W.viewing = asAdmin ? m : null; W.activeMapId = m.id; prepareReading(asAdmin);
 }
 
 /* ---- eventos ---- */
 document.addEventListener('click', async e => {
   const t = e.target.closest('button,li,a'); if (!t || !$('gt') || $('gt').hidden) return;
   const id = t.id;
+  if(id==='wzOpenReading'){if(!W.mapReady)return;pauseMeditation();if(!W.preparedMaps)W.preparedMaps=new Set();W.preparedMaps.add(W.activeMapId);W.screen='result';wz();window.scrollTo(0,0);return;}
   if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } if (W.maps.length) return openMap(W.maps[0].id, false); if (!(await liberarAcesso())) return; W.screen = 'step'; return wz(); }
-  if (id === 'wzCheckPayment') { if (!(await liberarAcesso())) return; W.screen = 'step'; D.step = D.step || 'dados1'; return wz(); }
+  if (id === 'wzCheckPayment') { if (!(await liberarAcesso())) return; W.screen = 'step'; D.step = D.step || newFirstStep(); return wz(); }
   if (id === 'wzHave') { W.screen = 'auth'; W.mode = 'login'; W.err = ''; return wz(); }
   if (id === 'wzBackW') { W.screen = 'welcome'; W.err = ''; W.msg = ''; return wz(); }
   if (id === 'wzTabS') { W.mode = 'signup'; W.err = ''; return wz(); }
@@ -432,7 +464,7 @@ document.addEventListener('click', async e => {
   if (id === 'wzAuth') return doAuth();
   if (id === 'wzToLogin') { W.screen = 'auth'; W.mode = 'login'; return wz(); }
   if (id === 'wzSetPass') { const v = $('wzPass').value; if (v.length < 6) { W.err = 'A senha precisa ter pelo menos 6 caracteres.'; return wz(); } const { error } = await sb.auth.updateUser({ password: v }); if (error) { W.err = msgAuth(error); return wz(); } history.replaceState(null, '', '/'); const { data } = await sb.auth.getSession(); W.user = data.session ? data.session.user : null; return afterLogin(); }
-  if (id === 'wzOut') { await sb.auth.signOut(); W.user = null; W.maps = []; W.screen = 'welcome'; return wz(); }
+  if (id === 'wzOut') { if(W.busy)return;pauseMeditation();await sb.auth.signOut(); W.user = null; W.maps = []; W.screen = 'welcome'; return wz(); }
   if (id === 'wzPrintFull') {
     try{
       if(!window.guardiaoImprimirLeitura?.save)
@@ -450,7 +482,7 @@ document.addEventListener('click', async e => {
     const status = $('gtPdfSt');
     const btn = $('wzPdf29');
     if (btn) btn.disabled = true;
-    if (status) status.textContent = 'Preparando seu PDF essencial de 14 a 18 páginas…';
+    if (status) status.textContent = 'Preparando o PDF da sua leitura…';
     try {
       const mapId = W.activeMapId || W.maps[0]?.id;
       if (!mapId) throw new Error('Aguarde o mapa ser salvo no painel antes de baixar.');
@@ -478,9 +510,9 @@ document.addEventListener('click', async e => {
     } catch (err) {
       // If the server fails, compose the SAME 14/18-page essential PDF in-browser (never the old 53-page report).
       // Never bypass a 401/403 payment/session rejection.
-      if ((!err?.status || err.status >= 500) && window.guardiaoPdfEssencial?.download && W.activeMapId) {
+      if ((!err?.status || err.status >= 500) && W.activeMapId) {
         if (status) status.textContent = 'O servidor demorou. Montando o PDF no navegador…';
-        try { await window.guardiaoPdfEssencial.download(btn || { disabled: false }, status || { textContent: '' }); }
+        try { const person=db.people.find(x=>x.id===D.pid);if(person?.gt?.res?.versao_consulta===2)await window.GuardiaoPdfConsulta.download(person,btn,status);else await window.guardiaoPdfEssencial.download(btn || { disabled: false }, status || { textContent: '' }); }
         catch (fallbackErr) { if (status) status.textContent = 'Não foi possível baixar agora. Seu mapa continua salvo.'; }
       } else if (status) {
         status.textContent = err?.message || 'O download falhou. Seu mapa continua salvo.';
@@ -500,7 +532,7 @@ document.addEventListener('click', async e => {
   if (id === 'wzRetry') return W.resetError ? afterLogin() : gerar();
   if (id === 'wzSyncBack') {
     history.replaceState(null,'','/');
-    W.screen='step';D.step=D.step||'dados1';W.err='';W.msg='';return wz();
+    W.screen='step';D.step=D.step||newFirstStep();W.err='';W.msg='';return wz();
   }
   if (id === 'wzSyncNow') {
     if(W.busy)return;
@@ -529,7 +561,8 @@ document.addEventListener('click', async e => {
   if (t.tagName === 'LI' && t.dataset.c !== undefined) { const L = (W.cities[D.uf] || [])[+t.dataset.c]; if (L) { D.city = L[0]; D.lat = L[1]; D.lon = L[2]; D.tz = L[3]; gtSave(); $('wzCity').value = L[0]; $('wzRes').hidden = true; } return; }
   if (id === 'wzNext') {
     const st = D.step; W.err = '';
-    if (st === 'dados1') {
+    if(st.startsWith('ctx_')){const key=st.slice(4);saveIntake(key,$('wzContext').value.trim());if(intake()[key].length<5)W.err='Conte um pouco mais, com pelo menos cinco caracteres.';}
+    else if (st === 'dados1') {
       D.name = $('wzName').value.trim(); D.birth = $('wzBirth').value; const b = E.parse(D.birth);
       if (D.name.length < 3) W.err = 'Digite o seu nome completo.'; else if (!b || b.y < 1900 || E.key(b) > E.key(todayObj)) W.err = 'Confira a data de nascimento.';
     } else if (st === 'dados2') {
@@ -542,6 +575,7 @@ document.addEventListener('click', async e => {
   }
   if (id === 'wzGo') {
     W.err = ''; D.goal = $('wzGoal').value.trim(); D.aceite = $('wzAceite').checked;
+    if(D.flowVersion===2){saveIntake('questao',D.goal);const missing=Entrada.validar(intake());if(missing.length){W.err='Responda esta pergunta antes de gerar seu mapa.';D.step='ctx_'+missing[0];gtSave();return wz();}}
     if (D.goal.length < 5) W.err = 'Conte o seu objetivo em poucas palavras.'; else if (!D.aceite) W.err = 'Para gerar o mapa, marque a concordância acima.';
     if (W.err) { gtSave(); return wz(); }
     gtSave(); return gerar();
@@ -549,6 +583,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('input', async e => {
   const t = e.target; if (!$('gt') || $('gt').hidden) return;
+  if(t.id==='wzContext'){saveIntake(t.dataset.field,t.value);return;}
   if (t.id === 'wzCity') {
     D.city = ''; D.lat = ''; D.lon = '';
     const q = norm(t.value), res = $('wzRes'); if (!D.uf) { res.hidden = false; res.innerHTML = '<li>Escolha o estado primeiro</li>'; return; }
@@ -556,7 +591,7 @@ document.addEventListener('input', async e => {
     const hits = []; L.forEach((c, i) => { if (q && norm(c[0]).includes(q) && hits.length < 8) hits.push(i); });
     res.hidden = !q; res.innerHTML = hits.length ? hits.map(i => `<li tabindex="0" data-c="${i}">${esc(L[i][0])}</li>`).join('') : '<li>Nenhuma cidade encontrada</li>';
   } else if (t.id === 'wzTime') { D.time = t.value; gtSave(); }
-  else if (t.id === 'wzGoal') { D.goal = t.value; gtSave(); }
+  else if (t.id === 'wzGoal') { D.goal = t.value;if(D.flowVersion===2)saveIntake('questao',t.value);gtSave(); }
 });
 document.addEventListener('change', e => {
   const t = e.target; if (!$('gt') || $('gt').hidden) return;
@@ -597,3 +632,4 @@ const _afterLogin = afterLogin;
 afterLogin = async function () { const ver = new URLSearchParams(location.search).get('ver'); if (ver) { syncLocal(); return openMap(ver, true); } return _afterLogin(); };
 boot();
 })();
+

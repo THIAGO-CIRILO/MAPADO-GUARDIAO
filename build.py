@@ -65,6 +65,12 @@ def use_real_auth(html, filename):
         html = html[:banner_start] + html[banner_end + len('</style>'):]
     return html
 
+# Shared intake, page model, and PDF layout for the personalized 20-page edition.
+for filename in ('consulta-entrada.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js','consulta.css','meditacao.html'):
+    shutil.copyfile(root / filename, out / filename)
+shutil.copytree(root / 'assets/fonts', out / 'fonts', dirs_exist_ok=True)
+shutil.copytree(root / 'assets/audio', out / 'audio', dirs_exist_ok=True)
+
 # Use the current tracked wizard.js, not the outdated copy embedded in the ZIP.
 index_page = out / "index.html"
 html = index_page.read_text(encoding="utf-8")
@@ -91,7 +97,11 @@ close_tag = html.find("</script>", wizard_pos)
 if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
+consulta_scripts = ''.join('<script src="/'+name+'?v=20261102-consulta20"></script>\n' for name in ('consulta-entrada.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
+
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
+html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261102-consulta20"></head>', 1)
+
 # Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
 # in the old archive. Editorial responsibility is handled by the new server prompt.
 old_disclaimer = ('Este mapa é um convite à reflexão, não um diagnóstico nem uma previsão. '
@@ -125,10 +135,15 @@ if html.count("<script>\n" + wizard_source) != 1:
     raise SystemExit("Cannot place the essential PDF module before the wizard")
 html = html.replace(
     "<script>\n" + wizard_source,
-    '<script src="/imprimir-leitura.js?v=20261015-full-print"></script>\n'
+    consulta_scripts + '<script src="/imprimir-leitura.js?v=20261015-full-print"></script>\n'
     '<script src="/pdf-essencial.js?v=20261015-photo-2"></script>\n<script>\n' + wizard_source,
     1,
 )
+# Compile every inline script before emitting the page; offsets must remain valid.
+import re
+inline_scripts = re.findall(r'<script\b[^>]*>([\s\S]*?)</script>', html, re.I)
+verify_scripts = 'const vm=require("node:vm"); const fs=require("node:fs"); JSON.parse(fs.readFileSync(0,"utf8")).forEach((s,i)=>new vm.Script(s,{filename:"inline-"+i+".js"}));'
+subprocess.run(['node','-e',verify_scripts], input=json.dumps(inline_scripts), text=True, check=True)
 index_page.write_text(html, encoding="utf-8")
 # Stop the deployment if a literal backslash-n ever replaces a script newline again.
 if "<script>" + chr(92) + "n" in html:
@@ -503,4 +518,5 @@ sales_page.write_text(sales_html, encoding="utf-8")
 
 print("Prepared", len(list(out.rglob("*"))), "site paths; Supabase configured:",
       bool(client_config["SUPABASE_URL"] and client_config["SUPABASE_ANON_KEY"]))
+
 

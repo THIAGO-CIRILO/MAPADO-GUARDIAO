@@ -18,7 +18,7 @@ O Claude **da API é cobrado à parte** da assinatura do Claude.ai.
 1. Entre em console.anthropic.com (mesmo e-mail serve, mas é outro painel).
 2. **Billing**: adicione cartão e crédito (ex.: US$ 20). Defina um **limite mensal de gasto**.
 3. **API Keys → Create Key**. Copie (`sk-ant-...`). Ela só aparece uma vez.
-4. Cada mapa faz 2 chamadas; custa centavos a poucos reais por mapa. Acompanhe em *Usage*.
+4. Cada mapa novo é gerado em seis partes. O custo depende do modelo e do tamanho da leitura. Acompanhe em *Usage*.
 
 ## 3) Vercel
 1. Suba esta pasta para um repositório no GitHub (ou use `npx vercel` nesta pasta).
@@ -41,8 +41,39 @@ O Claude **da API é cobrado à parte** da assinatura do Claude.ai.
 Abrir o site no navegador → menu → *Adicionar à tela inicial*.
 
 ## Atenções
-- **Tempo:** a função tem limite de 60 s (o plano gratuito da Vercel pode limitar a menos). Por isso o mapa é gerado em duas chamadas paralelas. Se der tempo esgotado, use plano Pro ou reduza `max_tokens` em `api/_prompt.js`/`gerar.js`.
+- **Tempo:** a função tem limite de 60 s (o plano gratuito da Vercel pode limitar a menos). Por isso o mapa é gerado em seis etapas, em lotes de duas chamadas paralelas. Se der tempo esgotado, use plano Pro ou reduza `max_tokens` em `api/_prompt.js`/`gerar.js`.
 - **LGPD:** a cliente marca a concordância antes de gerar. Inclua política de privacidade no site e avise que dados de nascimento ficam guardados.
 - **Texto do mapa:** o prompt trata ferida/guardião como hipótese, sem diagnóstico, sem causa de origem. Mantenha isso na comunicação comercial.
 - **Não testado de verdade aqui:** o fluxo foi testado ponta a ponta com Supabase e Claude simulados. Faça 1 mapa real depois do deploy para conferir a chave, o schema e a confirmação por e-mail.
 - **Cobrar das clientes (Hotmart, Stripe, Pix):** ainda não incluído. Dá para ligar depois (pagamento libera o acesso).
+
+
+
+## Edição de consulta rápida (versão 2)
+
+Novos questionários começam pela questão atual e quatro campos: cena, reação,
+receio e resultado desejado. As dez respostas de marcar mantêm o motor original.
+O contexto fica em `respostas._consulta`, no JSON da leitura e no histórico
+privado do questionário, sem mudar a estrutura das tabelas.
+
+A IA recebe o contexto, todas as alternativas escolhidas, o mapa natal com suas
+12 áreas e a numerologia. O servidor calcula o arcano pelo método AP-22: soma dos
+algarismos da data, repetida enquanto o resultado exceder 22 (Justiça 8, Força 11,
+Louco 22). A fórmula fica identificada no PDF. As fontes da biblioteca privada
+continuam disponíveis pelo módulo existente.
+
+A saída nova contém `areas_vida` (12 áreas), `tabela_consulta` (6 situações) e o
+plano de aplicação. Ela é validada antes de salvar cada fase. Os meses são
+calculados no servidor; a IA recebe os valores e escreve a interpretação.
+
+A tela de preparação toca `/audio/preparacao-5min.mp3` antes da abertura do mapa.
+O áudio é uma narração sintética em português brasileiro com cinco blocos e
+pausas; a duração é de aproximadamente 300 segundos. Não há reprodução automática
+nem bloqueio para quem prefere ler sem ouvir. A pessoa pode repetir em `/meditacao`.
+
+O mesmo modelo de 20 páginas alimenta a leitura na tela, o PDF do servidor e o
+PDF alternativo do navegador. Fontes Figtree e Instrument Serif ficam no projeto
+com suas licenças OFL. Mapas da versão anterior preservam o formato já salvo.
+
+Validação local: `npm ci` e `npm test`. Os testes usam dados fictícios e respostas
+simuladas da IA; não fazem compras nem gastam créditos reais do Claude.

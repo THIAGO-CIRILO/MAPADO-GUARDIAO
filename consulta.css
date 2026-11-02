@@ -1,0 +1,20 @@
+@font-face{font-family:Figtree;src:url('/fonts/Figtree-Regular.ttf') format('truetype');font-display:swap;font-weight:400}
+@font-face{font-family:Figtree;src:url('/fonts/Figtree-Bold.ttf') format('truetype');font-display:swap;font-weight:700}
+@font-face{font-family:'Instrument Serif';src:url('/fonts/InstrumentSerif-Regular.ttf') format('truetype');font-display:swap}
+.consulta-reading{max-width:860px;margin:24px auto;color:#453a33;font-family:Figtree,Arial,sans-serif;line-height:1.55}
+.consulta-page{background:#fff;padding:35px;margin:0 0 25px;border:1px solid #ddd2c4;border-radius:5px;scroll-margin-top:20px}
+.consulta-page h2{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(2rem,5vw,3rem);font-weight:400;line-height:1.1;color:#453a33;margin:20px 0}
+.consulta-kicker{font-size:12px;letter-spacing:.06em;color:#a35330;border-bottom:1px solid #ddd2c4;padding-bottom:14px;text-transform:uppercase}
+.consulta-card{background:#eee4d7;border:1px solid #ddd2c4;padding:20px;margin:18px 0;border-radius:3px}
+.consulta-card:nth-of-type(even){background:#fbf9f5}
+.consulta-card h3{font:700 12px/1.5 Figtree,Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:#75675d;margin:0 0 10px}
+.consulta-card p{white-space:normal;margin:0}.consulta-card ol{padding-left:22px;margin:12px 0 0}.consulta-card li{margin-bottom:8px}
+.consulta-table-wrap{overflow-x:auto;margin:20px 0}.consulta-table-wrap table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+.consulta-table-wrap th,.consulta-table-wrap td{border:1px solid #ddd2c4;text-align:left;padding:12px;vertical-align:top;font-weight:400}
+.consulta-table-wrap thead th{font-weight:700;background:#eee4d7}.consulta-table-wrap tr:nth-child(even){background:#fbf9f5}
+.consulta-table-wrap a{color:#453a33;text-decoration:underline}.consulta-page-count{text-align:right;font-size:12px;color:#75675d;margin:24px 0 0}
+.consulta-toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:860px;margin:18px auto;font-family:Figtree,Arial,sans-serif}
+.consulta-toolbar a{color:#a35330}.consulta-toolbar [role=status]{width:100%}.wz audio{width:100%;margin:14px 0}.wz-resumo{padding:15px;background:#eee4d7;color:#453a33;border-radius:6px;white-space:pre-wrap}.wz-field-count{font-size:12px;color:#75675d}
+.wz-card textarea{min-height:120px}.wz-med-transcript{font-size:14px;line-height:1.6}.wz-med-transcript h3{font-size:16px}
+@media(max-width:600px){.consulta-page{padding:22px 18px}.consulta-card{padding:16px}.consulta-reading{margin:12px auto}}
+@media print{.consulta-toolbar,.wz-bar,.btns{display:none!important}.consulta-page{break-after:page;border:0;margin:0}.consulta-page:last-child{break-after:auto}}
