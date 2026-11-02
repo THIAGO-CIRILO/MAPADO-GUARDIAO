@@ -18,7 +18,7 @@
     else if(p.intro)y+=painter.height(p.intro,CW,introSize,'regular')+18*scale;
     const cards=p.blocks.map((b,i)=>{
      const boxed=b.tone==='outline'||b.tone==='soft',hero=p.cover&&i===0;
-     const pad=boxed?14*scale:0,width=CW-2*pad;
+     const pad=boxed?(p.compact?8:14)*scale:0,width=CW-2*pad;
      const label=boxed&&!hero?b.label.toUpperCase():b.label;
      const labelFont=boxed&&!hero?'bold':'serif';
      const labelSize=(hero?24:boxed?8.4:19)*scale;
@@ -35,7 +35,7 @@
      const bottom=items?itemsY+itemsH:bodyY+bodyH;
      const h=bottom-y+pad;
      const out={y,h,pad,width,label,labelFont,labelSize,labelY,eyebrowY,bodyY,items,itemsY,itemsH,itemPad,boxed,hero};
-     y+=h+18*scale;return out;
+     y+=h+(p.compact?10:18)*scale;return out;
     });
     let table;
     if(p.table){

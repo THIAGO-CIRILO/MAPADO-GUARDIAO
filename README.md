@@ -122,3 +122,11 @@ A página `/venda` usa `venda.html` como fonte, com a paleta da marca
 (marrom #3A2C26, laranja #B04F1E e bege #F0E8DB). O fluxo de perguntas usa
 a mesma paleta, inclusive nas cores de seleção e no tema escuro. Preço, checkout, garantia e acesso
 continuam os mesmos. Exemplos de leitura são identificados como fictícios.
+
+A página 3 exibe `objetivo.leitura`, a resposta gerada para a questão, junto das
+cinco respostas originais. As páginas das áreas não repetem a instrução genérica
+de procurar uma aplicação. A apresentação também se aplica aos mapas de 20 páginas
+já salvos, sem reescrever o conteúdo. Na geração, questão e desejo têm prioridade
+sobre receios, apoios e referências simbólicas. A revisão bloqueia respostas ao
+objetivo totalmente alheias ao pedido e textos ou ações quase idênticos em quatro
+ou mais áreas. Isso não substitui a revisão do conteúdo de cada leitura.

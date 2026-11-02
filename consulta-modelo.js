@@ -31,7 +31,7 @@
    card(nome,r.abertura),card('Sua questão',input.questao),card('Um foco por consulta','As 12 áreas ajudam a olhar sua questão por diferentes ângulos. Consulte a parte de que precisa e use a tabela para preparar uma resposta.'),card('Thiago Cervi','Material de consulta rápida · Leitura individual em 20 páginas.')
   ]);
   add('Como usar o seu mapa','COMECE POR AQUI','Antes da primeira leitura, ouça a meditação. Retome sua questão, consulte a área ligada à situação e use a tabela para preparar uma resposta. Escolha uma ação e defina quando vai experimentá-la.',[],{headers:['Procure aqui','Página'],rows:[['Sua questão',3],['Guardião e potencial',4],['Reconhecer, Honrar e Atualizar',5],['Mapa natal, numerologia e arcano',6],['Identidade e dinheiro',7],['Comunicação e família',8],['Criatividade e rotina',9],['Relacionamentos e intimidade',10],['Propósito e carreira',11],['Coletivos e interioridade',12],['Seus próximos 12 meses',13],['Continuação dos meses',14],['Sua tabela de consulta',15],['Possíveis desdobramentos',16],['Uma ação em 72 horas',17],['Prática de cinco minutos',18],['Sete dias para experimentar',19],['Seu próximo passo',20]],widths:[.89,.11],links:true});
-  add('A questão que você trouxe','PARTE 1 · SUA QUESTÃO ATUAL','Suas palavras são o ponto de partida desta leitura.',Entrada.campos.map(c=>card(c.titulo,input[c.key])));
+  add('A resposta à sua questão','PARTE 1 · SUA QUESTÃO ATUAL',r.objetivo?.leitura||r.integrada,Entrada.campos.map(c=>card(c.titulo,input[c.key])));
   add('Sua proteção e seu potencial','O QUE A LEITURA ENCONTROU',r.integrada,[card(map.guardiao||'Seu Guardião',g.leitura+'\n\nO que preserva: '+g.beneficio+'\n\nO custo atual: '+g.preco),card('A ferida como referência simbólica',f.leitura),card(map.potencial||'Potencial em uso',p.leitura),card('Primeiro gesto',p.primeiro_gesto)]);
   add('Reconhecer · Honrar · Atualizar','DA LEITURA À RESPOSTA','Use os movimentos numa cena concreta. Você pode voltar aqui antes de responder a um pedido ou tomar uma decisão.',[
    card('Reconhecer','Observe o que aconteceu, o pensamento que apareceu e sua reação mais rápida. Sua descrição: '+input.reacao),
@@ -44,7 +44,7 @@
    card('Como foi calculado',arc?.metodo||'Não calculado nesta leitura.')
   ]);
   const titles=['Sua autonomia e seus recursos','Conversas e responsabilidades','O espaço da sua rotina','Vínculos e acordos','Direção e trabalho','Trocas e vida interior'];
-  for(let i=0;i<6;i++)add(titles[i],'AS 12 ÁREAS DA VIDA','Consulte a área ligada à sua pergunta e escolha uma aplicação possível.',areas.slice(i*2,i*2+2).map(([key,label])=>card(label,r.areas_vida[key].texto,['Um passo possível: '+r.areas_vida[key].gesto])));
+  for(let i=0;i<6;i++)add(titles[i],'AS 12 ÁREAS DA VIDA','',areas.slice(i*2,i*2+2).map(([key,label])=>card(label,r.areas_vida[key].texto,['Um passo possível: '+r.areas_vida[key].gesto])));
   for(let i=0;i<2;i++)add('Seus próximos doze meses',i===0?'CONSULTA AO LONGO DO TEMPO':'CONSULTA AO LONGO DO TEMPO · CONTINUAÇÃO',i===0?'Um tema, um cuidado e uma ação para cada mês, a partir da referência da sua leitura.':'',[],{headers:['Mês','Tema e recurso','Cuidado','Ação possível'],rows:r.meses.slice(i*6,i*6+6).map(m=>[String(m.mes).padStart(2,'0')+'/'+m.ano,m.titulo+'. '+m.potencial,m.cuidado,m.passo]),widths:[.13,.33,.25,.29]});
   const headers=['Situação possível','Reconhecer','Honrar','Atualizar'];
   const rows=r.tabela_consulta.map(t=>[t.situacao,t.reconhecer,t.honrar,t.atualizar]);
@@ -61,7 +61,7 @@
    card('Sua direção',r.objetivo?.proximo_passo),card('Leve uma resposta para a vida real','', ['Minha questão de agora é…','O que consegui compreender foi…','O próximo passo que vou experimentar é…','Vou fazer isso até…']),card('Quando quiser aprofundar','Se precisar de ajuda para relacionar a leitura à situação que está vivendo, você pode seguir comigo em uma sessão individual. Entre em contato para conhecer o atendimento e agendar.\ncontato.energystudio@gmail.com'),card('Thiago Cervi','Mapa do Guardião · Reconhecer, Honrar e Atualizar.')
   ]);
   // Keep the text intact. Only presentation metadata changes between editions.
-  pages[0].cover=true;pages[0].promessa=promessa;
+  pages[0].cover=true;pages[0].promessa=promessa;pages[2].compact=true;
   pages.forEach((page,index)=>page.blocks.forEach((block,i)=>{
    block.tone=index===0?(i<3?'outline':i===3?'soft':'plain'):
      index===2?'outline':index===4&&i===3?'soft':

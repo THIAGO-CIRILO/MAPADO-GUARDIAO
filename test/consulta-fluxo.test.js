@@ -58,6 +58,8 @@ test('questionário completo salva contexto, mostra meditação e reabre as 20 p
   assert.equal(Object.keys(saved[0].respostas).length,10);
   for(const req of calls){assert.deepEqual(req.teste.contexto_atual,entrada);assert.deepEqual(req.teste.contextos_complementares,complementares);assert.ok(JSON.stringify({teste:req.teste,dossier:req.dossier}).length<42000);assert.equal(req.dossier.areas.length,12);assert.equal(req.teste.respostas.length,10);assert.ok(req.dossier.mapa_natal.posicoes.Sol);}
   click('wzOpenReading');assert.equal(w.document.querySelectorAll('.consulta-page').length,20);
+  assert.ok(w.document.getElementById('consulta-pagina-3').textContent.includes(partes().d.objetivo.leitura));
+  assert.ok(!w.document.getElementById('consulta-pagina-8').textContent.includes('Consulte a área ligada à sua pergunta'));
   assert.ok(w.document.body.textContent.includes(entrada.cena));
   assert.equal(w.document.querySelector('.consulta-promise strong').textContent,'a sua energia rende mais e custa menos.');
   assert.equal(w.document.querySelector('.consulta-card--potencia h3').textContent,partes().b.lugar_potencia.titulo);
