@@ -15,10 +15,11 @@ Peças: **Supabase** (login + banco de dados), **Vercel** (site + função que c
 
 ## 2) Chave do Claude (pagamento da IA)
 O Claude **da API é cobrado à parte** da assinatura do Claude.ai.
-1. Entre em console.anthropic.com (mesmo e-mail serve, mas é outro painel).
+1. Entre em https://platform.claude.com/settings/billing com a conta e a organização da API usada no site.
 2. **Billing**: adicione cartão e crédito (ex.: US$ 20). Defina um **limite mensal de gasto**.
 3. **API Keys → Create Key**. Copie (`sk-ant-...`). Ela só aparece uma vez.
 4. Cada mapa novo é gerado em seis partes. O custo depende do modelo e do tamanho da leitura. Acompanhe em *Usage*.
+5. O painel `/admin` tem o botão **Ver saldo e recarregar créditos**, que abre o faturamento oficial em outra aba. O saldo e a compra de créditos são administrados no Claude Console.
 
 ## 3) Vercel
 1. Suba esta pasta para um repositório no GitHub (ou use `npx vercel` nesta pasta).

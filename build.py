@@ -204,6 +204,11 @@ admin_html = out / "admin.html"
 if not admin_html.is_file():
     raise SystemExit("Missing admin page to link the private library")
 admin_code = admin_html.read_text(encoding="utf-8")
+admin_app = '<div id="app" hidden>'
+if admin_code.count(admin_app) != 1:
+    raise SystemExit("Could not safely place the Claude credits access inside the admin panel")
+admin_credits = (root / 'admin-creditos.html').read_text(encoding='utf-8')
+admin_code = admin_code.replace(admin_app, admin_app + '\n' + admin_credits, 1)
 library_link = '<a id="guardiaoLibraryLink" href="/biblioteca" style="position:fixed;bottom:18px;right:18px;z-index:9999;background:#F04A12;color:#fff;padding:11px 17px;border-radius:10px;text-decoration:none;font:700 13px system-ui,sans-serif;box-shadow:0 6px 22px #351A1444">Biblioteca de livros</a>'
 if admin_code.count("</body>") != 1:
     raise SystemExit("Could not safely add the private library navigation to admin")
