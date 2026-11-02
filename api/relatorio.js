@@ -205,7 +205,7 @@ async function renderReport(m,p){
   // 4 — método
   page(doc,4,'Como ler o seu mapa','O MÉTODO');
   [['RECONHECER','Observe a proteção que aparece antes da escolha.'],['HONRAR','Entenda qual necessidade essa proteção tentou cuidar.'],['ATUALIZAR','Experimente uma resposta possível para o presente.']].forEach((a,i)=>{const x=42+i*266;box(doc,x,202,250,236,'paper');sub(doc,String(i+1).padStart(2,'0'),x+20,221,92);doc.font('Times-Bold').fontSize(23).fillColor(HEX.dark).text(a[0],x+19,271,{width:215});text(doc,a[1],x+19,324,210,13,'ink');});
-  text(doc,'Este material é uma lente simbólica de reflexão, não um diagnóstico ou previsão.',48,469,750,11,'muted');
+  text(doc,'Reconhecer o padrão, compreender o que ele protege e escolher uma resposta possível para o presente.',48,469,750,11,'muted');
   // 5 — overview
   page(doc,5,'Um retrato do seu momento','VISÃO GERAL');
   panelPhoto(doc,images,'horizon',43,171,285,330);
