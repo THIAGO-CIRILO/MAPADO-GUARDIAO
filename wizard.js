@@ -431,7 +431,7 @@ async function gerar() {
   W.mapReady=false;W.screen='preparar'; W.live = 'Lendo as suas respostas…'; wz();
   const frases = ['Calculando os seus ciclos…', 'Cruzando o seu Guardião com o seu momento de vida…', 'Escrevendo o seu mapa…', 'Montando o plano de ação…', 'Revisando os últimos detalhes…'];
   let k = 0; const tm = setInterval(() => { W.live = frases[Math.min(k++, frases.length - 1)]; const l = $('wzLive'); if (l) l.textContent = W.live; }, 9000);
-  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: dataFixa },...(upgrading?{atualizarMapaId:D.upgradeMapId}:{}) }) })
+  const call = (fase,leituraGerada) => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: dataFixa },...(leituraGerada?{leituraGerada}:{}),...(upgrading?{atualizarMapaId:D.upgradeMapId}:{}) }) })
     .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'erro'), { status: r.status, j }); if(j.assinatura_atualizacao)W.assinaturaAtualizacao=j.assinatura_atualizacao;return j.parte; });
   try {
     // Reuse completed stages after an error. Limit concurrency to two API calls.
@@ -440,7 +440,8 @@ async function gerar() {
       W.assinaturaGeracao = assinatura;
       W.partesGeradas = {};
     }
-    const fases = recuperacaoLegada ? ['a', 'b', 'c', 'd', 'e'] : ['a', 'b', 'c', 'd', 'e', 'f'];
+    const sinteseFinal=teste.versao_consulta===2&&!recuperacaoLegada;
+    const fases = recuperacaoLegada ? ['a', 'b', 'c', 'd', 'e'] : sinteseFinal ? ['a', 'b', 'c', 'e', 'f'] : ['a', 'b', 'c', 'd', 'e', 'f'];
     const partes = new Array(fases.length);
     for (let i = 0; i < fases.length; i += 2) {
       const lote = fases.slice(i, i + 2);
@@ -455,6 +456,12 @@ async function gerar() {
       });
       const falha = estados.find(estado => estado.status === 'rejected');
       if (falha) throw falha.reason;
+    }
+    if(sinteseFinal){
+      W.live='Gerando a síntese das suas respostas…';const live=$('wzLive');if(live)live.textContent=W.live;
+      const leituraGerada=Object.assign({},...partes);
+      const sintese=W.partesGeradas.d||await call('d',leituraGerada);
+      W.partesGeradas.d=sintese;partes.push(sintese);
     }
     const res = Object.assign({}, ...partes);
     res.trabalhar = (res.trabalhar || []).slice(0, 4); if (res.plano && res.plano.dias) res.plano.dias = res.plano.dias.slice(0, 7);

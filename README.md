@@ -123,10 +123,15 @@ A página `/venda` usa `venda.html` como fonte, com a paleta da marca
 a mesma paleta, inclusive nas cores de seleção e no tema escuro. Preço, checkout, garantia e acesso
 continuam os mesmos. Exemplos de leitura são identificados como fictícios.
 
-A página 3 exibe `objetivo.leitura`, a resposta gerada para a questão, junto das
-cinco respostas originais. As páginas das áreas não repetem a instrução genérica
-de procurar uma aplicação. A apresentação também se aplica aos mapas de 20 páginas
-já salvos, sem reescrever o conteúdo. Na geração, questão e desejo têm prioridade
-sobre receios, apoios e referências simbólicas. A revisão bloqueia respostas ao
-objetivo totalmente alheias ao pedido e textos ou ações quase idênticos em quatro
-ou mais áreas. Isso não substitui a revisão do conteúdo de cada leitura.
+A página 3 das novas leituras traz a conclusão `objetivo.leitura`, uma interpretação
+individual de cada uma das cinco respostas em `sintese_respostas` e o próximo passo.
+No navegador, o relato original pode ser conferido em cada bloco; no PDF, aparece
+a síntese, sem repetir os relatos longos. A etapa D é gerada por último, recebendo
+as áreas, a tabela, o plano e os meses já preparados. O número de chamadas continua
+sendo seis e as reservas concluídas continuam reutilizadas depois de uma falha.
+Mapas já salvos sem `sintese_respostas` mantêm o conteúdo e a apresentação anterior.
+As páginas das áreas não repetem a instrução genérica de procurar uma aplicação.
+Questão e desejo têm prioridade sobre receios, apoios e referências simbólicas.
+A revisão bloqueia respostas alheias ao pedido, cópias literais do relato na síntese
+e textos ou ações quase idênticos em quatro ou mais áreas. Isso não substitui a
+revisão do conteúdo de cada leitura.

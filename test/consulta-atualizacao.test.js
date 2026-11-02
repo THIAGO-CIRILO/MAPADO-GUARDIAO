@@ -10,7 +10,7 @@ const {compatibilidade,AREA_KEYS}=require('../api/_consulta.js');
 const ROOT=path.resolve(__dirname,'..');
 const waitFor=async fn=>{for(let i=0;i<300;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('A atualização não chegou à tela esperada.');};
 
-function legacyFlow({deepLink=false,failOnce=false,pending=null}={}){
+function legacyFlow({deepLink=false,failOnce=false,failPhase='c',pending=null}={}){
  const errors=[],calls=[],actions=[];
  const old=mapa();delete old.resultado.versao_consulta;delete old.resultado.entrada_consulta;
  old.respostas=Object.fromEntries(Array.from({length:10},(_,i)=>[i,0]));old.created_at='2026-10-12T12:00:00Z';
@@ -43,7 +43,7 @@ function legacyFlow({deepLink=false,failOnce=false,pending=null}={}){
    const body=JSON.parse(opt.body);calls.push(body);assert.equal(body.atualizarMapaId,old.id);
    if(!frozen)frozen=structuredClone({teste:body.teste,dossier:body.dossier,dadosCiclos:body.dadosCiclos});
    assert.deepEqual(body.teste,frozen.teste);assert.deepEqual(body.dossier,frozen.dossier);
-   if(failOnce&&body.fase==='c'&&!failed){failed=true;return new Response(JSON.stringify({erro:'Falha temporária simulada.',fase:'c'}),{status:503});}
+   if(failOnce&&body.fase===failPhase&&!failed){failed=true;return new Response(JSON.stringify({erro:'Falha temporária simulada.',fase:failPhase}),{status:503});}
    const raw=partes()[body.fase],parte={...compatibilidade(raw,body.fase),versao_consulta:2};
    if(body.fase==='f')parte.meses=mapa().resultado.meses;
    return new Response(JSON.stringify({ok:true,parte,assinatura_atualizacao:signature}));
@@ -85,6 +85,23 @@ test('leitura antiga recebe os campos novos, mantém o mesmo mapa e oferece medi
   for(const body of f.calls){assert.deepEqual(body.teste.contexto_atual,entrada);assert.equal(body.teste.respostas.length,10);assert.equal(body.dossier.areas.length,12);assert.equal(body.dadosCiclos.nascimento,'1990-05-15');}
   f.click('wzOpenReading');assert.equal(f.w.document.querySelectorAll('.consulta-page').length,20);assert.match(f.$('wzPdf29').textContent,/20 páginas/);assert.ok(!f.$('wzUpgrade'));
   assert.deepEqual(f.errors,[]);
+ }finally{f.dom.window.close();}
+});
+
+test('falha na síntese retoma só a etapa final e aproveita o mapa já preparado',async()=>{
+ const f=legacyFlow({failOnce:true,failPhase:'d'});
+ try{
+  await waitFor(()=>f.$('wzUpgrade'));f.click('wzUpgrade');await waitFor(()=>f.$('wzContext'));
+  for(const value of Object.values(entrada)){f.type('wzContext',value);f.click('wzNext');}responderApoios(f);
+  f.$('wzAceite').checked=true;f.click('wzGo');await waitFor(()=>f.$('wzRetry'));
+  assert.deepEqual(f.old.resultado,f.original);
+  assert.equal(f.calls.at(-1).fase,'d');
+  const snapshot=structuredClone(f.calls.at(-1).leituraGerada);
+  assert.equal(Object.keys(snapshot.areas_vida).length,12);assert.equal(snapshot.tabela_consulta.length,6);assert.equal(snapshot.meses.length,12);
+  f.click('wzRetry');await waitFor(()=>f.finished);
+  for(const fase of ['a','b','c','e','f'])assert.equal(f.calls.filter(x=>x.fase===fase).length,1);
+  assert.equal(f.calls.filter(x=>x.fase==='d').length,2);
+  assert.deepEqual(f.calls.at(-1).leituraGerada,snapshot);
  }finally{f.dom.window.close();}
 });
 

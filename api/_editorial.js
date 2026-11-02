@@ -13,7 +13,7 @@ const normalizar = value => String(value == null ? '' : value)
 
 const frasesDefensivas = [
   { tipo:'disclaimer de diagnostico ou previsao', re:/\b(?:nao (?:e|se trata de|constitui) (?:um[ao]? )?|nem (?:um[ao]? )?)(?:diagnostico|previsao|veredito|sentenca|laudo)\b/ },
-  { tipo:'disclaimer de substituicao', re:/\b(?:nao substitui|nao serve como substituto|nao pretende substituir)\b/ },
+  { tipo:'disclaimer de substituicao', re:/\b(?:nao substitui|nao serve como substituto|nao pretende substituir)\s+(?:(?:o|a|um|uma|seu|sua)\s+)?(?:acompanhamento|tratamento|terapia|consulta|atendimento|avaliacao|diagnostico|profissional|medicacao|psicologo|medico)\b/ },
   { tipo:'autorreferência ao produto', re:/\b(?:este|esse|o seu) (?:mapa|relatorio|material|documento) (?:foi escrito|foi feito|e um espelho|e uma lente|e um convite|nao pretende|nao e)\b/ },
   { tipo:'apresentacao generica', re:/\b(?:esse|este) mapa (?:nasceu|existe|chegou) para (?:voce|te)\b|\b(?:este|esse) mapa (?:reune|foi criado a partir d[ao]) (?:o que voce|suas respostas)\b/ },
   { tipo:'hipotese autorreferente', re:/\b(?:sao apenas hipoteses|sao hipoteses|feito de hipoteses|um conjunto de hipoteses)\b/ },
@@ -64,6 +64,15 @@ function avaliarPersonalizacao(parte,fase,teste){
     // Isso detecta uma resposta totalmente alheia; não substitui revisão semântica.
     if(referencias.size>=4&&![...referencias].some(t=>resposta.has(t)))
       avisos.push({campo:'objetivo',problema:'resposta sem detalhe especifico da questao ou do desejo'});
+    const sintese=parte?.sintese_respostas;
+    if(sintese&&typeof sintese==='object'){
+      for(const [key,texto] of Object.entries(sintese)){
+        if(normalizar(texto)===normalizar(input[key]))
+          avisos.push({campo:'sintese_respostas.'+key,problema:'sintese apenas copia a resposta original'});
+        if(Object.entries(sintese).some(([outra,outro])=>outra!==key&&textosSemelhantes(texto,outro)))
+          avisos.push({campo:'sintese_respostas.'+key,problema:'sintese repete a mesma resposta para perguntas diferentes'});
+      }
+    }
   }
   if(fase==='c'){
     const areas=Object.entries(parte?.areas_vida||{});

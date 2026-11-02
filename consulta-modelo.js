@@ -31,7 +31,10 @@
    card(nome,r.abertura),card('Sua questão',input.questao),card('Um foco por consulta','As 12 áreas ajudam a olhar sua questão por diferentes ângulos. Consulte a parte de que precisa e use a tabela para preparar uma resposta.'),card('Thiago Cervi','Material de consulta rápida · Leitura individual em 20 páginas.')
   ]);
   add('Como usar o seu mapa','COMECE POR AQUI','Antes da primeira leitura, ouça a meditação. Retome sua questão, consulte a área ligada à situação e use a tabela para preparar uma resposta. Escolha uma ação e defina quando vai experimentá-la.',[],{headers:['Procure aqui','Página'],rows:[['Sua questão',3],['Guardião e potencial',4],['Reconhecer, Honrar e Atualizar',5],['Mapa natal, numerologia e arcano',6],['Identidade e dinheiro',7],['Comunicação e família',8],['Criatividade e rotina',9],['Relacionamentos e intimidade',10],['Propósito e carreira',11],['Coletivos e interioridade',12],['Seus próximos 12 meses',13],['Continuação dos meses',14],['Sua tabela de consulta',15],['Possíveis desdobramentos',16],['Uma ação em 72 horas',17],['Prática de cinco minutos',18],['Sete dias para experimentar',19],['Seu próximo passo',20]],widths:[.89,.11],links:true});
-  add('A resposta à sua questão','PARTE 1 · SUA QUESTÃO ATUAL',r.objetivo?.leitura||r.integrada,Entrada.campos.map(c=>card(c.titulo,input[c.key])));
+  const temSintese=Entrada.campos.every(c=>clean(r.sintese_respostas?.[c.key]));
+  const respostasIniciais=Entrada.campos.map(c=>temSintese?{...card(c.titulo,r.sintese_respostas[c.key]),original:input[c.key]}:card(c.titulo,input[c.key]));
+  if(temSintese)respostasIniciais.push(card('Seu próximo passo',r.objetivo?.proximo_passo));
+  add(temSintese?'Síntese das suas respostas':'A resposta à sua questão','PARTE 1 · SUA QUESTÃO ATUAL',r.objetivo?.leitura||r.integrada,respostasIniciais);
   add('Sua proteção e seu potencial','O QUE A LEITURA ENCONTROU',r.integrada,[card(map.guardiao||'Seu Guardião',g.leitura+'\n\nO que preserva: '+g.beneficio+'\n\nO custo atual: '+g.preco),card('A ferida como referência simbólica',f.leitura),card(map.potencial||'Potencial em uso',p.leitura),card('Primeiro gesto',p.primeiro_gesto)]);
   add('Reconhecer · Honrar · Atualizar','DA LEITURA À RESPOSTA','Use os movimentos numa cena concreta. Você pode voltar aqui antes de responder a um pedido ou tomar uma decisão.',[
    card('Reconhecer','Observe o que aconteceu, o pensamento que apareceu e sua reação mais rápida. Sua descrição: '+input.reacao),
@@ -64,7 +67,7 @@
   pages[0].cover=true;pages[0].promessa=promessa;pages[2].compact=true;
   pages.forEach((page,index)=>page.blocks.forEach((block,i)=>{
    block.tone=index===0?(i<3?'outline':i===3?'soft':'plain'):
-     index===2?'outline':index===4&&i===3?'soft':
+     index===2?(temSintese&&i===5?'soft':'outline'):index===4&&i===3?'soft':
      index===5&&i===0?'outline':index===5&&i===4?'soft':
      [14,15].includes(index)?'soft':index===16&&i===1?'soft':
      index===17&&i===1?'soft':index===19&&i===1?'soft':'plain';
