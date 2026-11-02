@@ -21,9 +21,14 @@ test('modelo tem 20 páginas, 12 áreas, seis cenas e contexto próprio de cada 
  assert.equal(pa.length,20);assert.equal(pb.length,20);
  assert.equal(pa[2].blocks[0].body,entrada.questao);
  assert.notEqual(pa[2].blocks[0].body,pb[2].blocks[0].body);
- assert.equal(pa.slice(7,13).reduce((s,x)=>s+x.blocks.length,0),12);
+ assert.equal(pa.slice(6,12).reduce((s,x)=>s+x.blocks.length,0),12);
  assert.equal(pa[14].table.rows.length+pa[15].table.rows.length,6);
- assert.equal(pa[13].table.rows.length,12);
+ assert.equal(pa[12].table.rows.length,6);assert.equal(pa[13].table.rows.length,6);
+ const monthRows=pa.filter(p=>p.table?.headers[0]==='Mês').flatMap(p=>p.table.rows);
+ assert.equal(monthRows.length,12);assert.equal(new Set(monthRows.map(row=>row[0])).size,12);
+ assert.ok(!JSON.stringify(pa).includes('Cinco minutos antes da leitura'));
+ assert.ok(!JSON.stringify(pa).includes('Primeiro minuto'));
+ for(const row of pa[1].table.rows)assert.ok(row[1]>=3&&row[1]<=20);
  assert.equal(pa[18].table.rows.length,7);
 });
 test('PDF real tem 20 páginas e mantém a questão e a fonte serifada',async()=>{

@@ -210,7 +210,7 @@ module.exports = async function handler(req, res) {
       'Interprete simbolicamente os ciclos, com linguagem responsável e sem alegar fatos ou prometer acontecimentos. NÃO escreva avisos sobre o que o produto não é, nem prefácios defensivos. Entre diretamente na leitura particular de cada mês.',
       'Receba os 12 pares ano/mês do cálculo matemático. Retorne exatamente 12 objetos em "meses", na mesma ordem recebida, um para cada mês. Não escreva datas ou números no JSON; o servidor os adicionará.',
       isConsulta
-        ? 'Edição de consulta rápida: título de 3 a 5 palavras; potencial em 10 a 14 palavras, cuidado em 8 a 12 palavras e passo concreto em 8 a 12 palavras. Os 12 meses dividem uma página. Seja específico e respeite esses limites.'
+        ? 'Edição de consulta rápida: título de 3 a 5 palavras; potencial em 10 a 14 palavras, cuidado em 8 a 12 palavras e passo concreto em 8 a 12 palavras. Os 12 meses ficam distribuídos em duas páginas de consulta. Seja específico e respeite esses limites.'
         : 'Cada mês deve ter título específico de 3 a 7 palavras; potencial em 2 frases (25 a 35 palavras), cuidado em 2 frases (20 a 30 palavras) e passo concreto em 1 frase (12 a 18 palavras). Total de 60 a 85 palavras por mês. Respeite estritamente esses tamanhos para caber no PDF. Evite previsões, clichês, ameaças e repetições.',
       'Cruze o foco do mês com o Guardião, a ferida, o potencial guardado e o objetivo declarado. Não invente acontecimentos do passado ou do futuro.',
       'O método Campo Guardião segue Reconhecer, Honrar, Atualizar. Os livros são referências de reflexão, não justificativa para afirmar previsões como fatos.',

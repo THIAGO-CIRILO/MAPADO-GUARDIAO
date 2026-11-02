@@ -27,9 +27,8 @@
   add('Mapa do Guardião','SUA LEITURA PESSOAL','Clareza para a questão de agora e um próximo passo possível.',[
    card(nome,r.abertura),card('Sua questão',input.questao),card('Um foco por consulta','As 12 áreas ajudam a olhar sua questão por diferentes ângulos. Consulte a parte de que precisa e use a tabela para preparar uma resposta.'),card('Thiago Cervi','Material de consulta rápida · Leitura individual em 20 páginas.')
   ]);
-  add('Como usar o seu mapa','COMECE POR AQUI','Antes da primeira leitura, ouça a meditação. Retome sua questão, consulte a área ligada à situação e use a tabela para preparar uma resposta. Escolha uma ação e defina quando vai experimentá-la.',[],{headers:['Procure aqui','Página'],rows:[['Sua questão',3],['Meditação de preparação',4],['Guardião e potencial',5],['Reconhecer, Honrar e Atualizar',6],['Mapa natal, numerologia e arcano',7],['Identidade e dinheiro',8],['Comunicação e família',9],['Criatividade e rotina',10],['Relacionamentos e intimidade',11],['Propósito e carreira',12],['Coletivos e interioridade',13],['Seus próximos 12 meses',14],['Sua tabela de consulta',15],['Possíveis desdobramentos',16],['Uma ação em 72 horas',17],['Prática de cinco minutos',18],['Sete dias para experimentar',19],['Seu próximo passo',20]],widths:[.89,.11],links:true});
+  add('Como usar o seu mapa','COMECE POR AQUI','Antes da primeira leitura, ouça a meditação. Retome sua questão, consulte a área ligada à situação e use a tabela para preparar uma resposta. Escolha uma ação e defina quando vai experimentá-la.',[],{headers:['Procure aqui','Página'],rows:[['Sua questão',3],['Guardião e potencial',4],['Reconhecer, Honrar e Atualizar',5],['Mapa natal, numerologia e arcano',6],['Identidade e dinheiro',7],['Comunicação e família',8],['Criatividade e rotina',9],['Relacionamentos e intimidade',10],['Propósito e carreira',11],['Coletivos e interioridade',12],['Seus próximos 12 meses',13],['Continuação dos meses',14],['Sua tabela de consulta',15],['Possíveis desdobramentos',16],['Uma ação em 72 horas',17],['Prática de cinco minutos',18],['Sete dias para experimentar',19],['Seu próximo passo',20]],widths:[.89,.11],links:true});
   add('A questão que você trouxe','PARTE 1 · SUA QUESTÃO ATUAL','Suas palavras são o ponto de partida desta leitura.',Entrada.campos.map(c=>card(c.titulo,input[c.key])));
-  add('Cinco minutos antes da leitura','PARTE 2 · PREPARAÇÃO','Ouça o áudio e use as pausas no seu ritmo. Você pode manter os olhos abertos, pausar ou interromper a prática.',meditacao.map(([t,x])=>card(t,x)).concat([card('Ouvir novamente','mapado-guardiao.vercel.app/meditacao · Meditação de preparação, cinco minutos.')]));
   add('Sua proteção e seu potencial','O QUE A LEITURA ENCONTROU',r.integrada,[card(map.guardiao||'Seu Guardião',g.leitura+'\n\nO que preserva: '+g.beneficio+'\n\nO custo atual: '+g.preco),card('A ferida como referência simbólica',f.leitura),card(map.potencial||'Potencial em uso',p.leitura),card('Primeiro gesto',p.primeiro_gesto)]);
   add('Reconhecer · Honrar · Atualizar','DA LEITURA À RESPOSTA','Use os movimentos numa cena concreta. Você pode voltar aqui antes de responder a um pedido ou tomar uma decisão.',[
    card('Reconhecer','Observe o que aconteceu, o pensamento que apareceu e sua reação mais rápida. Sua descrição: '+input.reacao),
@@ -43,7 +42,7 @@
   ]);
   const titles=['Sua autonomia e seus recursos','Conversas e responsabilidades','O espaço da sua rotina','Vínculos e acordos','Direção e trabalho','Trocas e vida interior'];
   for(let i=0;i<6;i++)add(titles[i],'AS 12 ÁREAS DA VIDA','Consulte a área ligada à sua pergunta e escolha uma aplicação possível.',areas.slice(i*2,i*2+2).map(([key,label])=>card(label,r.areas_vida[key].texto,['Um passo possível: '+r.areas_vida[key].gesto])));
-  add('Seus próximos doze meses','CONSULTA AO LONGO DO TEMPO','Um tema, um cuidado e uma ação para cada mês, a partir da referência da sua leitura.',[],{headers:['Mês','Tema e recurso','Cuidado','Ação possível'],rows:r.meses.map(m=>[String(m.mes).padStart(2,'0')+'/'+m.ano,m.titulo+'. '+m.potencial,m.cuidado,m.passo]),widths:[.11,.34,.25,.30],small:true});
+  for(let i=0;i<2;i++)add('Seus próximos doze meses',i===0?'CONSULTA AO LONGO DO TEMPO':'CONSULTA AO LONGO DO TEMPO · CONTINUAÇÃO',i===0?'Um tema, um cuidado e uma ação para cada mês, a partir da referência da sua leitura.':'',[],{headers:['Mês','Tema e recurso','Cuidado','Ação possível'],rows:r.meses.slice(i*6,i*6+6).map(m=>[String(m.mes).padStart(2,'0')+'/'+m.ano,m.titulo+'. '+m.potencial,m.cuidado,m.passo]),widths:[.13,.33,.25,.29]});
   const headers=['Situação possível','Reconhecer','Honrar','Atualizar'];
   const rows=r.tabela_consulta.map(t=>[t.situacao,t.reconhecer,t.honrar,t.atualizar]);
   add('Sua tabela de consulta rápida','RECONHECER · HONRAR · ATUALIZAR',input.questao,[card('Como consultar','Procure uma cena próxima da sua. Reconhecer mostra o que observar. Honrar ajuda a compreender a necessidade envolvida. Atualizar traz uma frase ou ação possível.')],{headers,rows:rows.slice(0,3),widths:[.24,.25,.24,.27]});
@@ -58,6 +57,15 @@
   add('Seu próximo passo','PARA VOLTAR QUANDO PRECISAR','Retome a pergunta que trouxe. Registre o que ficou mais claro e qual ação deseja experimentar agora.',[
    card('Sua direção',r.objetivo?.proximo_passo),card('Leve uma resposta para a vida real','', ['Minha questão de agora é…','O que consegui compreender foi…','O próximo passo que vou experimentar é…','Vou fazer isso até…']),card('Quando quiser aprofundar','Se precisar de ajuda para relacionar a leitura à situação que está vivendo, você pode seguir comigo em uma sessão individual. Entre em contato para conhecer o atendimento e agendar.\ncontato.energystudio@gmail.com'),card('Thiago Cervi','Mapa do Guardião · Reconhecer, Honrar e Atualizar.')
   ]);
+  // Keep the text intact. Only presentation metadata changes between editions.
+  pages[0].cover=true;
+  pages.forEach((page,index)=>page.blocks.forEach((block,i)=>{
+   block.tone=index===0?(i<2?'outline':i===2?'soft':'plain'):
+     index===2?'outline':index===4&&i===3?'soft':
+     index===5&&i===0?'outline':index===5&&i===4?'soft':
+     [14,15].includes(index)?'soft':index===16&&i===1?'soft':
+     index===17&&i===1?'soft':index===19&&i===1?'soft':'plain';
+  }));
   if(pages.length!==20)throw new Error('O mapa precisa ter exatamente 20 páginas.');
   return pages;
  }

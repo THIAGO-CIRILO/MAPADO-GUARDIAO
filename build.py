@@ -97,10 +97,10 @@ close_tag = html.find("</script>", wizard_pos)
 if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
-consulta_scripts = ''.join('<script src="/'+name+'?v=20261102-consulta20"></script>\n' for name in ('consulta-entrada.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
+consulta_scripts = ''.join('<script src="/'+name+'?v=20261102-editorial2"></script>\n' for name in ('consulta-entrada.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
 
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
-html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261102-consulta20"></head>', 1)
+html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261102-editorial2"></head>', 1)
 
 # Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
 # in the old archive. Editorial responsibility is handled by the new server prompt.

@@ -23,7 +23,7 @@
    height:(t,w,s,f)=>{set(s,f);return doc.splitTextToSize(t,w).length*(s+2);},
    text:(t,x,y,w,s,f,c)=>{set(s,f,c);doc.text(doc.splitTextToSize(t,w),x,y,{baseline:'top'});},
    line:(x,y,xx,yy,c)=>{doc.setDrawColor(c);doc.setLineWidth(.6);doc.line(x,y,xx,yy);},
-   rect:(x,y,w,h,c,b)=>{doc.setFillColor(c);doc.setDrawColor(b);doc.setLineWidth(.6);doc.rect(x,y,w,h,'FD');},
+   rect:(x,y,w,h,c,b,r=0)=>{doc.setFillColor(c);if(b)doc.setDrawColor(b);doc.setLineWidth(.6);if(r)doc.roundedRect(x,y,w,h,r,r,b?'FD':'F');else doc.rect(x,y,w,h,b?'FD':'F');},
    link:(x,y,w,h,target)=>links.push({page:count,x,y,w,h,target})
   };
   window.GuardiaoPdfLayout.draw(painter,pages);

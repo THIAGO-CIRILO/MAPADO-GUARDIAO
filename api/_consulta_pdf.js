@@ -17,7 +17,7 @@ async function renderConsulta(map,profile){
   height:(t,w,s,f)=>doc.font(f).fontSize(s).heightOfString(t,{width:w,lineGap:2}),
   text:(t,x,y,w,s,f,c)=>doc.font(f).fontSize(s).fillColor(c).text(t,x,y,{width:w,lineGap:2}),
   line:(x,y,xx,yy,c)=>doc.moveTo(x,y).lineTo(xx,yy).strokeColor(c).lineWidth(.6).stroke(),
-  rect:(x,y,w,h,c,b)=>doc.rect(x,y,w,h).fillAndStroke(c,b),
+  rect:(x,y,w,h,c,b,r=0)=>{const shape=r?doc.roundedRect(x,y,w,h,r):doc.rect(x,y,w,h);return b?shape.lineWidth(.6).fillAndStroke(c,b):shape.fill(c);},
   link:(x,y,w,h,target)=>links.push({page:doc.bufferedPageRange().count-1,x,y,w,h,target})
  };
  draw(painter,pages);

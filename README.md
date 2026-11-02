@@ -74,7 +74,10 @@ pausas; a duração é de aproximadamente 300 segundos. Não há reprodução au
 nem bloqueio para quem prefere ler sem ouvir. A pessoa pode repetir em `/meditacao`.
 
 O mesmo modelo de 20 páginas alimenta a leitura na tela, o PDF do servidor e o
-PDF alternativo do navegador. Fontes Figtree e Instrument Serif ficam no projeto
+PDF alternativo do navegador. A preparação em áudio fica antes da leitura; seu
+roteiro não ocupa uma página do mapa. Os 12 meses são distribuídos em duas páginas,
+com seis meses em cada uma. O layout usa fundo branco, títulos serifados, números
+em terracota e caixas bege apenas nos destaques. Fontes Figtree e Instrument Serif ficam no projeto
 com suas licenças OFL.
 
 ### Atualizar uma leitura anterior
