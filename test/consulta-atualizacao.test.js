@@ -64,11 +64,14 @@ function legacyFlow({deepLink=false,failOnce=false,pending=null}={}){
  return {dom,w,$,click,type,calls,actions,errors,old,original,get finished(){return finished;},get frozen(){return frozen;}};
 }
 
-test('leitura antiga recebe cinco perguntas, mantém o mesmo mapa e oferece meditação antes das 20 páginas',async()=>{
+function responderApoios(f){for(const c of require('../consulta-contexto.js').campos){const opt=f.w.document.querySelector('[data-apoio="'+c.key+'"][data-escolha="0"]');assert.ok(opt,'Falta a pergunta sobre '+c.key);opt.click();f.click('wzNext');}}
+
+test('leitura antiga recebe os campos novos, mantém o mesmo mapa e oferece meditação antes das 20 páginas',async()=>{
  const f=legacyFlow({failOnce:true});
  try{
   await waitFor(()=>f.$('wzUpgrade'));assert.match(f.$('wzPdf29').textContent,/PDF anterior/);f.click('wzUpgrade');await waitFor(()=>f.$('wzContext'));
   for(const [key,value] of Object.entries(entrada)){assert.equal(f.$('wzContext').dataset.field,key);f.type('wzContext',value);f.click('wzNext');}
+  responderApoios(f);
   assert.ok(f.$('wzGoal'),'Não deve repetir nascimento nem as dez alternativas salvas.');
   f.$('wzAceite').checked=true;f.click('wzGo');
   await waitFor(()=>f.$('wzRetry'));
@@ -91,7 +94,7 @@ test('link de atualização abre a primeira pergunta depois do login',async()=>{
 
 test('outro navegador retoma as respostas enviadas sem pedir outro questionário',async()=>{
  let pending;const first=legacyFlow({failOnce:true});
- try{await waitFor(()=>first.$('wzUpgrade'));first.click('wzUpgrade');await waitFor(()=>first.$('wzContext'));for(const value of Object.values(entrada)){first.type('wzContext',value);first.click('wzNext');}first.$('wzAceite').checked=true;first.click('wzGo');await waitFor(()=>first.$('wzRetry'));pending=structuredClone(first.frozen);}finally{first.dom.window.close();}
+ try{await waitFor(()=>first.$('wzUpgrade'));first.click('wzUpgrade');await waitFor(()=>first.$('wzContext'));for(const value of Object.values(entrada)){first.type('wzContext',value);first.click('wzNext');}responderApoios(first);first.$('wzAceite').checked=true;first.click('wzGo');await waitFor(()=>first.$('wzRetry'));pending=structuredClone(first.frozen);}finally{first.dom.window.close();}
  const second=legacyFlow({deepLink:true,pending});
  try{await waitFor(()=>second.$('wzGoal'));assert.equal(second.$('wzGoal').value,entrada.questao);assert.equal(second.$('wzGoal').readOnly,true);assert.ok(!second.$('wzContext'));second.$('wzAceite').checked=true;second.click('wzGo');await waitFor(()=>second.finished);assert.deepEqual(second.old.resultado.entrada_consulta,entrada);assert.deepEqual(second.errors,[]);}finally{second.dom.window.close();}
 });

@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const {JSDOM,VirtualConsole}=require('jsdom');
-const {entrada,partes,mapa}=require('./consulta-fixture.js');
+const {entrada,complementares,partes,mapa}=require('./consulta-fixture.js');
 const {compatibilidade}=require('../api/_consulta.js');
 const ROOT=path.resolve(__dirname,'..');
 const waitFor=async fn=>{for(let i=0;i<300;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('O fluxo não chegou à tela esperada.');};
@@ -43,18 +43,24 @@ test('questionário completo salva contexto, mostra meditação e reabre as 20 p
   for(const [key,value] of Object.entries(entrada)){assert.equal($('wzContext').dataset.field,key);type('wzContext',value);click('wzNext');}
   type('wzName','Ana Exemplo');type('wzBirth','1990-05-15');click('wzNext');
   type('wzTime','10:00');click('wzManual');type('wzLat','-23.5505');type('wzLon','-46.6333');type('wzTz','-3');click('wzNext');
+  click('wzQuizStart');
   for(let i=0;i<10;i++){const opt=w.document.querySelector('[data-opt="0"]');assert.ok(opt,'Falta a pergunta '+i);opt.click();click('wzNext');}
+  for(const c of require('../consulta-contexto.js').campos){const opt=w.document.querySelector('[data-apoio="'+c.key+'"][data-escolha="0"]');assert.ok(opt);opt.click();click('wzNext');}
   assert.equal($('wzGoal').value,entrada.questao);$('wzAceite').checked=true;click('wzGo');
   await waitFor(()=>saved.length===1&&$('wzOpenReading')&&!$('wzOpenReading').disabled);
-  assert.ok($('wzMeditation'));assert.equal(w.document.querySelectorAll('.consulta-page').length,0);
+  assert.ok($('wzMeditation'));assert.match($('wzMeditation').src,/preparacao-5min.mp3\?v=20261102-enviada/);assert.equal($('wzMeditation').autoplay,false);assert.equal(w.document.querySelectorAll('.consulta-page').length,0);
   assert.equal(calls.length,6);assert.equal(backups.length,1);
   assert.equal(Object.keys(backups[0].p_respostas).length,10);
   assert.deepEqual(backups[0].p_teste.contexto_atual,entrada);
+  assert.deepEqual(backups[0].p_teste.contextos_complementares,complementares);
+  assert.deepEqual(saved[0].resultado.contextos_complementares,complementares);
   assert.deepEqual(saved[0].resultado.entrada_consulta,entrada);
   assert.equal(Object.keys(saved[0].respostas).length,10);
-  for(const req of calls){assert.deepEqual(req.teste.contexto_atual,entrada);assert.equal(req.dossier.areas.length,12);assert.equal(req.teste.respostas.length,10);assert.ok(req.dossier.mapa_natal.posicoes.Sol);}
+  for(const req of calls){assert.deepEqual(req.teste.contexto_atual,entrada);assert.deepEqual(req.teste.contextos_complementares,complementares);assert.ok(JSON.stringify({teste:req.teste,dossier:req.dossier}).length<42000);assert.equal(req.dossier.areas.length,12);assert.equal(req.teste.respostas.length,10);assert.ok(req.dossier.mapa_natal.posicoes.Sol);}
   click('wzOpenReading');assert.equal(w.document.querySelectorAll('.consulta-page').length,20);
   assert.ok(w.document.body.textContent.includes(entrada.cena));
+  assert.equal(w.document.querySelector('.consulta-promise strong').textContent,'a sua energia rende mais e custa menos.');
+  assert.equal(w.document.querySelector('.consulta-card--potencia h3').textContent,partes().b.lugar_potencia.titulo);
   profile.objetivo='Objetivo diferente no perfil';
   await w.wzOpenMap(saved[0].id,false);
   assert.equal(w.document.querySelectorAll('.consulta-page').length,20);

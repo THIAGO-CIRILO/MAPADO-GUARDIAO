@@ -27,3 +27,7 @@
 .wz-card textarea{min-height:120px}.wz-med-transcript{font-size:14px;line-height:1.6}.wz-med-transcript h3{font-size:16px}
 @media(max-width:600px){.consulta-page{padding:28px 20px}.consulta-card--outline,.consulta-card--soft{padding:16px}.consulta-reading{margin:12px auto}.consulta-kicker{gap:12px}.consulta-card h3{font-size:24px}}
 @media print{.consulta-toolbar,.wz-bar,.btns{display:none!important}.consulta-page{break-after:page;border:0;margin:0}.consulta-page:last-child{break-after:auto}}
+
+.consulta-promise{font-size:19px;line-height:1.5;margin:0 0 26px}.consulta-promise strong{display:block;color:#a35330;font-weight:700}.consulta-power-label{display:block;font:700 11px/1.4 Figtree,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#75675d;margin-bottom:12px}.consulta-card--potencia h3{font-size:32px!important}.wz-promise em{font-style:normal;color:var(--accent)}.wz-test-topics{margin:0;padding-left:20px;display:grid;gap:8px}.wz-question-topic{margin:0;color:var(--accent);font-weight:600}.wz-input-summary{padding:12px 14px;background:var(--accent-soft);color:var(--fg);border-radius:6px;font-size:13px;line-height:1.6}
+
+.wz-review{font-size:13px;line-height:1.5}.wz-review summary{cursor:pointer;color:var(--accent)}.wz-review ol{padding-left:20px}.wz-review li{margin:14px 0}.wz-review li span{display:block;color:var(--muted);margin-top:5px}

@@ -11,6 +11,7 @@
   ['Quarto minuto','Traga sua pergunta por um instante. Qual parte dela precisa de atenção hoje? Escolha um ponto para levar à leitura. Pode ser uma conversa ou uma dúvida que deseja compreender. Depois, volte a observar o ambiente.'],
   ['Quinto minuto','Perceba como está agora. Você pode continuar ou preferir mais tempo. Se estiver confortável, movimente as mãos e olhe ao redor. Ao abrir a leitura, comece pela parte ligada à sua pergunta. Leia um trecho de cada vez.']
  ];
+ const promessa={inicio:'O seu lugar de potência é onde',destaque:'a sua energia rende mais e custa menos.'};
  const clean=v=>typeof v==='string'?v.trim():'';
  const card=(label,body,items)=>({label,body:clean(body),items:(items||[]).map(clean).filter(Boolean)});
  function paginas(map,profile={}){
@@ -21,10 +22,12 @@
   const nome=pessoa.nome||profile.nome||map.name||'Sua leitura';
   const g=r.guardiao||{},f=r.ferida||{},p=r.potencial||{},pl=r.plano||{};
   const bases=r.bases_leitura||{},arc=r.arcano_pessoal||null;
+  const lugar=clean(r.lugar_potencia?.titulo)&&clean(r.lugar_potencia?.leitura)?r.lugar_potencia:{titulo:map.potencial||'Seu potencial em uso',leitura:p.leitura,gesto:p.primeiro_gesto};
   if(areas.some(([k])=>!r.areas_vida?.[k]?.texto)||r.tabela_consulta?.length!==6||r.meses?.length!==12||pl.dias?.length!==7)throw new Error('A leitura de consulta rápida ainda está incompleta.');
   const pages=[];
   function add(title,section,intro,blocks=[],table){pages.push({title,section,intro:clean(intro),blocks,table});}
-  add('Mapa do Guardião','SUA LEITURA PESSOAL','Clareza para a questão de agora e um próximo passo possível.',[
+  add('Mapa do Guardião','SUA LEITURA PESSOAL',promessa.inicio+' '+promessa.destaque,[
+   {...card(lugar.titulo,lugar.leitura,[lugar.gesto]),kind:'potencia',eyebrow:'Seu lugar de potência'},
    card(nome,r.abertura),card('Sua questão',input.questao),card('Um foco por consulta','As 12 áreas ajudam a olhar sua questão por diferentes ângulos. Consulte a parte de que precisa e use a tabela para preparar uma resposta.'),card('Thiago Cervi','Material de consulta rápida · Leitura individual em 20 páginas.')
   ]);
   add('Como usar o seu mapa','COMECE POR AQUI','Antes da primeira leitura, ouça a meditação. Retome sua questão, consulte a área ligada à situação e use a tabela para preparar uma resposta. Escolha uma ação e defina quando vai experimentá-la.',[],{headers:['Procure aqui','Página'],rows:[['Sua questão',3],['Guardião e potencial',4],['Reconhecer, Honrar e Atualizar',5],['Mapa natal, numerologia e arcano',6],['Identidade e dinheiro',7],['Comunicação e família',8],['Criatividade e rotina',9],['Relacionamentos e intimidade',10],['Propósito e carreira',11],['Coletivos e interioridade',12],['Seus próximos 12 meses',13],['Continuação dos meses',14],['Sua tabela de consulta',15],['Possíveis desdobramentos',16],['Uma ação em 72 horas',17],['Prática de cinco minutos',18],['Sete dias para experimentar',19],['Seu próximo passo',20]],widths:[.89,.11],links:true});
@@ -58,9 +61,9 @@
    card('Sua direção',r.objetivo?.proximo_passo),card('Leve uma resposta para a vida real','', ['Minha questão de agora é…','O que consegui compreender foi…','O próximo passo que vou experimentar é…','Vou fazer isso até…']),card('Quando quiser aprofundar','Se precisar de ajuda para relacionar a leitura à situação que está vivendo, você pode seguir comigo em uma sessão individual. Entre em contato para conhecer o atendimento e agendar.\ncontato.energystudio@gmail.com'),card('Thiago Cervi','Mapa do Guardião · Reconhecer, Honrar e Atualizar.')
   ]);
   // Keep the text intact. Only presentation metadata changes between editions.
-  pages[0].cover=true;
+  pages[0].cover=true;pages[0].promessa=promessa;
   pages.forEach((page,index)=>page.blocks.forEach((block,i)=>{
-   block.tone=index===0?(i<2?'outline':i===2?'soft':'plain'):
+   block.tone=index===0?(i<3?'outline':i===3?'soft':'plain'):
      index===2?'outline':index===4&&i===3?'soft':
      index===5&&i===0?'outline':index===5&&i===4?'soft':
      [14,15].includes(index)?'soft':index===16&&i===1?'soft':

@@ -13,7 +13,9 @@
     const titleY=83;
     let y=titleY+painter.height(p.title,CW,titleSize,'serif')+12*scale;
     const introY=y;
-    if(p.intro)y+=painter.height(p.intro,CW,introSize,'regular')+18*scale;
+    const promiseEnd=p.promessa?introY+painter.height(p.promessa.inicio,CW,introSize,'regular')+3*scale:0;
+    if(p.promessa)y=promiseEnd+painter.height(p.promessa.destaque,CW,15.4*scale,'bold')+18*scale;
+    else if(p.intro)y+=painter.height(p.intro,CW,introSize,'regular')+18*scale;
     const cards=p.blocks.map((b,i)=>{
      const boxed=b.tone==='outline'||b.tone==='soft',hero=p.cover&&i===0;
      const pad=boxed?14*scale:0,width=CW-2*pad;
@@ -21,7 +23,9 @@
      const labelFont=boxed&&!hero?'bold':'serif';
      const labelSize=(hero?24:boxed?8.4:19)*scale;
      const labelH=painter.height(label,width,labelSize,labelFont);
-     const labelY=y+pad;
+     const eyebrowY=y+pad;
+     const eyebrowH=b.eyebrow?painter.height(b.eyebrow.toUpperCase(),width,8.4*scale,'bold')+8*scale:0;
+     const labelY=eyebrowY+eyebrowH;
      const bodyY=labelY+labelH+(hero?13:7)*scale;
      const bodyH=b.body?painter.height(b.body,width,size,'regular'):0;
      const items=b.items.map((t,j)=>(j+1)+'. '+t).join('\n');
@@ -30,7 +34,7 @@
      const itemsH=items?painter.height(items,width-2*itemPad,size,'regular')+2*itemPad:0;
      const bottom=items?itemsY+itemsH:bodyY+bodyH;
      const h=bottom-y+pad;
-     const out={y,h,pad,width,label,labelFont,labelSize,labelY,bodyY,items,itemsY,itemsH,itemPad,boxed,hero};
+     const out={y,h,pad,width,label,labelFont,labelSize,labelY,eyebrowY,bodyY,items,itemsY,itemsH,itemPad,boxed,hero};
      y+=h+18*scale;return out;
     });
     let table;
@@ -43,7 +47,7 @@
      });
      table={y,widths,heights,fs,headerSize};y+=heights.reduce((a,b)=>a+b,0);
     }
-    return {y,cards,table,size,titleSize,titleY,introY,introSize};
+    return {y,cards,table,size,titleSize,titleY,introY,introSize,promiseEnd};
    }
    let m=metrics();
    while(m.y>H-53&&scale>.85){scale-=.025;m=metrics();}
@@ -57,10 +61,12 @@
     painter.line(M,68,W-M,68,C.border);
    }
    painter.text(p.title,M,m.titleY,CW,m.titleSize,'serif',p.cover?C.accent:C.ink);
-   if(p.intro)painter.text(p.intro,M,m.introY,CW,m.introSize,'regular',C.ink);
+   if(p.promessa){painter.text(p.promessa.inicio,M,m.introY,CW,m.introSize,'regular',C.ink);painter.text(p.promessa.destaque,M,m.promiseEnd,CW,15.4*scale,'bold',C.accent);}
+   else if(p.intro)painter.text(p.intro,M,m.introY,CW,m.introSize,'regular',C.ink);
    p.blocks.forEach((b,i)=>{
     const bM=m.cards[i],x=M+bM.pad;
     if(bM.boxed)painter.rect(M,bM.y,CW,bM.h,b.tone==='soft'?C.pale:C.light,b.tone==='soft'?null:C.border,4);
+    if(b.eyebrow)painter.text(b.eyebrow.toUpperCase(),x,bM.eyebrowY,bM.width,8.4*scale,'bold',C.muted);
     painter.text(bM.label,x,bM.labelY,bM.width,bM.labelSize,bM.labelFont,bM.hero?C.accent:bM.boxed?C.muted:C.ink);
     if(bM.hero)painter.line(x,bM.bodyY-7*scale,W-M-bM.pad,bM.bodyY-7*scale,C.border);
     if(b.body)painter.text(b.body,x,bM.bodyY,bM.width,m.size,'regular',C.ink);

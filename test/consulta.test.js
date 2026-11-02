@@ -6,7 +6,7 @@ const Entrada=require('../consulta-entrada.js');
 const {paginas}=require('../consulta-modelo.js');
 const {AREA_KEYS,schemas,validarEntrada,validarParte}=require('../api/_consulta.js');
 const {renderConsulta}=require('../api/_consulta_pdf.js');
-const {entrada,partes,mapa}=require('./consulta-fixture.js');
+const {entrada,complementares,partes,mapa}=require('./consulta-fixture.js');
 test('entrada mantém as palavras e calcula AP-22 com data válida',()=>{
  assert.deepEqual(Entrada.contexto(entrada),entrada);
  assert.deepEqual(Entrada.validar(entrada),[]);
@@ -19,6 +19,9 @@ test('modelo tem 20 páginas, 12 áreas, seis cenas e contexto próprio de cada 
  const a=mapa(),b=mapa();b.resultado.entrada_consulta.questao='Quero renegociar uma responsabilidade na empresa da família.';
  const pa=paginas(a),pb=paginas(b);
  assert.equal(pa.length,20);assert.equal(pb.length,20);
+ assert.equal(pa[0].blocks[0].label,a.resultado.lugar_potencia.titulo);
+ assert.equal(pa[0].promessa.destaque,'a sua energia rende mais e custa menos.');
+ const antiga=mapa();delete antiga.resultado.lugar_potencia;assert.equal(paginas(antiga)[0].blocks[0].label,antiga.potencial);
  assert.equal(pa[2].blocks[0].body,entrada.questao);
  assert.notEqual(pa[2].blocks[0].body,pb[2].blocks[0].body);
  assert.equal(pa.slice(6,12).reduce((s,x)=>s+x.blocks.length,0),12);
@@ -51,19 +54,31 @@ test('gerador envia todo contexto, mantém autorização e grava a versão nova'
   if(url.endsWith('/iniciar_fase_guardiao'))return new Response(JSON.stringify({estado:'reservada'}));
   if(url.endsWith('/concluir_fase_guardiao')){saved=JSON.parse(options.body);return new Response('true');}
   if(url.endsWith('/liberar_fase_guardiao'))return new Response('true');
-  if(url.includes('api.anthropic.com')){calls++;lastPayload=JSON.parse(options.body);return new Response(JSON.stringify({content:[{type:'text',text:JSON.stringify(source.c)}],stop_reason:'end_turn'}));}
+  if(url.includes('api.anthropic.com')){calls++;lastPayload=JSON.parse(options.body);return new Response(JSON.stringify({content:[{type:'text',text:JSON.stringify(lastPayload.output_config.format.schema.properties.lugar_potencia?source.b:source.c)}],stop_reason:'end_turn'}));}
   throw new Error('Unexpected URL '+url);
  };
- const body={fase:'c',teste:{versao_consulta:2,contexto_atual:entrada,objetivo_da_pessoa:entrada.questao,respostas:[{pergunta:'Exemplo',resposta:'Minha resposta exata'}]},dossier:{areas:AREA_KEYS.map((k,i)=>({casa:i+1,area:k})),mapa_natal:{posicoes:{Sol:'Touro'}},numerologia:{numero_natal:3}},dadosCiclos:{nascimento:'1990-05-15',referencia:'2026-11-02'}};
+ const body={fase:'c',teste:{versao_consulta:2,contexto_atual:entrada,contextos_complementares:complementares,objetivo_da_pessoa:entrada.questao,respostas:[{pergunta:'Exemplo',resposta:'Minha resposta exata'}]},dossier:{areas:AREA_KEYS.map((k,i)=>({casa:i+1,area:k})),mapa_natal:{posicoes:{Sol:'Touro'}},numerologia:{numero_natal:3}},dadosCiclos:{nascimento:'1990-05-15',referencia:'2026-11-02'}};
  const run=async b=>{let status=200,value;const res={setHeader(){},status(n){status=n;return this;},json(v){value=v;return this;}};await handler({method:'POST',headers:{authorization:'Bearer fake-token'},body:b},res);return {status,value};};
  try{
   let result=await run(body);assert.equal(result.status,200);assert.equal(saved.p_parte.versao_consulta,2);assert.equal(Object.keys(saved.p_parte.areas_vida).length,12);
   for(const text of Object.values(entrada))assert.ok(lastPayload.messages[0].content.includes(text));
   assert.ok(lastPayload.messages[0].content.includes('Minha resposta exata'));
   assert.equal(Object.keys(lastPayload.output_config.format.schema.properties.areas_vida.properties).length,12);
+  for(const item of Object.values(complementares))assert.ok(lastPayload.messages[0].content.includes(item.resposta));
+  result=await run({...body,fase:'b'});assert.equal(result.status,200);assert.deepEqual(saved.p_parte.lugar_potencia,source.b.lugar_potencia);assert.deepEqual(saved.p_parte.contextos_complementares,complementares);
+  result=await run({...body,teste:{...body.teste,contextos_complementares:{ritmo:{resposta:'Outra resposta'}}}});assert.equal(result.status,400);
   allowed=false;const before=calls;result=await run(body);assert.equal(result.status,403);assert.equal(calls,before);
   result=await run({...body,teste:{...body.teste,contexto_atual:{}}});assert.equal(result.status,400);
   assert.ok(validarParte({areas_vida:{}},'c'));
   assert.ok(validarParte({tabela_consulta:[]},'e'));
  }finally{global.fetch=originalFetch;process.env=oldEnv;}
+});
+
+test('perguntas complementares preservam rascunhos antigos e só aceitam escolhas previstas',()=>{
+ const C=require('../consulta-contexto.js');
+ assert.equal(C.versaoRascunho({ans:{}}),1);
+ assert.equal(C.versaoRascunho({ans:{0:0,1:2},flowVersion:2}),0);
+ assert.equal(C.versaoRascunho({ans:{0:0},contextoVersion:1}),1);
+ assert.equal(C.validar(complementares).length,0);
+ assert.equal(C.validar({ritmo:{resposta:'Diagnóstico inventado'}}).length,3);
 });

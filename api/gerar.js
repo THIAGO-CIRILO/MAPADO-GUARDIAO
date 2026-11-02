@@ -297,6 +297,7 @@ module.exports = async function handler(req, res) {
     if (isConsulta) {
       parte = consulta.compatibilidade(parte, fase);
       parte.versao_consulta = 2;
+      if(teste.contextos_complementares)parte.contextos_complementares=teste.contextos_complementares;
       if (fase === 'b') parte.arcano_pessoal = calculosConsulta.arcano_pessoal;
     }
     const saved = isUpgrade ? (await upgradeRpc('concluir',parte))?.ok===true : await rpc('concluir_fase_guardiao', { ...params, p_parte: parte });

@@ -13,15 +13,19 @@ window.claude = { use: async n => n === 'downloads' ? { save: async ({ filename,
 const D = gtDraft;
 const W = { screen: 'boot', mode: 'signup', msg: '', err: '', user: null, maps: [], cities: null, busy: false, results: [], viewing: null };
 const Entrada = window.GuardiaoEntrada;
+const Contexto = window.GuardiaoContexto;
+const apoioSteps=()=>D.contextoVersion===1?Contexto.campos.map(c=>'apoio_'+c.key):[];
+const quizSteps=()=>['teste',...GT_Q.map((_,i)=>'q'+i)];
 // Drafts already answered keep their original signature and generation format.
 D.flowVersion = D.flowVersion || (GT_Q.some((_,i)=>D.ans[i]!==undefined) ? 1 : 2);
-let STEPS = [...(D.flowVersion===2 ? Entrada.campos.map(c=>'ctx_'+c.key) : []), 'dados1', 'dados2', ...GT_Q.map((_, i) => 'q' + i), 'obj'];
+D.contextoVersion=Contexto.versaoRascunho(D,GT_Q.length);
+let STEPS = [...(D.flowVersion===2 ? Entrada.campos.map(c=>'ctx_'+c.key) : []), 'dados1', 'dados2', ...quizSteps(), ...(D.flowVersion===2?apoioSteps():[]), 'obj'];
 function intake(){return Entrada.contexto(D.ans?._consulta);}
 function saveIntake(key,value){D.ans._consulta={versao:2,...intake(),[key]:String(value).slice(0,Entrada.campos.find(c=>c.key===key).max)};if(key==='questao')D.goal=value;gtSave();}
 function newFirstStep(){return D.flowVersion===2?'ctx_questao':'dados1';}
 function prepareReading(asAdmin=false){W.mapReady=true;const old=!!W.sourceMap&&W.sourceMap.resultado?.versao_consulta!==2;W.screen=old||asAdmin||W.preparedMaps?.has(W.activeMapId)?'result':'preparar';wz();window.scrollTo(0,0);}
 function pauseMeditation(){const a=$('wzMeditation');if(a)a.pause();}
-function upgradeSteps(){return [...Entrada.campos.map(c=>'ctx_'+c.key),'obj'];}
+function upgradeSteps(){return [...Entrada.campos.map(c=>'ctx_'+c.key),...(!W.upgradeFrozen?apoioSteps():[]),'obj'];}
 async function startUpgrade(){
   const m=W.sourceMap,f=W.sourceProfile||{};
   if(W.busy||!m||m.user_id!==W.user?.id||m.resultado?.versao_consulta===2)return;
@@ -38,10 +42,11 @@ async function startUpgrade(){
   if(!resume){
     D.ans={...m.respostas,_consulta:{versao:2,...Entrada.contexto({questao:f.objetivo||''})}};
     Object.assign(D,{name:f.nome||'',birth:f.nascimento||'',time:f.hora||'',uf:f.uf||'',city:f.cidade||'',lat:f.lat??'',lon:f.lon??'',tz:f.tz??-3,dst:!!f.dst,goal:f.objetivo||'',aceite:false,step:'ctx_questao'});
-    W.assinaturaAtualizacao=null;W.partesGeradas={};W.assinaturaGeracao=null;
+    D.contextoVersion=1;D.contextosComplementares={};W.assinaturaAtualizacao=null;W.partesGeradas={};W.assinaturaGeracao=null;
   }
   W.upgradeFrozen=!!pending.contexto?.teste?.contexto_atual;
   if(W.upgradeFrozen){D.ans._consulta={versao:2,...Entrada.contexto(pending.contexto.teste.contexto_atual)};D.goal=intake().questao;D.step='obj';W.assinaturaAtualizacao=pending.assinatura;}
+  if(W.upgradeFrozen){D.contextosComplementares=Contexto.respostas(pending.contexto.teste.contextos_complementares);D.contextoVersion=Object.keys(pending.contexto.teste.contextos_complementares||{}).length?1:0;}
   D.flowVersion=2;D.upgradeMapId=m.id;STEPS=upgradeSteps();
   if(!STEPS.includes(D.step))D.step='ctx_questao';
   W.mapReady=false;W.err='';W.msg='';W.screen='step';gtSave();wz();window.scrollTo(0,0);
@@ -58,8 +63,8 @@ function resetDraft(keepPerson) {
   W.upgradeFrozen=false;
   const keep = keepPerson ? { name: D.name, birth: D.birth, time: D.time, uf: D.uf, city: D.city, lat: D.lat, lon: D.lon, tz: D.tz, dst: D.dst, manual: D.manual } : {};
   Object.keys(D).forEach(k => delete D[k]);
-  Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'ctx_questao', flowVersion: 2, manual: false }, keep);
-  STEPS = [...Entrada.campos.map(c=>'ctx_'+c.key),'dados1','dados2',...GT_Q.map((_,i)=>'q'+i),'obj'];
+  Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'ctx_questao', flowVersion: 2, contextoVersion:1,contextosComplementares:{},manual: false }, keep);
+  STEPS = [...Entrada.campos.map(c=>'ctx_'+c.key),'dados1','dados2',...quizSteps(),...apoioSteps(),'obj'];
   gtSave();
 }
 if (!D.step) { D.step = newFirstStep(); if (D.city === 'Ribeirão Preto, SP') { D.city = ''; D.lat = ''; D.lon = ''; } D.uf = D.uf || ''; D.tz = D.tz ?? -3; }
@@ -93,7 +98,7 @@ function wz() {
   if (s === 'boot') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Carregando…</p></div></div>'; return; }
   if (s === 'config') { R.innerHTML = '<div class="wz"><div class="wz-card"><h2>Falta configurar</h2><p class="lead">Preencha o arquivo <b>config.js</b> com o endereço e a chave pública do seu Supabase (veja o README) e publique de novo.</p></div></div>'; return; }
   if (s === 'welcome') {
-    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">Descubra o bloqueio emocional por trás do seu comportamento.</p><p class="wz-sub">Conte sua questão e responda ao teste. A leitura reúne suas respostas, as 12 áreas da vida e um próximo passo possível.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
+    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">O seu lugar de potência é onde <em>a sua energia rende mais e custa menos.</em></p><p class="wz-sub">Conte sua questão, responda às dez perguntas fixas e às três perguntas sobre o momento atual. O mapa reúne suas respostas, as 12 áreas da vida e um próximo passo possível.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
   }
   if (s === 'auth') {
     const m = W.mode;
@@ -123,8 +128,8 @@ function wz() {
     return;
   }
   if(s==='preparar'){
-    R.innerHTML=`<div class="wz"><div class="wz-card"><span class="eyebrow">Antes da sua leitura</span><h2>Cinco minutos antes da leitura</h2><p>Encontre uma posição confortável. Ouça no seu ritmo. Você pode manter os olhos abertos, pausar ou interromper a prática.</p><audio id="wzMeditation" controls preload="metadata" aria-label="Meditação de preparação de cinco minutos" src="/audio/preparacao-5min.mp3"></audio><p id="wzAudioStatus" role="status"></p><details class="wz-med-transcript"><summary>Ler a prática</summary>${window.GuardiaoConsulta.meditacao.map(([t,x])=>`<h3>${esc(t)}</h3><p>${esc(x)}</p>`).join('')}</details><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${W.mapReady?'Seu mapa está pronto. Abra quando quiser.':esc(W.live||'Montando seu mapa…')}</p><button id="wzOpenReading" type="button"${W.mapReady?'':' disabled'}>${W.mapReady?'Abrir meu mapa':'Preparando a leitura…'}</button><p class="wz-hint">Você também pode abrir o mapa sem ouvir agora e voltar à meditação depois.</p></div></div>`;
-    $('wzMeditation').addEventListener('error',()=>{const st=$('wzAudioStatus');if(st)st.textContent='O áudio não carregou. Você pode ler a prática abaixo.';});return;
+    R.innerHTML=`<div class="wz"><div class="wz-card"><span class="eyebrow">Antes da sua leitura</span><h2>Cinco minutos antes da leitura</h2><p>Encontre uma posição confortável. Ouça no seu ritmo. Você pode manter os olhos abertos, pausar ou interromper a prática.</p><audio id="wzMeditation" controls preload="metadata" aria-label="Meditação de preparação de cinco minutos" src="/audio/preparacao-5min.mp3?v=20261102-enviada"></audio><p id="wzAudioStatus" role="status"></p><a class="wz-link" href="/meditacao" target="_blank" rel="noopener">Abrir o áudio em outra aba</a><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${W.mapReady?'Seu mapa está pronto. Abra quando quiser.':esc(W.live||'Montando seu mapa…')}</p><button id="wzOpenReading" type="button"${W.mapReady?'':' disabled'}>${W.mapReady?'Abrir meu mapa':'Preparando a leitura…'}</button><p class="wz-hint">Você também pode abrir o mapa sem ouvir agora e voltar à meditação depois.</p></div></div>`;
+    $('wzMeditation').addEventListener('error',()=>{const st=$('wzAudioStatus');if(st)st.textContent='O áudio não carregou. Tente novamente ou abra a meditação em outra aba.';});return;
   }
   if (s === 'gerando') {
     R.innerHTML = `<div class="wz"><div class="wz-card wz-load"><span class="gt-dot"></span><h2>Montando o seu mapa</h2><p class="wz-msg" id="wzLive" role="status" aria-live="polite">${esc(W.live || 'Lendo as suas respostas…')}</p><p class="wz-msg">Isso pode levar alguns minutos. Mantenha esta página aberta.</p></div></div>`; return;
@@ -175,13 +180,20 @@ function wz() {
       <label class="check"><input id="wzDst" type="checkbox"${D.dst ? ' checked' : ''}> Nasci em época de horário de verão</label>
       <p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button">Próximo</button></div></div></div>`; return;
   }
+  if(st==='teste'){
+    R.innerHTML=`<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Além da sua questão</span><h2>Dez perguntas para completar a leitura</h2><p class="lead">Seu relato mostra a situação de agora. Estas perguntas acrescentam referências sobre como você reage, seus recursos e o seu jeito de aprender e atuar.</p><ul class="wz-test-topics"><li>Reações e escolhas que se repetem.</li><li>Recursos que você reconhece em si.</li><li>Como você aprende e prefere trabalhar.</li></ul><p class="wz-hint">Não há resposta certa. Escolha o que mais se aproxima de você. A pergunta sobre a infância pode ser pulada.</p><button id="wzQuizStart" type="button">Responder às 10 perguntas</button><button id="wzPrev" class="ghost" type="button">Voltar</button></div></div>`;return;
+  }
+  if(st.startsWith('apoio_')){
+    const c=Contexto.campos.find(x=>'apoio_'+x.key===st),selected=Contexto.respostas(D.contextosComplementares)[c.key];
+    R.innerHTML=`<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Seu momento atual · ${Contexto.campos.indexOf(c)+1} de 3</span><h2>${esc(c.titulo)}</h2><p class="wz-hint">${esc(c.ajuda)}</p><div class="wz-opts">${c.opcoes.map((o,i)=>`<button class="wz-opt" type="button" data-apoio="${c.key}" data-escolha="${i}" aria-pressed="${selected===o}">${esc(o)}</button>`).join('')}</div><div class="wz-nav"><button id="wzPrev" class="ghost" type="button">Voltar</button><button id="wzNext" type="button"${selected?'':' disabled'}>Próximo</button></div></div></div>`;return;
+  }
   const qm = /^q(\d+)$/.exec(st);
   if (qm) {
     const i = +qm[1], q = GT_Q[i];
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Pergunta ${i + 1} de ${GT_Q.length}</span><p class="wz-q">${esc(q[0])}</p>${q[1] ? `<p class="wz-hint">${esc(q[1])}</p>` : ''}<div class="wz-opts">${q[2].map((o, j) => `<button type="button" class="wz-opt" data-opt="${j}" aria-pressed="${D.ans[i] === j}">${esc(o[0])}</button>`).join('')}</div><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button"${D.ans[i] === undefined ? ' disabled' : ''}>Próximo</button></div></div></div>`; return;
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">10 perguntas fixas · ${i + 1} de ${GT_Q.length}</span><p class="wz-question-topic">${esc(Contexto.tema(i))}</p><p class="wz-q">${esc(q[0])}</p>${q[1] ? `<p class="wz-hint">${esc(q[1])}</p>` : ''}<div class="wz-opts">${q[2].map((o, j) => `<button type="button" class="wz-opt" data-opt="${j}" aria-pressed="${D.ans[i] === j}">${esc(o[0])}</button>`).join('')}</div><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button"${D.ans[i] === undefined ? ' disabled' : ''}>Próximo</button></div></div></div>`; return;
   }
   if (st === 'obj') {
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Confira sua questão antes de gerar</h2>${W.upgradeFrozen?'<p class="wz-msg">Suas respostas já estão salvas. Vamos retomar a atualização com elas e aproveitar as etapas concluídas.</p>':''}<label>Esta é a questão que vai orientar a leitura. Ajuste se precisar.<textarea id="wzGoal"${W.upgradeFrozen?' readonly':''} rows="4" maxlength="350" placeholder="Ex.: Quero cobrar o que meu trabalho vale, sem culpa.">${esc(D.goal)}</textarea></label>
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Confira sua questão antes de gerar</h2><p class="wz-input-summary">${Object.keys(Entrada.respostasMarcadas(D.ans,GT_Q.length)).length} de 10 perguntas fixas respondidas${D.contextoVersion===1?' · '+Object.keys(Contexto.contexto(D.contextosComplementares)).length+' de 3 respostas sobre o momento atual':''}</p><details class="wz-review"><summary>Conferir minhas respostas do teste</summary><ol>${GT_Q.map((q,i)=>`<li><b>${esc(q[0])}</b><span>${esc(q[2][D.ans[i]]?.[0]||'Não respondida nesta leitura.')}</span></li>`).join('')}</ol></details>${W.upgradeFrozen?'<p class="wz-msg">Suas respostas já estão salvas. Vamos retomar a atualização com elas e aproveitar as etapas concluídas.</p>':''}<label>Esta é a questão que vai orientar a leitura. Ajuste se precisar.<textarea id="wzGoal"${W.upgradeFrozen?' readonly':''} rows="4" maxlength="350" placeholder="Ex.: Quero cobrar o que meu trabalho vale, sem culpa.">${esc(D.goal)}</textarea></label>
       <label class="check" style="align-items:flex-start"><input id="wzAceite" type="checkbox"${D.aceite ? ' checked' : ''} style="margin-top:3px"> <span>Concordo em enviar as minhas respostas para gerar o mapa e que o terapeuta responsável tenha acesso a elas.</span></label>
       <details><summary class="wz-link">Como usamos os seus dados</summary><p class="wz-msg">Os dados informados (nome, nascimento, respostas do teste, situação relatada e objetivo) são usados apenas para gerar o seu mapa e ficam guardados para você consultar e para o acompanhamento com o terapeuta. O texto é gerado por inteligência artificial. Você pode pedir a exclusão dos seus dados a qualquer momento pelo contato do terapeuta.</p></details>
       <p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzGo" type="button">Gerar o meu mapa</button></div></div></div>`;
@@ -284,7 +296,7 @@ function wzTeste(p, S) {
     estilo_de_aprender: { principal: GT_L[S.rl[0]][0] + ': ' + GT_L[S.rl[0]][1], secundario: S.rl[1] && Number(S.l[S.rl[1]]) > 0 ? GT_L[S.rl[1]][0] : null },
     fonte_de_renda_preferida: { principal: GT_M[S.rm[0]][0] + ': ' + GT_M[S.rm[0]][1], secundaria: S.rm[1] && Number(S.m[S.rm[1]]) > 0 ? GT_M[S.rm[1]][0] : null },
     respostas: GT_Q.map((q, i) => ({ pergunta: q[0], resposta: q[2][D.ans[i]] ? q[2][D.ans[i]][0] : 'não respondeu' })),
-    ...(D.flowVersion===2?{versao_consulta:2,contexto_atual:intake()}:{}),
+    ...(D.flowVersion===2?{versao_consulta:2,contexto_atual:intake(),...(D.contextoVersion===1?{contextos_complementares:Contexto.contexto(D.contextosComplementares)}:{})}:{}),
     objetivo_da_pessoa: p.goal
   };
 }
@@ -448,7 +460,7 @@ async function gerar() {
     res.trabalhar = (res.trabalhar || []).slice(0, 4); if (res.plano && res.plano.dias) res.plano.dias = res.plano.dias.slice(0, 7);
     if (!gtOk(res)) throw Object.assign(new Error('incompleto'), { status: 0 });
     if(teste.versao_consulta===2&&res.areas_vida&&res.tabela_consulta?.length===6){
-      res.versao_consulta=2;res.entrada_consulta=intake();
+      res.versao_consulta=2;res.entrada_consulta=intake();res.contextos_complementares=teste.contextos_complementares||{};
       res.dados_pessoa={nome:p.name,nascimento:D.birth,hora:D.time||'',cidade:p.city,lat:p.lat,lon:p.lon,tz:p.tz,dst:p.dst,data_referencia:dataFixa};
     }
     p.gt.S = S; p.gt.res = res; p.gt.when = dataFixa; save();
@@ -497,7 +509,7 @@ async function openMap(id, asAdmin) {
   const { data: pf } = await sb.from('perfis').select('*').eq('id', m.user_id).maybeSingle(); const f = pf || {};
   W.sourceMap=m;W.sourceProfile=f;
   if(m.resultado?.versao_consulta===2&&D.upgradeMapId===m.id){D.upgradeMapId=null;gtSave();}
-  const p = { id: 'gtv' + m.id, events: [], elem: {}, name: f.nome || '', birth: f.nascimento, time: f.hora || '', tz: f.tz ?? -3, dst: !!f.dst, city: f.cidade ? `${f.cidade}, ${f.uf || ''}` : '', lat: f.lat, lon: f.lon, goal: f.objetivo || '', gt: { ans: m.respostas, S: m.scores, res: m.resultado } };
+  const p = { id: 'gtv' + m.id, events: [], elem: {}, name: f.nome || '', birth: f.nascimento, time: f.hora || '', tz: f.tz ?? -3, dst: !!f.dst, city: f.cidade ? `${f.cidade}, ${f.uf || ''}` : '', lat: f.lat, lon: f.lon, goal: f.objetivo || '', guardiao:m.guardiao,potencial:m.potencial,gt: { ans: m.respostas, S: m.scores, res: m.resultado } };
   db.people = db.people.filter(x => x.id !== p.id); db.people.push(p); db.cur = p.id; D.pid = p.id; refStr = (m.created_at || '').slice(0, 10) || iso(todayObj);
   p.goal=m.resultado?.entrada_consulta?.questao||p.goal;
   fillForm(); render(); W.viewing = asAdmin ? m : null; W.activeMapId = m.id;
@@ -510,6 +522,8 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('button,li,a'); if (!t || !$('gt') || $('gt').hidden) return;
   const id = t.id;
   if(id==='wzUpgrade')return startUpgrade();
+  if(id==='wzQuizStart')return stepNext();
+  if(t.dataset?.apoio){const c=Contexto.campos.find(x=>x.key===t.dataset.apoio),o=c?.opcoes[Number(t.dataset.escolha)];if(o){D.contextosComplementares={...D.contextosComplementares,[c.key]:o};gtSave();return wz();}return;}
   if(id==='wzOpenReading'){if(!W.mapReady)return;pauseMeditation();if(!W.preparedMaps)W.preparedMaps=new Set();W.preparedMaps.add(W.activeMapId);W.screen='result';wz();window.scrollTo(0,0);return;}
   if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } if (W.maps.length) return openMap(W.maps[0].id, false); if (!(await liberarAcesso())) return; W.screen = 'step'; return wz(); }
   if (id === 'wzCheckPayment') { if (!(await liberarAcesso())) return; W.screen = 'step'; D.step = D.step || newFirstStep(); return wz(); }
@@ -633,6 +647,7 @@ document.addEventListener('click', async e => {
   if (id === 'wzGo') {
     W.err = ''; D.goal = $('wzGoal').value.trim(); D.aceite = $('wzAceite').checked;
     if(D.flowVersion===2){saveIntake('questao',D.goal);const missing=Entrada.validar(intake());if(missing.length){W.err='Responda esta pergunta antes de gerar seu mapa.';D.step='ctx_'+missing[0];gtSave();return wz();}}
+    if(D.flowVersion===2&&D.contextoVersion===1&&!W.upgradeFrozen){const missing=Contexto.validar(D.contextosComplementares);if(missing.length){W.err='Escolha a resposta que mais se aproxima do seu momento.';D.step='apoio_'+missing[0];gtSave();return wz();}}
     if (D.goal.length < 5) W.err = 'Conte o seu objetivo em poucas palavras.'; else if (!D.aceite) W.err = 'Para gerar o mapa, marque a concordância acima.';
     if (W.err) { gtSave(); return wz(); }
     gtSave(); return gerar();

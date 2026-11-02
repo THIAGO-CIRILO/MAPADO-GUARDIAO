@@ -52,11 +52,17 @@ Abrir o site no navegador → menu → *Adicionar à tela inicial*.
 ## Edição de consulta rápida (versão 2)
 
 Novos questionários começam pela questão atual e quatro campos: cena, reação,
-receio e resultado desejado. As dez respostas de marcar mantêm o motor original.
+receio e resultado desejado. As dez perguntas fixas mantêm o motor original e
+têm uma apresentação própria. Rascunhos antigos com alternativas já respondidas
+preservam a assinatura e não recebem campos novos no teste enviado à IA; novos
+rascunhos e novas atualizações usam `contextoVersion=1`. Três perguntas complementares sobre ritmo, apoio
+e tamanho do próximo passo acrescentam contexto, sem criar uma pontuação clínica.
 As dez alternativas continuam no campo `respostas`. Os cinco campos abertos
 ficam em `teste.contexto_atual` no histórico privado e em
 `resultado.entrada_consulta` no mapa salvo. O rascunho local usa
-`respostas._consulta`. O fluxo de novos mapas mantém a estrutura das tabelas existentes.
+`respostas._consulta`. As escolhas complementares ficam em
+`teste.contextos_complementares` e `resultado.contextos_complementares`; o
+rascunho local usa `contextosComplementares`. O fluxo de novos mapas mantém a estrutura das tabelas existentes.
 
 A IA recebe o contexto, todas as alternativas escolhidas, o mapa natal com suas
 12 áreas e a numerologia. O servidor calcula o arcano pelo método AP-22: soma dos
@@ -64,14 +70,22 @@ algarismos da data, repetida enquanto o resultado exceder 22 (Justiça 8, Força
 Louco 22). A fórmula fica identificada no PDF. As fontes da biblioteca privada
 continuam disponíveis pelo módulo existente.
 
+A fase B também gera `lugar_potencia` (título concreto, leitura e gesto), a partir
+dos recursos do teste e da questão atual. Ele aparece na capa, junto da frase
+“O seu lugar de potência é onde a sua energia rende mais e custa menos.” Leituras
+já salvas sem esse campo destacam o potencial e o primeiro gesto existentes, sem
+regerar a IA.
+
 A saída nova contém `areas_vida` (12 áreas), `tabela_consulta` (6 situações) e o
 plano de aplicação. Ela é validada antes de salvar cada fase. Os meses são
 calculados no servidor; a IA recebe os valores e escreve a interpretação.
 
 A tela de preparação toca `/audio/preparacao-5min.mp3` antes da abertura do mapa.
-O áudio é uma narração sintética em português brasileiro com cinco blocos e
-pausas; a duração é de aproximadamente 300 segundos. Não há reprodução automática
-nem bloqueio para quem prefere ler sem ouvir. A pessoa pode repetir em `/meditacao`.
+O áudio é a gravação de cinco minutos enviada pelo Thiago em 02/11/2026,
+convertida para MP3 de 64 kbps mono para entrega na web. A duração é de cerca de
+300 segundos. Não há reprodução automática nem bloqueio para quem prefere ler
+sem ouvir. A pessoa pode repetir em `/meditacao`. O roteiro anterior foi retirado
+da tela de áudio para não ser confundido com a gravação enviada.
 
 O mesmo modelo de 20 páginas alimenta a leitura na tela, o PDF do servidor e o
 PDF alternativo do navegador. A preparação em áudio fica antes da leitura; seu
@@ -88,7 +102,7 @@ não modifica as leituras existentes durante a instalação.
 
 Leituras antigas mostram **Atualizar meu mapa · 20 páginas**. O link
 `/?atualizar=1` abre o mesmo fluxo depois do login. A pessoa responde aos cinco
-campos novos e confirma o consentimento. Nascimento e alternativas salvas são
+campos abertos e às três perguntas do momento atual, e confirma o consentimento. Nascimento e alternativas salvas são
 reutilizados. Não há outra compra.
 
 A atualização tem suas próprias reservas, assinatura imutável e cache de seis
@@ -103,3 +117,7 @@ disponível até a conclusão da atualização.
 
 Validação local: `npm ci` e `npm test`. Os testes usam dados fictícios e respostas
 simuladas da IA; não fazem compras nem gastam créditos reais do Claude.
+
+A página `/venda` usa `venda.html` como fonte, com a paleta do questionário
+(verde #1D6B66, fundo #EEF1EC e dourado #B8862A). Preço, checkout, garantia e acesso
+continuam os mesmos. Exemplos de leitura são identificados como fictícios.
