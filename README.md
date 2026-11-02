@@ -53,8 +53,10 @@ Abrir o site no navegador → menu → *Adicionar à tela inicial*.
 
 Novos questionários começam pela questão atual e quatro campos: cena, reação,
 receio e resultado desejado. As dez respostas de marcar mantêm o motor original.
-O contexto fica em `respostas._consulta`, no JSON da leitura e no histórico
-privado do questionário, sem mudar a estrutura das tabelas.
+As dez alternativas continuam no campo `respostas`. Os cinco campos abertos
+ficam em `teste.contexto_atual` no histórico privado e em
+`resultado.entrada_consulta` no mapa salvo. O rascunho local usa
+`respostas._consulta`. Não há mudança na estrutura das tabelas.
 
 A IA recebe o contexto, todas as alternativas escolhidas, o mapa natal com suas
 12 áreas e a numerologia. O servidor calcula o arcano pelo método AP-22: soma dos

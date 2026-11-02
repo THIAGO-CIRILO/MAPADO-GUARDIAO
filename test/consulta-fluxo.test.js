@@ -15,7 +15,7 @@ test('questionário completo salva contexto, mostra meditação e reabre as 20 p
  const dom=new JSDOM(fs.readFileSync(path.join(ROOT,'public/index.html'),'utf8'),{url:'https://teste.invalid/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
  const w=dom.window;w.scrollTo=()=>{};w.matchMedia=()=>({matches:false,addListener(){},addEventListener(){}});w.HTMLMediaElement.prototype.pause=function(){};
  const user={id:'22222222-2222-4222-8222-222222222222',email:'ana@example.invalid'};
- const db={auth:{getSession:async()=>({data:{session:{user,access_token:'mock-session'}}}),onAuthStateChange(){},signOut:async()=>({})},rpc:async(name,data)=>{if(name==='guardiao_salvar_questionario')backups.push(structuredClone(data));return {data:name==='tem_acesso_guardiao'?true:name==='guardiao_consultar_reinicio'?0:null,error:null};},from(table){
+ const db={auth:{getSession:async()=>({data:{session:{user,access_token:'mock-session'}}}),onAuthStateChange(){},signOut:async()=>({})},rpc:async(name,data)=>{if(name==='guardiao_salvar_questionario'){assert.ok(Object.keys(data.p_respostas).length<=10,'O banco aceita no máximo dez alternativas.');backups.push(structuredClone(data));}return {data:name==='tem_acesso_guardiao'?true:name==='guardiao_consultar_reinicio'?0:null,error:null};},from(table){
   return {select(){return this;},eq(k,v){this.key=k;this.value=v;return this;},order:async()=>({data:saved.map(x=>({id:x.id,created_at:x.created_at,guardiao:x.guardiao,potencial:x.potencial}))}),maybeSingle:async()=>({data:table==='perfis'?profile:saved[0]}),upsert:async data=>{profile=structuredClone(data);return {error:null};},insert:async data=>{saved.push({...structuredClone(data),id:'11111111-1111-4111-8111-111111111111',created_at:'2026-11-02T12:00:00Z'});return {error:null};}};
  }};
  w.APP_CONFIG={SUPABASE_URL:'https://db.invalid',SUPABASE_ANON_KEY:'public-mock'};w.supabase={createClient:()=>db};
@@ -48,7 +48,10 @@ test('questionário completo salva contexto, mostra meditação e reabre as 20 p
   await waitFor(()=>saved.length===1&&$('wzOpenReading')&&!$('wzOpenReading').disabled);
   assert.ok($('wzMeditation'));assert.equal(w.document.querySelectorAll('.consulta-page').length,0);
   assert.equal(calls.length,6);assert.equal(backups.length,1);
-  assert.deepEqual(backups[0].p_respostas._consulta,{versao:2,...entrada});
+  assert.equal(Object.keys(backups[0].p_respostas).length,10);
+  assert.deepEqual(backups[0].p_teste.contexto_atual,entrada);
+  assert.deepEqual(saved[0].resultado.entrada_consulta,entrada);
+  assert.equal(Object.keys(saved[0].respostas).length,10);
   for(const req of calls){assert.deepEqual(req.teste.contexto_atual,entrada);assert.equal(req.dossier.areas.length,12);assert.equal(req.teste.respostas.length,10);assert.ok(req.dossier.mapa_natal.posicoes.Sol);}
   click('wzOpenReading');assert.equal(w.document.querySelectorAll('.consulta-page').length,20);
   assert.ok(w.document.body.textContent.includes(entrada.cena));

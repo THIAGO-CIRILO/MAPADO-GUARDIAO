@@ -88,7 +88,7 @@ function wz() {
   }
   if (s === 'loading') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Abrindo…</p></div></div>'; return; }
   if (s === 'sincronizar') {
-    const total=Object.keys(D.ans||{}).length;
+    const total=Object.keys(Entrada.respostasMarcadas(D.ans,GT_Q.length)).length;
     const complete=total>=8 && String(D.name||'').trim().length>=2 &&
       /^\d{4}-\d{2}-\d{2}$/.test(D.birth||'') &&
       String(D.goal||'').trim().length>=5;
@@ -263,7 +263,7 @@ function wzTeste(p, S) {
    Não envia o conteúdo para terceiros: o RPC escreve em tabela privada, ligada à conta. */
 async function guardarHistoricoGuardiao(options={}) {
   if(!sb||!W.user)throw new Error('Entre na sua conta para enviar os dados ao suporte.');
-  if(!D.ans||Object.keys(D.ans).length<8)
+  if(!D.ans||Object.keys(Entrada.respostasMarcadas(D.ans,GT_Q.length)).length<8)
     throw new Error('O questionário não está completo neste navegador. Consulte o suporte para recuperar as respostas.');
   const S=options.S||gtScore(D.ans);
   const p={name:String(D.name||'').trim(),goal:String(D.goal||'').trim()};
@@ -278,7 +278,7 @@ async function guardarHistoricoGuardiao(options={}) {
   };
   const teste=options.teste||wzTeste(p,S);
   const {error}=await sb.rpc('guardiao_salvar_questionario',{
-    p_respostas:D.ans,p_scores:S,p_perfil:perfil,
+    p_respostas:Entrada.respostasMarcadas(D.ans,GT_Q.length),p_scores:S,p_perfil:perfil,
     p_teste:teste,
     p_dossier:options.dossier||{},
     p_dados_ciclos:{nascimento:D.birth,referencia:options.referencia||iso(todayObj)}
@@ -339,7 +339,7 @@ async function gerar() {
       };
       const {data:mapId,error:recoverError}=await sb.rpc(
         'finalizar_mapa_guardiao_recuperado',
-        {p_respostas:D.ans,p_scores:S,p_perfil:perfil}
+        {p_respostas:Entrada.respostasMarcadas(D.ans,GT_Q.length),p_scores:S,p_perfil:perfil}
       );
       if (recoverError)throw recoverError;
       if (!mapId)throw new Error('O servidor não retornou a identificação do mapa recuperado.');
@@ -414,7 +414,7 @@ async function gerar() {
     // Only show a completed map after the database confirms it was saved.
     const { error: profileError } = await sb.from('perfis').upsert({ id: W.user.id, email: W.user.email, nome: p.name, nascimento: D.birth, hora: D.time || null, uf: D.uf || null, cidade: D.city || null, lat: p.lat, lon: p.lon, tz: p.tz, dst: !!D.dst, objetivo: p.goal, aceite_lgpd_em: new Date().toISOString() });
     if (profileError) console.warn('Perfil não atualizado; mapa continua salvo se inserção funcionar.');
-    const { error: saveError } = await sb.from('mapas').insert({ user_id: W.user.id, respostas: D.ans, scores: S, resultado: res, guardiao: GT_G[S.rg[0]][0], ferida: S.rw[0] ? GT_W[S.rw[0]][0] : null, potencial: GT_P[S.rp[0]][0] });
+    const { error: saveError } = await sb.from('mapas').insert({ user_id: W.user.id, respostas: Entrada.respostasMarcadas(D.ans,GT_Q.length), scores: S, resultado: res, guardiao: GT_G[S.rg[0]][0], ferida: S.rw[0] ? GT_W[S.rw[0]][0] : null, potencial: GT_P[S.rp[0]][0] });
     if (saveError) {
       if (saveError.code === '23505') {
         await loadMaps();

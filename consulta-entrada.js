@@ -20,6 +20,9 @@
     return campos.filter(c=>x[c.key].length<5).map(c=>c.key);
   }
   function novo(answers){return answers?._consulta?.versao===2;}
+  function respostasMarcadas(answers,count=10){
+    return Object.fromEntries(Array.from({length:count},(_,i)=>[String(i),answers?.[i]]).filter(([,v])=>Number.isInteger(v)&&v>=0));
+  }
   const arcanos=['','O Mago','A Sacerdotisa','A Imperatriz','O Imperador','O Papa','Os Enamorados','O Carro','A Justiça','O Eremita','A Roda da Fortuna','A Força','O Enforcado','A Morte','A Temperança','O Diabo','A Torre','A Estrela','A Lua','O Sol','O Julgamento','O Mundo','O Louco'];
   function arcanoPessoal(date){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||'')))return null;
@@ -30,5 +33,5 @@
     while(numero>22)numero=String(numero).split('').reduce((s,n)=>s+Number(n),0);
     return {numero,nome:arcanos[numero],soma,metodo:'AP-22: soma dos algarismos da data, com nova soma enquanto o resultado exceder 22; Justiça 8, Força 11 e Louco 22.'};
   }
-  return {campos,contexto,validar,novo,arcanoPessoal};
+  return {campos,contexto,validar,novo,respostasMarcadas,arcanoPessoal};
 });
