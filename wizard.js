@@ -19,8 +19,34 @@ let STEPS = [...(D.flowVersion===2 ? Entrada.campos.map(c=>'ctx_'+c.key) : []), 
 function intake(){return Entrada.contexto(D.ans?._consulta);}
 function saveIntake(key,value){D.ans._consulta={versao:2,...intake(),[key]:String(value).slice(0,Entrada.campos.find(c=>c.key===key).max)};if(key==='questao')D.goal=value;gtSave();}
 function newFirstStep(){return D.flowVersion===2?'ctx_questao':'dados1';}
-function prepareReading(asAdmin=false){W.mapReady=true;W.screen=asAdmin||W.preparedMaps?.has(W.activeMapId)?'result':'preparar';wz();window.scrollTo(0,0);}
+function prepareReading(asAdmin=false){W.mapReady=true;const old=!!W.sourceMap&&W.sourceMap.resultado?.versao_consulta!==2;W.screen=old||asAdmin||W.preparedMaps?.has(W.activeMapId)?'result':'preparar';wz();window.scrollTo(0,0);}
 function pauseMeditation(){const a=$('wzMeditation');if(a)a.pause();}
+function upgradeSteps(){return [...Entrada.campos.map(c=>'ctx_'+c.key),'obj'];}
+async function startUpgrade(){
+  const m=W.sourceMap,f=W.sourceProfile||{};
+  if(W.busy||!m||m.user_id!==W.user?.id||m.resultado?.versao_consulta===2)return;
+  pauseMeditation();W.busy=true;
+  let pending;
+  try{
+    const checkpoint=await sb.rpc('guardiao_atualizar_consulta',{p_acao:'referencia',p_mapa_id:m.id});
+    if(checkpoint.error||!['disponivel','concluido'].includes(checkpoint.data?.estado))throw new Error('Atualização indisponível.');
+    pending=checkpoint.data;
+  }catch(e){W.busy=false;W.err='Não consegui abrir a atualização. Sua leitura anterior está preservada. Atualize a página e tente novamente.';W.screen='erro';return wz();}
+  W.busy=false;
+  if(pending.estado==='concluido')return openMap(m.id,false);
+  const resume=D.upgradeMapId===m.id;
+  if(!resume){
+    D.ans={...m.respostas,_consulta:{versao:2,...Entrada.contexto({questao:f.objetivo||''})}};
+    Object.assign(D,{name:f.nome||'',birth:f.nascimento||'',time:f.hora||'',uf:f.uf||'',city:f.cidade||'',lat:f.lat??'',lon:f.lon??'',tz:f.tz??-3,dst:!!f.dst,goal:f.objetivo||'',aceite:false,step:'ctx_questao'});
+    W.assinaturaAtualizacao=null;W.partesGeradas={};W.assinaturaGeracao=null;
+  }
+  W.upgradeFrozen=!!pending.contexto?.teste?.contexto_atual;
+  if(W.upgradeFrozen){D.ans._consulta={versao:2,...Entrada.contexto(pending.contexto.teste.contexto_atual)};D.goal=intake().questao;D.step='obj';W.assinaturaAtualizacao=pending.assinatura;}
+  D.flowVersion=2;D.upgradeMapId=m.id;STEPS=upgradeSteps();
+  if(!STEPS.includes(D.step))D.step='ctx_questao';
+  W.mapReady=false;W.err='';W.msg='';W.screen='step';gtSave();wz();window.scrollTo(0,0);
+}
+
 
 const UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -29,6 +55,7 @@ const root = () => $('gtBody');
 let bar = null;
 
 function resetDraft(keepPerson) {
+  W.upgradeFrozen=false;
   const keep = keepPerson ? { name: D.name, birth: D.birth, time: D.time, uf: D.uf, city: D.city, lat: D.lat, lon: D.lon, tz: D.tz, dst: D.dst, manual: D.manual } : {};
   Object.keys(D).forEach(k => delete D[k]);
   Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'ctx_questao', flowVersion: 2, manual: false }, keep);
@@ -106,13 +133,17 @@ function wz() {
   if (s === 'result') {
     const p = db.people.find(x => x.id === D.pid && x.gt && x.gt.res); if (!p) { W.screen = 'welcome'; return wz(); }
     if(p.gt.res.versao_consulta===2)window.GuardiaoConsultaView.render({...p,guardiao:GT_G[p.gt.S.rg[0]][0],potencial:GT_P[p.gt.S.rp[0]][0]});else gtResult(p);
+    if(p.gt.res.versao_consulta!==2&&W.sourceMap?.user_id===W.user?.id){
+      root().insertAdjacentHTML('afterbegin',`<section class="wz-card" style="max-width:860px;margin:18px auto"><span class="eyebrow">Sua leitura está no formato anterior</span><h2>Atualizar para o mapa de 20 páginas</h2><p>Responda às cinco perguntas sobre sua questão atual. Vamos aproveitar seus dados de nascimento e as respostas do teste para gerar as 12 áreas e sua tabela de consulta.</p><p>Sua leitura anterior fica preservada. Esta atualização não exige outra compra.</p><button id="wzUpgrade" type="button">${D.upgradeMapId===W.activeMapId?'Continuar atualização':'Atualizar meu mapa · 20 páginas'}</button></section>`);
+    }
+
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
     root().insertAdjacentHTML('beforeend', extra);
     if ($('gtRedo')) $('gtRedo').remove();
     // Duas saídas distintas: leitura completa imprimível e resumo fotográfico.
     if ($('gtPdf')) {
       $('gtPdf').id = 'wzPdf29';
-      $('wzPdf29').textContent = p.gt.res.versao_consulta===2?'Baixar meu mapa · 20 páginas':'Baixar PDF essencial com imagens (14 a 18 páginas)';
+      $('wzPdf29').textContent = p.gt.res.versao_consulta===2?'Baixar meu mapa · 20 páginas':'Baixar PDF anterior · 14 a 18 páginas';
       if(p.gt.res.versao_consulta!==2){
       const full = document.createElement('button');
       full.type='button';full.id='wzPrintFull';full.className='ghost';
@@ -132,7 +163,7 @@ function wz() {
     const field=Entrada.campos.find(c=>'ctx_'+c.key===st);
     if(!field){D.step=newFirstStep();return wz();}
     const value=intake()[field.key];
-    R.innerHTML=`<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Sua questão atual</span><h2>${esc(field.titulo)}</h2><p class="wz-hint">${esc(field.ajuda)}</p><label>Sua resposta<textarea aria-label="${esc(field.titulo)}" id="wzContext" data-field="${field.key}" maxlength="${field.max}" rows="5" placeholder="${esc(field.exemplo)}">${esc(value)}</textarea></label><span class="wz-field-count">Até ${field.max} caracteres. Escreva do seu jeito.</span><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button">Próximo</button></div></div></div>`;return;
+    R.innerHTML=`<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Sua questão atual</span><h2>${esc(field.titulo)}</h2><p class="wz-hint">${esc(field.ajuda)}</p><label>Sua resposta<textarea aria-label="${esc(field.titulo)}" id="wzContext"${W.upgradeFrozen?' readonly':''} data-field="${field.key}" maxlength="${field.max}" rows="5" placeholder="${esc(field.exemplo)}">${esc(value)}</textarea></label><span class="wz-field-count">Até ${field.max} caracteres. Escreva do seu jeito.</span><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button">Próximo</button></div></div></div>`;return;
   }
   if (st === 'dados1') {
     R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Vamos começar</h2>${W.resetNotice?'<p class="wz-msg" role="status">'+esc(W.resetNotice)+'</p>':''}<label>Seu nome completo<input id="wzName" maxlength="120" autocomplete="name" value="${esc(D.name)}"></label><label>Data de nascimento<input id="wzBirth" type="date" value="${esc(D.birth)}"></label><p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button id="wzNext" type="button">Próximo</button></div></div></div>`; return;
@@ -150,7 +181,7 @@ function wz() {
     R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><span class="eyebrow">Pergunta ${i + 1} de ${GT_Q.length}</span><p class="wz-q">${esc(q[0])}</p>${q[1] ? `<p class="wz-hint">${esc(q[1])}</p>` : ''}<div class="wz-opts">${q[2].map((o, j) => `<button type="button" class="wz-opt" data-opt="${j}" aria-pressed="${D.ans[i] === j}">${esc(o[0])}</button>`).join('')}</div><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzNext" type="button"${D.ans[i] === undefined ? ' disabled' : ''}>Próximo</button></div></div></div>`; return;
   }
   if (st === 'obj') {
-    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Confira sua questão antes de gerar</h2><label>Esta é a questão que vai orientar a leitura. Ajuste se precisar.<textarea id="wzGoal" rows="4" maxlength="350" placeholder="Ex.: Quero cobrar o que meu trabalho vale, sem culpa.">${esc(D.goal)}</textarea></label>
+    R.innerHTML = `<div class="wz">${dotsHtml(st)}<div class="wz-card"><h2>Confira sua questão antes de gerar</h2>${W.upgradeFrozen?'<p class="wz-msg">Suas respostas já estão salvas. Vamos retomar a atualização com elas e aproveitar as etapas concluídas.</p>':''}<label>Esta é a questão que vai orientar a leitura. Ajuste se precisar.<textarea id="wzGoal"${W.upgradeFrozen?' readonly':''} rows="4" maxlength="350" placeholder="Ex.: Quero cobrar o que meu trabalho vale, sem culpa.">${esc(D.goal)}</textarea></label>
       <label class="check" style="align-items:flex-start"><input id="wzAceite" type="checkbox"${D.aceite ? ' checked' : ''} style="margin-top:3px"> <span>Concordo em enviar as minhas respostas para gerar o mapa e que o terapeuta responsável tenha acesso a elas.</span></label>
       <details><summary class="wz-link">Como usamos os seus dados</summary><p class="wz-msg">Os dados informados (nome, nascimento, respostas do teste, situação relatada e objetivo) são usados apenas para gerar o seu mapa e ficam guardados para você consultar e para o acompanhamento com o terapeuta. O texto é gerado por inteligência artificial. Você pode pedir a exclusão dos seus dados a qualquer momento pelo contato do terapeuta.</p></details>
       <p class="wz-err" role="alert">${esc(W.err)}</p><div class="wz-nav"><button class="ghost" id="wzPrev" type="button">Voltar</button><button id="wzGo" type="button">Gerar o meu mapa</button></div></div></div>`;
@@ -265,6 +296,7 @@ async function guardarHistoricoGuardiao(options={}) {
   if(!sb||!W.user)throw new Error('Entre na sua conta para enviar os dados ao suporte.');
   if(!D.ans||Object.keys(Entrada.respostasMarcadas(D.ans,GT_Q.length)).length<8)
     throw new Error('O questionário não está completo neste navegador. Consulte o suporte para recuperar as respostas.');
+  if(D.upgradeMapId)return true; // The server stores this upgrade before its first AI call.
   const S=options.S||gtScore(D.ans);
   const p={name:String(D.name||'').trim(),goal:String(D.goal||'').trim()};
   const g=GT_G[S.rg?.[0]],pot=GT_P[S.rp?.[0]],fer=S.rw?.[0]?GT_W[S.rw[0]]:null;
@@ -291,7 +323,8 @@ async function gerar() {
   if (W.busy) return;
   W.busy = true;
   try { await loadMaps(); } catch (e) {}
-  if (W.maps.length) { W.busy = false; return openMap(W.maps[0].id, false); }
+  const upgrading=!!D.upgradeMapId;
+  if (W.maps.length&&!upgrading) { W.busy = false; return openMap(W.maps[0].id, false); }
   const sess = (await sb.auth.getSession()).data.session;
   if (!sess) { W.busy = false; W.screen = 'auth'; W.mode = 'login'; W.err = 'Entre de novo para continuar.'; return wz(); }
   // O questionário é único: se uma geração foi iniciada anteriormente,
@@ -299,8 +332,10 @@ async function gerar() {
   // Sem isso, os cálculos do dia seguinte geram outro hash e bloqueiam partes já pagas.
   let andamentoAnterior=null;
   try {
-    const checkpoint=await sb.rpc('referencia_geracao_guardiao');
+    const checkpoint=upgrading?await sb.rpc('guardiao_atualizar_consulta',{p_acao:'referencia',p_mapa_id:D.upgradeMapId}):await sb.rpc('referencia_geracao_guardiao');
     if(checkpoint.error)throw checkpoint.error;
+    if(upgrading&&checkpoint.data?.estado==='concluido'){W.busy=false;const id=D.upgradeMapId;D.upgradeMapId=null;gtSave();return openMap(id,false);}
+    if(upgrading&&!['disponivel'].includes(checkpoint.data?.estado))throw new Error('Não consegui abrir a atualização desta leitura.');
     andamentoAnterior=checkpoint.data;
     if(andamentoAnterior?.referencia && !/^\d{4}-\d{2}-\d{2}$/.test(andamentoAnterior.referencia))
       throw new Error('Data de recuperação inválida.');
@@ -310,6 +345,12 @@ async function gerar() {
     W.screen='erro';return wz();
   }
   const dataFixa=andamentoAnterior?.referencia || iso(todayObj);
+  // A retry on another day or browser uses the first submitted questionnaire.
+  const frozen=upgrading?andamentoAnterior?.contexto:null;
+  if(frozen?.teste?.contexto_atual){
+    D.ans._consulta={versao:2,...Entrada.contexto(frozen.teste.contexto_atual)};
+    D.goal=intake().questao;W.assinaturaAtualizacao=andamentoAnterior.assinatura;gtSave();
+  }
   // Leituras que já tinham cinco fases concluídas ANTES da publicação do
   // calendário mensal devem poder ser finalizadas sem consumir créditos novos.
   const recuperacaoLegada=!!(andamentoAnterior?.etapas_prontas===5 &&
@@ -362,12 +403,12 @@ async function gerar() {
   Object.assign(p, { name: D.name.trim(), birth: D.birth, goal: D.goal.trim(), time: D.time || '', dst: !!D.dst, city: D.city ? `${D.city}, ${D.uf}` : '', lat: parseFloat(D.lat), lon: parseFloat(D.lon), tz: parseFloat(D.tz) });
   p.gt = { ans: Object.assign({}, D.ans) }; D.pid = p.id; db.cur = p.id; refStr = dataFixa; gtSave();
   fillForm(); render();
-  const S = gtScore(D.ans), dossier = buildDossier('atual');
+  const S = gtScore(D.ans);let dossier = frozen?.dossier || buildDossier('atual');
   if (!dossier) { W.busy = false; W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
   if(D.flowVersion!==2)delete dossier.areas;
-  else {dossier.pessoa.nome=p.name;dossier.pessoa.cidade=p.city;dossier.pessoa.nascimento_iso=D.birth;dossier.pessoa.hora_informada=!!D.time;dossier.arcano_pessoal=Entrada.arcanoPessoal(D.birth);}
+  else if(!frozen) {dossier.pessoa.nome=p.name;dossier.pessoa.cidade=p.city;dossier.pessoa.nascimento_iso=D.birth;dossier.pessoa.hora_informada=!!D.time;dossier.arcano_pessoal=Entrada.arcanoPessoal(D.birth);}
   delete dossier.modo; delete dossier.elementos_autoavaliacao;
-  const teste = wzTeste(p, S);
+  const teste = frozen?.teste || wzTeste(p, S);
   try { await guardarHistoricoGuardiao({S,teste,dossier,referencia:dataFixa}); }
   catch(err){
     W.busy=false;
@@ -378,8 +419,8 @@ async function gerar() {
   W.mapReady=false;W.screen='preparar'; W.live = 'Lendo as suas respostas…'; wz();
   const frases = ['Calculando os seus ciclos…', 'Cruzando o seu Guardião com o seu momento de vida…', 'Escrevendo o seu mapa…', 'Montando o plano de ação…', 'Revisando os últimos detalhes…'];
   let k = 0; const tm = setInterval(() => { W.live = frases[Math.min(k++, frases.length - 1)]; const l = $('wzLive'); if (l) l.textContent = W.live; }, 9000);
-  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: dataFixa } }) })
-    .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'erro'), { status: r.status, j }); return j.parte; });
+  const call = fase => fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess.access_token }, body: JSON.stringify({ fase, teste, dossier, dadosCiclos: { nascimento: D.birth, referencia: dataFixa },...(upgrading?{atualizarMapaId:D.upgradeMapId}:{}) }) })
+    .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'erro'), { status: r.status, j }); if(j.assinatura_atualizacao)W.assinaturaAtualizacao=j.assinatura_atualizacao;return j.parte; });
   try {
     // Reuse completed stages after an error. Limit concurrency to two API calls.
     const assinatura = JSON.stringify({ teste, dossier });
@@ -411,6 +452,14 @@ async function gerar() {
       res.dados_pessoa={nome:p.name,nascimento:D.birth,hora:D.time||'',cidade:p.city,lat:p.lat,lon:p.lon,tz:p.tz,dst:p.dst,data_referencia:dataFixa};
     }
     p.gt.S = S; p.gt.res = res; p.gt.when = dataFixa; save();
+    // Publish an upgrade atomically from server-saved phases; keep the old map until success.
+    const upgradedId=upgrading?D.upgradeMapId:null;
+    if(upgrading){
+      if(!W.assinaturaAtualizacao)throw new Error('Não consegui identificar as etapas da atualização. Tente novamente.');
+      const {data:finished,error}=await sb.rpc('guardiao_atualizar_consulta',{p_acao:'finalizar',p_mapa_id:upgradedId,p_assinatura:W.assinaturaAtualizacao});
+      if(error||finished?.estado!=='concluido'||finished?.mapa_id!==upgradedId)throw new Error('A atualização ainda não foi concluída. Sua leitura anterior está preservada; tente novamente.');
+      res.atualizacao_consulta={versao_anterior_preservada:true};
+    }else{
     // Only show a completed map after the database confirms it was saved.
     const { error: profileError } = await sb.from('perfis').upsert({ id: W.user.id, email: W.user.email, nome: p.name, nascimento: D.birth, hora: D.time || null, uf: D.uf || null, cidade: D.city || null, lat: p.lat, lon: p.lon, tz: p.tz, dst: !!D.dst, objetivo: p.goal, aceite_lgpd_em: new Date().toISOString() });
     if (profileError) console.warn('Perfil não atualizado; mapa continua salvo se inserção funcionar.');
@@ -422,8 +471,11 @@ async function gerar() {
       }
       throw new Error('O mapa foi escrito, mas não pôde ser salvo. Tente novamente: as etapas já concluídas serão reutilizadas.');
     }
+
+    }
     await loadMaps();
-    W.activeMapId = W.maps[0]?.id || null;
+    W.activeMapId=upgradedId||W.maps[0]?.id||null;
+    if(upgrading){D.upgradeMapId=null;W.sourceMap={...W.sourceMap,resultado:res};gtSave();}
     clearInterval(tm); W.viewing=null;W.mapReady=true;
     if(W.screen==='preparar'&&$('wzOpenReading')){$('wzOpenReading').disabled=false;$('wzOpenReading').textContent='Abrir meu mapa';$('wzLive').textContent='Seu mapa está pronto. Abra quando quiser.';}else prepareReading();
   } catch (e) {
@@ -443,16 +495,21 @@ async function openMap(id, asAdmin) {
   const { data: m } = await sb.from('mapas').select('*').eq('id', id).maybeSingle();
   if (!m) { W.err = 'Mapa não encontrado.'; W.screen = 'erro'; return wz(); }
   const { data: pf } = await sb.from('perfis').select('*').eq('id', m.user_id).maybeSingle(); const f = pf || {};
+  W.sourceMap=m;W.sourceProfile=f;
+  if(m.resultado?.versao_consulta===2&&D.upgradeMapId===m.id){D.upgradeMapId=null;gtSave();}
   const p = { id: 'gtv' + m.id, events: [], elem: {}, name: f.nome || '', birth: f.nascimento, time: f.hora || '', tz: f.tz ?? -3, dst: !!f.dst, city: f.cidade ? `${f.cidade}, ${f.uf || ''}` : '', lat: f.lat, lon: f.lon, goal: f.objetivo || '', gt: { ans: m.respostas, S: m.scores, res: m.resultado } };
   db.people = db.people.filter(x => x.id !== p.id); db.people.push(p); db.cur = p.id; D.pid = p.id; refStr = (m.created_at || '').slice(0, 10) || iso(todayObj);
   p.goal=m.resultado?.entrada_consulta?.questao||p.goal;
-  fillForm(); render(); W.viewing = asAdmin ? m : null; W.activeMapId = m.id; prepareReading(asAdmin);
+  fillForm(); render(); W.viewing = asAdmin ? m : null; W.activeMapId = m.id;
+  if(!asAdmin&&m.user_id===W.user?.id&&m.resultado?.versao_consulta!==2&&new URLSearchParams(location.search).get('atualizar')==='1')return startUpgrade();
+  prepareReading(asAdmin);
 }
 
 /* ---- eventos ---- */
 document.addEventListener('click', async e => {
   const t = e.target.closest('button,li,a'); if (!t || !$('gt') || $('gt').hidden) return;
   const id = t.id;
+  if(id==='wzUpgrade')return startUpgrade();
   if(id==='wzOpenReading'){if(!W.mapReady)return;pauseMeditation();if(!W.preparedMaps)W.preparedMaps=new Set();W.preparedMaps.add(W.activeMapId);W.screen='result';wz();window.scrollTo(0,0);return;}
   if (id === 'wzStart') { if (!W.user) { W.screen = 'auth'; W.mode = 'signup'; return wz(); } if (W.maps.length) return openMap(W.maps[0].id, false); if (!(await liberarAcesso())) return; W.screen = 'step'; return wz(); }
   if (id === 'wzCheckPayment') { if (!(await liberarAcesso())) return; W.screen = 'step'; D.step = D.step || newFirstStep(); return wz(); }
@@ -508,7 +565,7 @@ document.addEventListener('click', async e => {
       setTimeout(() => URL.revokeObjectURL(href), 30000);
       if (status) status.textContent = 'Seu PDF está pronto.';
     } catch (err) {
-      // If the server fails, compose the SAME 14/18-page essential PDF in-browser (never the old 53-page report).
+      // If the server fails, render the same saved edition in the browser.
       // Never bypass a 401/403 payment/session rejection.
       if ((!err?.status || err.status >= 500) && W.activeMapId) {
         if (status) status.textContent = 'O servidor demorou. Montando o PDF no navegador…';

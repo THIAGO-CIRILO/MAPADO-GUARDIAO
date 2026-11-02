@@ -72,13 +72,15 @@ module.exports = async function handler(req, res) {
 
   const jwt = /^(?:Bearer) (.+)$/i.exec(req.headers.authorization || '')?.[1];
   if (!jwt || jwt.length > 4096) return res.status(401).json({ erro: 'Entre novamente na sua conta.' });
-  const { fase, teste, dossier, dadosCiclos } = req.body || {};
+  const { fase, teste, dossier, dadosCiclos, atualizarMapaId } = req.body || {};
   if (!Object.hasOwn(SCHEMAS, fase) || !teste || !dossier ||
       typeof teste !== 'object' || typeof dossier !== 'object' ||
       Array.isArray(teste) || Array.isArray(dossier)) {
     return res.status(400).json({ erro: 'Dados de geração inválidos.' });
   }
   const isConsulta = teste.versao_consulta === 2;
+  const isUpgrade = typeof atualizarMapaId==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(atualizarMapaId);
+  if(atualizarMapaId && (!isUpgrade || !isConsulta))return res.status(400).json({erro:'Atualização de mapa inválida.'});
   if (isConsulta) {
     const invalid = consulta.validarEntrada(teste);
     if (invalid) return res.status(400).json({ erro: invalid });
@@ -152,20 +154,26 @@ module.exports = async function handler(req, res) {
     // saving its map (for example after a site update). Recover ONLY when the
     // same authenticated and paid account has all five original parts ready.
     // The stored signature remains immutable; no stage A-E is re-generated.
-    const assinaturaExistente = await rpc('recuperar_assinatura_guardiao', {});
+    const assinaturaExistente = isUpgrade ? null : await rpc('recuperar_assinatura_guardiao', {});
     const recuperando = typeof assinaturaExistente === 'string' &&
       /^[a-f0-9]{64}$/.test(assinaturaExistente) && assinaturaExistente !== assinatura;
     const assinaturaEfetiva = recuperando ? assinaturaExistente : assinatura;
     const params = { p_fase: fase, p_assinatura: assinaturaEfetiva };
-    const gate = await rpc('iniciar_fase_guardiao', params);
+    const upgradeRpc=(acao,payload={})=>rpc('guardiao_atualizar_consulta',{
+      p_acao:acao,p_mapa_id:atualizarMapaId,p_fase:fase,p_assinatura:assinatura,p_payload:payload
+    });
+    const gate = isUpgrade
+      ? await upgradeRpc('iniciar',{teste,dossier,dadosCiclos})
+      : await rpc('iniciar_fase_guardiao', params);
     if (gate.estado === 'concluido')
       return res.status(409).json({ erro: 'Seu Mapa do Guardião já foi gerado. Acesse seu painel para visualizá-lo e baixar o PDF.', fase });
+    if(gate.estado==='nao_encontrado')return res.status(404).json({erro:'Não encontrei esse mapa na sua conta.',fase});
     if (gate.estado === 'sem_acesso')
       return res.status(403).json({ erro: 'Seu acesso ainda não foi liberado. Utilize o mesmo e-mail da compra na Kiwify.', fase });
     if (gate.estado === 'questionario_ja_definido')
       return res.status(409).json({ erro: 'Este acesso já tem um questionário em geração. Entre em contato com o suporte se precisar recuperá-lo.', fase });
     if (gate.estado === 'pronta')
-      return res.status(200).json({ ok: true, parte: gate.parte, reutilizada: true, recuperada: recuperando });
+      return res.status(200).json({ ok: true, parte: gate.parte, reutilizada: true, recuperada: recuperando, ...(isUpgrade?{assinatura_atualizacao:assinatura}:{}) });
     if (gate.estado === 'processando')
       return res.status(409).json({ erro: 'Esta etapa já está sendo gerada. Aguarde um pouco antes de tentar novamente.', fase });
     if (gate.estado === 'limite')
@@ -176,7 +184,7 @@ module.exports = async function handler(req, res) {
     }
     // Reservation is atomic across multiple tabs. Always release failed attempts.
     const release = async () => {
-      try { await rpc('liberar_fase_guardiao', params); }
+      try { if(isUpgrade)await upgradeRpc('liberar');else await rpc('liberar_fase_guardiao', params); }
       catch (e) { console.error('Cannot release phase reservation', fase); }
     };
     liberarReservaPendente = release;
@@ -291,11 +299,11 @@ module.exports = async function handler(req, res) {
       parte.versao_consulta = 2;
       if (fase === 'b') parte.arcano_pessoal = calculosConsulta.arcano_pessoal;
     }
-    const saved = await rpc('concluir_fase_guardiao', { ...params, p_parte: parte });
+    const saved = isUpgrade ? (await upgradeRpc('concluir',parte))?.ok===true : await rpc('concluir_fase_guardiao', { ...params, p_parte: parte });
     if (saved !== true)
       return res.status(503).json({ erro: 'Falha ao salvar a etapa. Aguarde antes de tentar de novo.', fase });
     liberarReservaPendente = null;
-    return res.status(200).json({ ok: true, parte });
+    return res.status(200).json({ ok: true, parte, ...(isUpgrade?{assinatura_atualizacao:assinatura}:{}) });
   } catch (e) {
     if (liberarReservaPendente) await liberarReservaPendente();
     console.error('Erro na geração:', e?.name || 'unknown', 'fase', req.body?.fase);

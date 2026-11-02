@@ -56,7 +56,7 @@ receio e resultado desejado. As dez respostas de marcar mantêm o motor original
 As dez alternativas continuam no campo `respostas`. Os cinco campos abertos
 ficam em `teste.contexto_atual` no histórico privado e em
 `resultado.entrada_consulta` no mapa salvo. O rascunho local usa
-`respostas._consulta`. Não há mudança na estrutura das tabelas.
+`respostas._consulta`. O fluxo de novos mapas mantém a estrutura das tabelas existentes.
 
 A IA recebe o contexto, todas as alternativas escolhidas, o mapa natal com suas
 12 áreas e a numerologia. O servidor calcula o arcano pelo método AP-22: soma dos
@@ -75,7 +75,28 @@ nem bloqueio para quem prefere ler sem ouvir. A pessoa pode repetir em `/meditac
 
 O mesmo modelo de 20 páginas alimenta a leitura na tela, o PDF do servidor e o
 PDF alternativo do navegador. Fontes Figtree e Instrument Serif ficam no projeto
-com suas licenças OFL. Mapas da versão anterior preservam o formato já salvo.
+com suas licenças OFL.
+
+### Atualizar uma leitura anterior
+
+Execute `supabase/atualizar-consulta.sql` no projeto existente antes de publicar
+esta correção. O script cria uma tabela em schema privado e um RPC autenticado;
+não modifica as leituras existentes durante a instalação.
+
+Leituras antigas mostram **Atualizar meu mapa · 20 páginas**. O link
+`/?atualizar=1` abre o mesmo fluxo depois do login. A pessoa responde aos cinco
+campos novos e confirma o consentimento. Nascimento e alternativas salvas são
+reutilizados. Não há outra compra.
+
+A atualização tem suas próprias reservas, assinatura imutável e cache de seis
+fases. Uma tentativa interrompida retoma o contexto já enviado, inclusive em outro
+navegador. O mesmo limite diário de chamadas continua aplicado. Ao finalizar,
+o banco exige as seis partes, 12 áreas, seis situações, 12 meses e sete dias;
+só então atualiza o mesmo mapa. O resultado anterior e o perfil ficam preservados
+em `guardiao_private.atualizacoes_consulta.anterior`. O RPC permite atualizar
+somente a leitura do próprio usuário com acesso liberado. O PDF anterior continua
+disponível até a conclusão da atualização.
+
 
 Validação local: `npm ci` e `npm test`. Os testes usam dados fictícios e respostas
 simuladas da IA; não fazem compras nem gastam créditos reais do Claude.
