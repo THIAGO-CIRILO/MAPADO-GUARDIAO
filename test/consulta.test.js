@@ -54,7 +54,7 @@ test('gerador envia todo contexto, mantém autorização e grava a versão nova'
   if(url.endsWith('/iniciar_fase_guardiao'))return new Response(JSON.stringify({estado:'reservada'}));
   if(url.endsWith('/concluir_fase_guardiao')){saved=JSON.parse(options.body);return new Response('true');}
   if(url.endsWith('/liberar_fase_guardiao'))return new Response('true');
-  if(url.includes('api.anthropic.com')){calls++;lastPayload=JSON.parse(options.body);return new Response(JSON.stringify({content:[{type:'text',text:JSON.stringify(lastPayload.output_config.format.schema.properties.lugar_potencia?source.b:source.c)}],stop_reason:'end_turn'}));}
+  if(url.includes('api.anthropic.com')){calls++;lastPayload=JSON.parse(options.body);return new Response(JSON.stringify({content:[{type:'text',text:JSON.stringify(lastPayload.output_config.format.schema.properties.lugar_potencia?source.b:lastPayload.output_config.format.schema.properties.meses?source.f:source.c)}],stop_reason:'end_turn'}));}
   throw new Error('Unexpected URL '+url);
  };
  const body={fase:'c',teste:{versao_consulta:2,contexto_atual:entrada,contextos_complementares:complementares,objetivo_da_pessoa:entrada.questao,respostas:[{pergunta:'Exemplo',resposta:'Minha resposta exata'}]},dossier:{areas:AREA_KEYS.map((k,i)=>({casa:i+1,area:k})),mapa_natal:{posicoes:{Sol:'Touro'}},numerologia:{numero_natal:3}},dadosCiclos:{nascimento:'1990-05-15',referencia:'2026-11-02'}};
@@ -66,6 +66,7 @@ test('gerador envia todo contexto, mantém autorização e grava a versão nova'
   assert.equal(Object.keys(lastPayload.output_config.format.schema.properties.areas_vida.properties).length,12);
   for(const item of Object.values(complementares))assert.ok(lastPayload.messages[0].content.includes(item.resposta));
   result=await run({...body,fase:'b'});assert.equal(result.status,200);assert.deepEqual(saved.p_parte.lugar_potencia,source.b.lugar_potencia);assert.deepEqual(saved.p_parte.contextos_complementares,complementares);
+  result=await run({...body,fase:'f'});assert.equal(result.status,200);assert.equal(saved.p_parte.meses.length,12);assert.deepEqual(saved.p_parte.contextos_complementares,complementares);assert.ok(lastPayload.messages[0].content.includes('Ajuste as ações mensais ao ritmo'));
   result=await run({...body,teste:{...body.teste,contextos_complementares:{ritmo:{resposta:'Outra resposta'}}}});assert.equal(result.status,400);
   allowed=false;const before=calls;result=await run(body);assert.equal(result.status,403);assert.equal(calls,before);
   result=await run({...body,teste:{...body.teste,contexto_atual:{}}});assert.equal(result.status,400);

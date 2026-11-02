@@ -74,6 +74,9 @@ shutil.copytree(root / 'assets/audio', out / 'audio', dirs_exist_ok=True)
 # Use the current tracked wizard.js, not the outdated copy embedded in the ZIP.
 index_page = out / "index.html"
 html = index_page.read_text(encoding="utf-8")
+old_description='<meta name="description" content="Em 10 minutos, descubra o seu lugar de potência para ganhar ainda mais dinheiro. Mapa do Guardião, do Campo Guardião.">'
+if html.count(old_description)!=1:raise SystemExit('Unexpected app description in the archive')
+html=html.replace(old_description,'<meta name="description" content="Traga uma questão, responda ao teste e receba um mapa pessoal de 20 páginas, com recursos, 12 áreas da vida e um próximo passo possível.">',1)
 # Prepare a standalone quiz motor for the administrator from the public site archive.
 quiz_begin = html.find('const GT_G = {')
 quiz_finish = html.find('const gtDraft =', quiz_begin)
