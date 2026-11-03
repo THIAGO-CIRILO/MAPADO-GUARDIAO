@@ -68,8 +68,21 @@ rascunho local usa `contextosComplementares`. O fluxo de novos mapas mantém a e
 A IA recebe o contexto, todas as alternativas escolhidas, o mapa natal com suas
 12 áreas e a numerologia. O servidor calcula o arcano pelo método AP-22: soma dos
 algarismos da data, repetida enquanto o resultado exceder 22 (Justiça 8, Força 11,
-Louco 22). A fórmula fica identificada no PDF. As fontes da biblioteca privada
-continuam disponíveis pelo módulo existente.
+Louco 22). A fórmula fica identificada no PDF. A busca privada cruza questão,
+desejo, cena, reação, receio, alternativas fixas e os resultados de Guardião e
+potencial com a base do método. As demais obras apoiam as áreas e os ciclos.
+As referências são dados de estudo: exemplos de terceiros não viram biografia
+da pessoa e a leitura digital não executa os procedimentos de mesa da apostila.
+O texto completo da apostila pertence à biblioteca privada, fora deste repositório.
+Em produção, indisponibilidade da base do método preserva as respostas e permite
+tentar novamente antes de gastar uma chamada de geração.
+
+`supabase/biblioteca-contexto.sql` mantém a pesquisa administrativa antiga e
+acrescenta a busca por categoria usada pelo gerador. `supabase/sinteses-salvas.sql`
+permite revisar a síntese de mapas completos por jobs administrativos privados.
+Cada job exige um token aleatório de 256 bits, tem validade curta e preserva o
+resultado anterior. O executor `/api/atualizar-sintese` não cria jobs e publica
+apenas `objetivo` e `sintese_respostas`, após validação; o resto do mapa fica igual.
 
 A fase B também gera `lugar_potencia` (título concreto, leitura e gesto), a partir
 dos recursos do teste e da questão atual. Ele aparece na capa, junto da frase

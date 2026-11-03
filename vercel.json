@@ -19,6 +19,9 @@
     "api/gerar.js": {
       "maxDuration": 60
     },
+    "api/atualizar-sintese.js": {
+      "maxDuration": 60
+    },
     "api/relatorio.js": {
       "maxDuration": 60,
       "includeFiles": "assets/fonts/**"
