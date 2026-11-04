@@ -26,8 +26,8 @@ module.exports=async(req,res)=>{
   const done=await rpc('concluir',parte);if(!['pronta','concluido'].includes(done.estado))throw Error('Publicação pendente');
   reserved=false;return res.status(200).json({ok:true,estado:done.estado});
  }catch(e){
-  const providerCode=['max_tokens','rate_limit_error','overloaded_error','invalid_request_error','authentication_error','permission_error','not_found_error','api_error','incompleta'].includes(e.providerCode)?e.providerCode:null;
-  if(reserved)try{await rpc('liberar',{erro:e.name==='RevisaoEstacoes'?e.message:providerCode?'IA: '+providerCode:'A etapa não foi concluída.'});}catch(_){}
+  const providerCode=['credit_balance','schema_invalido','max_tokens','rate_limit_error','overloaded_error','invalid_request_error','authentication_error','permission_error','not_found_error','api_error','incompleta'].includes(e.providerCode)?e.providerCode:null;
+  if(reserved)try{await rpc('liberar',{erro:e.name==='RevisaoEstacoes'?e.message:providerCode?'IA: '+providerCode+(e.providerDetail?' · '+e.providerDetail:''):'A etapa não foi concluída.'});}catch(_){}
   if(e.name==='NaoAutorizado')return res.status(401).json({erro:'Trabalho não autorizado.'});
   console.error('Atualização das estações:',fase,e.name,e.providerCode||'');
   return res.status(503).json({erro:'A etapa não foi publicada. A leitura anterior está preservada.',codigo:e.name==='RevisaoEstacoes'?'revisao':e.name==='FalhaIA'?'ia':'temporario',...(providerCode?{motivo:providerCode}:{})});

@@ -19,7 +19,12 @@ async function gerarEstacoes({fase,contexto,mapa,orientacaoRevisao}){
   body:JSON.stringify({model:process.env.ANTHROPIC_MODEL||'claude-sonnet-5-5',max_tokens:fase==='d'?8000:6000,system:SYSTEM+'\nFrases curtas e linguagem fácil. Evite jornada, travada e expressões grandiosas. Respeite os limites de cada caixa.',messages:[{role:'user',content:prompt}],output_config:{effort:'medium',format:{type:'json_schema',schema:Estacoes.esquema(fase,consulta.schemas[fase],estudo)}}}),signal:AbortSignal.timeout(45000)
  });
  const data=await response.json().catch(()=>({}));
- if(!response.ok||data.stop_reason==='max_tokens'){const e=new Error('A resposta da IA ficou indisponível ou incompleta.');e.name='FalhaIA';e.providerCode=data?.error?.type||data.stop_reason||'incompleta';throw e;}
+ if(!response.ok||data.stop_reason==='max_tokens'){
+  const e=new Error('A resposta da IA ficou indisponível ou incompleta.'),message=String(data?.error?.message||'');e.name='FalhaIA';
+  e.providerCode=/credit balance|credits|billing|spend limit|payment|usage limits/i.test(message)?'credit_balance':/schema/i.test(message)?'schema_invalido':data?.error?.type||data.stop_reason||'incompleta';
+  // Apenas o diagnóstico do provedor, sem gravar o prompt ou as respostas da pessoa.
+  e.providerDetail=message.replace(/[\u0000-\u001f]/g,' ').slice(0,180);throw e;
+ }
  let parte=Estacoes.normalizar(JSON.parse((data.content||[]).filter(t=>t.type==='text').map(t=>t.text).join('')),fase,estudo);
  const error=consulta.validarParte(parte,fase)||Estacoes.validar(parte,fase,estudo,leitura);
  if(error){const e=new Error(error);e.name='RevisaoEstacoes';throw e;}
