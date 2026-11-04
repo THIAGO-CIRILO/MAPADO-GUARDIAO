@@ -36,6 +36,17 @@ test('estações só aceitam referências calculadas para o mês e preservam a c
  const noArea=structuredClone(x.d);delete noArea.estacoes_areas.rotina;assert.ok(Estacoes.validar(noArea,'d',x.estudo,x.mapa.resultado));
  assert.equal(Estacoes.calcular({versao_consulta:2},x.dossier,x.dadosCiclos),null);
 });
+test('o esquema fixa cada mês e impede selecionar referências de outro período',()=>{
+ const x=exemplo(),s=Estacoes.esquema('f',{},x.estudo),wire={meses:{}};
+ for(let i=0;i<12;i++){
+  const m=x.estudo.meses[i],key=m.ano+'-'+String(m.mes).padStart(2,'0'),schema=s.properties.meses.properties[key];
+  assert.deepEqual(schema.properties.base_ids.items.enum,[m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)]);
+  wire.meses[key]=x.f.meses[i];
+ }
+ assert.deepEqual(Estacoes.normalizar(wire,'f',x.estudo),x.f);
+ delete wire.meses['2026-11'];wire.meses['2028-11']=x.f.meses[0];assert.ok(Estacoes.validar(Estacoes.normalizar(wire,'f',x.estudo),'f',x.estudo));
+ assert.ok(Estacoes.validar(Estacoes.normalizar(x.f,'f',x.estudo),'f',x.estudo));
+});
 test('PDF mantém 20 páginas com estações em caixas e cores iguais às do calendário',async()=>{
  const x=exemplo(),p=paginas(x.mapa),s=require('../consulta-estacoes.js');
  assert.equal(p.length,20);assert.equal(p[5].title,'Sua Estação da Alma');assert.equal(p[5].blocks[0].estacao,'outono');

@@ -69,10 +69,10 @@ begin
  patch:=jsonb_build_object('estacao_alma',p_payload->'estacao_alma','estacoes_areas',p_payload->'estacoes_areas',
   'estudo_estacoes',p_payload->'estudo_estacoes','versao_estacoes',1,'objetivo',p_payload->'objetivo',
   'sintese_respostas',p_payload->'sintese_respostas','ano',p_payload->'ano','integrada',p_payload->'integrada');
- merged:=m.resultado||(j.fases->'f')||patch;
- update public.mapas set resultado=merged where id=m.id;
- update guardiao_private.estacoes_salvas set fases=jsonb_set(fases,'{d}',patch),estado='concluido',fase_reservada=null,concluido_em=now() where id=j.id;
- return jsonb_build_object('estado','concluido');
+ -- A leitura final fica privada para conferência do PDF antes de substituir a versão salva.
+ -- A publicação é feita pela administração após revisar F + D e conferir o snapshot anterior.
+ update guardiao_private.estacoes_salvas set fases=jsonb_set(fases,'{d}',patch),estado='pendente',fase_reservada=null,reservado_em=null,ultima_falha=null where id=j.id;
+ return jsonb_build_object('estado','pronta');
 end;
 $fn$;
 revoke all on function guardiao_private.processar_estacoes_salvas(text,uuid,text,text,jsonb) from public;

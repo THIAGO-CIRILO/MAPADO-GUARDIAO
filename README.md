@@ -118,7 +118,11 @@ A página 6 traz a Estação da Alma; as bases natal e do arcano ficam nas pági
 administrativa de mapas com respostas completas, em duas etapas (F e D). O
 resultado anterior fica preservado até a publicação atômica. Cada token é
 aleatório, limitado a um mapa, com validade curta e até três tentativas por etapa.
-Clientes não podem criar trabalhos nem ler a fila privada.
+Clientes não podem criar trabalhos nem ler a fila privada. A fase D agora fica preparada
+em privado; a administração confere o PDF completo antes de publicar F + D no mesmo mapa,
+com comparação do snapshot anterior. Em instalações que já têm a fila, aplique
+`supabase/revisar-estacoes-salvas.sql`. O esquema de saída fixa cada chave ANO-MÊS e
+restringe seus IDs às referências daquele mês, antes da validação editorial.
 
 Os testes comparam 40 posições e quatro Ascendentes com dados independentes
 JPL DE421/Skyfield, conferem ausência de Lua/ângulos sem hora, mudança de setênio,
