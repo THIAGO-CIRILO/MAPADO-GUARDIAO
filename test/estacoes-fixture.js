@@ -27,4 +27,11 @@ function exemplo(){
  const dossier={pessoa:{hora:'10:00',tz:-3,lat:-23.5505,lon:-46.6333,nascimento_iso:'1990-05-15'},areas:Array.from({length:12},(_,i)=>({casa:i+1,area:AREA_KEYS[i]}))};
  return {mapa:m,estudo,f,d,teste,dossier,dadosCiclos:{nascimento:'1990-05-15',referencia:'2026-11-04'}};
 }
-module.exports={exemplo};
+function respostaIA(parte,fase,estudo){
+ const local=m=>[m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)];
+ const wire=(p,m)=>{const {base_ids,...rest}=p;return {...rest,bases:base_ids.filter(id=>!id.startsWith('area-')).map(id=>local(m).indexOf(id))};};
+ if(fase==='f')return {meses:parte.meses.map((p,i)=>({...wire(p,estudo.meses[i]),periodo:estudo.meses[i].ano+'-'+String(estudo.meses[i].mes).padStart(2,'0')}))};
+ if(fase==='d')return {...parte,estacao_alma:wire(parte.estacao_alma,estudo.meses[0]),estacoes_areas:Object.entries(parte.estacoes_areas).map(([area,p])=>({...wire(p,estudo.meses[0]),area}))};
+ return parte;
+}
+module.exports={exemplo,respostaIA};

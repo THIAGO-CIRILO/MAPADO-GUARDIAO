@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {exemplo}=require('./estacoes-fixture.js');
+const {exemplo,respostaIA}=require('./estacoes-fixture.js');
 const handler=require('../api/atualizar-estacoes.js');
 const job='11111111-1111-4111-8111-111111111111',token='a'.repeat(64);
 const run=async body=>{let status=200,value;await handler({method:'POST',body},{setHeader(){},status(n){status=n;return this;},json(v){value=v;}});return {status,value};};
@@ -20,7 +20,7 @@ test('atualização salva meses antes da síntese, bloqueia acesso sem token e n
   if(url.endsWith('/biblioteca_buscar_contexto'))return new Response(JSON.stringify([{trecho_id:1,titulo:'Códigos Guardiões',categoria:'metodo',pagina:1,trecho:'O relato ajuda a compreender a proteção.'}]));
   if(url.includes('anthropic')){
    const f=!!b.output_config.format.schema.properties.meses,out=structuredClone(f?x.f:x.d);if(invalid)out.estacao_alma={};
-   const wire=f?{meses:Object.fromEntries(x.estudo.meses.map((m,i)=>[m.ano+'-'+String(m.mes).padStart(2,'0'),out.meses[i]]))}:out;
+   const wire=invalid?out:respostaIA(out,f?'f':'d',x.estudo);
    return new Response(JSON.stringify({content:[{type:'text',text:JSON.stringify(wire)}],stop_reason:'end_turn'}));
   }
   throw Error('URL inesperada');

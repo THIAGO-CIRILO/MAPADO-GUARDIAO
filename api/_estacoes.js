@@ -7,21 +7,34 @@ const obj=properties=>({type:'object',properties,required:Object.keys(properties
 const list=items=>({type:'array',items});
 const refs=list(T);
 const chaveMes=m=>m.ano+'-'+String(m.mes).padStart(2,'0');
+const locais=m=>[m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)];
+const indices=list({type:'integer'});
 function esquema(fase,base,estudo){
  if(fase==='f'){
-  const month=m=>obj({titulo:T,potencial:T,cuidado:T,passo:T,estacao:season,porque:T,base_ids:m?list({type:'string',enum:[m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)]}):refs});
-  return obj({meses:estudo?obj(Object.fromEntries(estudo.meses.map(m=>[chaveMes(m),month(m)]))):list(month())});
+  return obj({meses:list(obj({periodo:estudo?{type:'string',enum:estudo.meses.map(chaveMes)}:T,titulo:T,potencial:T,cuidado:T,passo:T,estacao:season,porque:T,bases:indices}))});
  }
- if(fase==='d')return obj({...base.properties,estacao_alma:obj({estacao:season,titulo:T,leitura:T,porque:T,fase_vida:T,questao:T,gesto:T,ao_longo_do_ano:T,base_ids:refs}),estacoes_areas:obj(Object.fromEntries(AREA_KEYS.map(k=>[k,obj({estacao:season,leitura:T,base_ids:refs})]))) });
+ if(fase==='d')return obj({...base.properties,estacao_alma:obj({estacao:season,titulo:T,leitura:T,porque:T,fase_vida:T,questao:T,gesto:T,ao_longo_do_ano:T,bases:indices}),estacoes_areas:list(obj({area:{type:'string',enum:AREA_KEYS},estacao:season,leitura:T,bases:indices}))});
  return base;
 }
 function normalizar(parte,fase,estudo){
- if(fase!=='f'||!estudo)return parte;
- const months=parte?.meses;
- if(!months||Array.isArray(months)||typeof months!=='object')return {...parte,meses:[]};
- const keys=estudo.meses.map(chaveMes);
- if(Object.keys(months).length!==12||keys.some(k=>!Object.hasOwn(months,k)))return {...parte,meses:[]};
- return {...parte,meses:keys.map(k=>months[k])};
+ if(!estudo)return parte;
+ function resolve(p,m,area){
+  if(!p||typeof p!=='object')return {};
+  const {bases,periodo,area:_,...fields}=p,allowed=locais(m);
+  const valid=Array.isArray(bases)&&bases.every(i=>Number.isInteger(i)&&i>=0&&i<allowed.length);
+  return {...fields,base_ids:valid?[...(area?['area-'+area]:[]),...bases.map(i=>allowed[i])]:[]};
+ }
+ if(fase==='f'){
+  const months=parte?.meses,keys=estudo.meses.map(chaveMes);
+  if(!Array.isArray(months)||months.length!==12||new Set(months.map(m=>m?.periodo)).size!==12||months.some(m=>!keys.includes(m?.periodo)))return {...parte,meses:[]};
+  return {...parte,meses:estudo.meses.map(m=>resolve(months.find(p=>p.periodo===chaveMes(m)),m))};
+ }
+ if(fase==='d'){
+  const areas=parte?.estacoes_areas;
+  if(!Array.isArray(areas)||areas.length!==12||new Set(areas.map(a=>a?.area)).size!==12||areas.some(a=>!AREA_KEYS.includes(a?.area)))return {...parte,estacoes_areas:{}};
+  return {...parte,estacao_alma:resolve(parte.estacao_alma,estudo.meses[0]),estacoes_areas:Object.fromEntries(areas.map(a=>[a.area,resolve(a,estudo.meses[0],a.area)]))};
+ }
+ return parte;
 }
 function calcular(teste,dossier,dadosCiclos){
  if(teste?.versao_consulta!==2||teste?.versao_estacoes!==1)return null;
@@ -43,11 +56,11 @@ function instrucao(fase,estudo,leitura){
  ];
  if(fase==='f')common.push(
   'Para cada um dos 12 meses, retorne estacao (inverno, primavera, verao ou outono) e porque: de 10 a 18 palavras e até 140 caracteres, ligado ao relato. Titulo 3 a 5 palavras; potencial 10 a 14 palavras (até 115 caracteres); cuidado 8 a 12 palavras (até 100 caracteres); passo 8 a 12 palavras (até 100 caracteres). Todos os campos terão caixas próprias. Não repita os mesmos conselhos nos 12 meses.',
-  'O campo meses é um objeto com as 12 chaves ANO-MÊS do esquema, não uma lista. Cada chave só aceita os IDs calculados para aquele mês. base_ids: use pelo menos uma referência de trânsito daquele mês e uma referência numérica ou de setênio do mesmo mês. Se o mês não tem trânsito selecionado, use as referências numérica e de setênio. Os IDs ficam nos bastidores. Cada mês pode manter a estação anterior; mude a classificação apenas quando o estudo e o contexto sustentarem essa mudança. Não force as quatro estações a aparecer e não siga estações do calendário.'
+  'Retorne 12 objetos em meses. periodo deve ser a chave ANO-MÊS daquele mês, sem repetir períodos. bases são índices LOCAIS daquele mês: 0 = base_numerologica, 1 = base_setenio, 2 = primeiro trânsito do mês, 3 = segundo trânsito, e assim por diante. Use um índice numérico/de setênio e um de trânsito do próprio mês; sem trânsito, use [0,1]. Não escreva IDs de outro mês. O servidor resolve os índices somente dentro do período indicado. Cada mês pode manter a estação anterior; mude a classificação apenas quando o estudo e o contexto sustentarem essa mudança. Não force as quatro estações a aparecer e não siga estações do calendário.'
  );
  if(fase==='d')common.push(
-  'Preencha estacao_alma. estacao deve coincidir com a estação do primeiro mês da leitura já preparada: '+String(leitura?.meses?.[0]?.estacao||'a definir com base no estudo')+'. titulo: 3 a 7 palavras (até 65 caracteres). leitura: 35 a 50 palavras (até 360 caracteres). porque: 25 a 35 palavras (até 260 caracteres), explicando a combinação de referências e não uma causa comprovada. fase_vida: 20 a 30 palavras (até 220 caracteres), ligando setênio e ciclo pessoal à questão sem impor destino por idade. questao: 25 a 35 palavras (até 260 caracteres), resposta direta ao pedido. gesto: 12 a 20 palavras (até 150 caracteres). ao_longo_do_ano: 25 a 35 palavras (até 260 caracteres), usando as mudanças de estação realmente presentes nos 12 meses. base_ids deve incluir um trânsito atual, a referência de setênio atual e a referência numérica atual. Sem trânsito atual, use as duas últimas. Não exponha os IDs no texto.',
-  'Preencha estacoes_areas para as 12 áreas. Cada estacao é uma leitura simbólica daquela área no momento atual e pode diferir da estação predominante. leitura: 12 a 22 palavras e até 160 caracteres. Retome o que a área esclarece no pedido, sem inventar fatos. base_ids deve conter area-CHAVE_DA_AREA e outra referência calculada aplicável. Respostas sem relato nessa área são possibilidades concretas, nunca biografia inventada.'
+  'Preencha estacao_alma. estacao deve coincidir com a estação do primeiro mês da leitura já preparada: '+String(leitura?.meses?.[0]?.estacao||'a definir com base no estudo')+'. titulo: 3 a 7 palavras (até 65 caracteres). leitura: 35 a 50 palavras (até 360 caracteres). porque: 25 a 35 palavras (até 260 caracteres), explicando a combinação de referências e não uma causa comprovada. fase_vida: 20 a 30 palavras (até 220 caracteres), ligando setênio e ciclo pessoal à questão sem impor destino por idade. questao: 25 a 35 palavras (até 260 caracteres), resposta direta ao pedido. gesto: 12 a 20 palavras (até 150 caracteres). ao_longo_do_ano: 25 a 35 palavras (até 260 caracteres), usando as mudanças de estação realmente presentes nos 12 meses. bases usa índices do PRIMEIRO mês: 0 = numerologia atual, 1 = setênio atual, 2 = primeiro trânsito atual, 3 = segundo trânsito, etc. Inclua 0, 1 e um trânsito atual; sem trânsito use [0,1]. Não exponha os índices no texto.',
+  'Retorne estacoes_areas como lista de 12 objetos, um por area, sem repetir nem omitir áreas. Cada estacao é uma leitura simbólica daquela área no momento atual e pode diferir da estação predominante. leitura: 12 a 22 palavras e até 160 caracteres. Retome o que a área esclarece no pedido, sem inventar fatos. bases contém um ou mais índices aplicáveis do PRIMEIRO mês, com a mesma numeração da estacao_alma. O servidor acrescenta a referência da área. Respostas sem relato nessa área são possibilidades concretas, nunca biografia inventada.'
  );
  if(fase==='b')common.push('Para caber nas caixas da edição com estações, bases_leitura.natal até 45 palavras e 330 caracteres; numerologia até 35 palavras e 250 caracteres; arcano até 35 palavras e 250 caracteres.');
  return '\n\n'+common.join('\n\n');

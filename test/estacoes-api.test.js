@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {exemplo}=require('./estacoes-fixture.js');
+const {exemplo,respostaIA}=require('./estacoes-fixture.js');
 test('geração usa efemérides, busca os trânsitos nos livros e salva mês e estação com as referências',async()=>{
  const old={...process.env},original=global.fetch,x=exemplo(),calls=[];let saved,release=0,invalid=false;
  Object.assign(process.env,{SUPABASE_URL:'https://db.invalid',SUPABASE_ANON_KEY:'public',ANTHROPIC_API_KEY:'key',BIBLIOTECA_RPC_SECRET:'secret',VERCEL_ENV:'production'});
@@ -16,7 +16,7 @@ test('geração usa efemérides, busca os trânsitos nos livros e salva mês e e
   if(url.includes('api.anthropic.com')){
    const f=b.output_config.format.schema.properties.meses;const out=structuredClone(f?x.f:x.d);
    if(invalid&&f)out.meses[0].base_ids=['transito-inventado','num-2026-11'];
-   const wire=f?{meses:Object.fromEntries(x.estudo.meses.map((m,i)=>[m.ano+'-'+String(m.mes).padStart(2,'0'),out.meses[i]]))}:out;
+   const wire=respostaIA(out,f?'f':'d',x.estudo);
    return new Response(JSON.stringify({content:[{type:'text',text:JSON.stringify(wire)}],stop_reason:'end_turn'}));
   }
   throw Error('URL inesperada');
@@ -28,8 +28,8 @@ test('geração usa efemérides, busca os trânsitos nos livros e salva mês e e
   const llm=calls.find(c=>c.url.includes('anthropic')).body;
   assert.ok(llm.messages[0].content.includes('Astronomy Engine 2.1.19'));assert.ok(llm.messages[0].content.includes(x.estudo.transitos[0].id));
   assert.ok(calls.some(c=>c.url.endsWith('/biblioteca_buscar_contexto')&&/Júpiter|Saturno/.test(c.body.p_consulta)));
-  const month=llm.output_config.format.schema.properties.meses.properties['2026-11'];
-  assert.ok(month.properties.estacao.enum.includes('inverno'));assert.ok(month.properties.base_ids.items.enum.includes('num-2026-11'));assert.ok(!month.properties.base_ids.items.enum.includes('num-2026-12'));
+  const month=llm.output_config.format.schema.properties.meses.items;
+  assert.ok(month.properties.estacao.enum.includes('inverno'));assert.ok(month.properties.periodo.enum.includes('2026-11'));assert.equal(month.properties.bases.items.type,'integer');
   assert.equal((await run('d')).status,200);assert.equal(saved.p_parte.estacao_alma.estacao,'outono');assert.equal(saved.p_parte.estudo_estacoes.versao,1);assert.equal(Object.keys(saved.p_parte.estacoes_areas).length,12);
   const prior=saved;invalid=true;assert.equal((await run('f')).status,502);assert.equal(saved,prior);assert.equal(release,1);
  }finally{global.fetch=original;process.env=old;}

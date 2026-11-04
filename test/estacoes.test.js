@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const {longitude,angulos,calcularTransitos,nascimentoUTC}=require('../api/_transitos.js');
 const Estacoes=require('../api/_estacoes.js');
-const {exemplo}=require('./estacoes-fixture.js');
+const {exemplo,respostaIA}=require('./estacoes-fixture.js');
 const {paginas}=require('../consulta-modelo.js');
 const {renderConsulta}=require('../api/_consulta_pdf.js');
 const vm=require('node:vm'),path=require('node:path');
@@ -37,15 +37,14 @@ test('estações só aceitam referências calculadas para o mês e preservam a c
  assert.equal(Estacoes.calcular({versao_consulta:2},x.dossier,x.dadosCiclos),null);
 });
 test('o esquema fixa cada mês e impede selecionar referências de outro período',()=>{
- const x=exemplo(),s=Estacoes.esquema('f',{},x.estudo),wire={meses:{}};
- for(let i=0;i<12;i++){
-  const m=x.estudo.meses[i],key=m.ano+'-'+String(m.mes).padStart(2,'0'),schema=s.properties.meses.properties[key];
-  assert.deepEqual(schema.properties.base_ids.items.enum,[m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)]);
-  wire.meses[key]=x.f.meses[i];
- }
+ const x=exemplo(),s=Estacoes.esquema('f',{},x.estudo),wire=respostaIA(x.f,'f',x.estudo);
+ assert.equal(s.properties.meses.items.properties.bases.items.type,'integer');assert.equal(s.properties.meses.items.properties.periodo.enum.length,12);
  assert.deepEqual(Estacoes.normalizar(wire,'f',x.estudo),x.f);
- delete wire.meses['2026-11'];wire.meses['2028-11']=x.f.meses[0];assert.ok(Estacoes.validar(Estacoes.normalizar(wire,'f',x.estudo),'f',x.estudo));
- assert.ok(Estacoes.validar(Estacoes.normalizar(x.f,'f',x.estudo),'f',x.estudo));
+ wire.meses.reverse();assert.deepEqual(Estacoes.normalizar(wire,'f',x.estudo),x.f);
+ wire.meses[0].periodo='2028-11';assert.ok(Estacoes.validar(Estacoes.normalizar(wire,'f',x.estudo),'f',x.estudo));
+ const bad=respostaIA(x.f,'f',x.estudo);bad.meses[0].bases=[0,99];assert.ok(Estacoes.validar(Estacoes.normalizar(bad,'f',x.estudo),'f',x.estudo));
+ const d=respostaIA(x.d,'d',x.estudo);d.estacoes_areas.reverse();assert.deepEqual(Estacoes.normalizar(d,'d',x.estudo),x.d);
+ d.estacoes_areas[0].area=d.estacoes_areas[1].area;assert.ok(Estacoes.validar(Estacoes.normalizar(d,'d',x.estudo),'d',x.estudo,x.mapa.resultado));
 });
 test('PDF mantém 20 páginas com estações em caixas e cores iguais às do calendário',async()=>{
  const x=exemplo(),p=paginas(x.mapa),s=require('../consulta-estacoes.js');

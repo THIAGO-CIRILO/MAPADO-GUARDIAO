@@ -121,8 +121,9 @@ aleatório, limitado a um mapa, com validade curta e até três tentativas por e
 Clientes não podem criar trabalhos nem ler a fila privada. A fase D agora fica preparada
 em privado; a administração confere o PDF completo antes de publicar F + D no mesmo mapa,
 com comparação do snapshot anterior. Em instalações que já têm a fila, aplique
-`supabase/revisar-estacoes-salvas.sql`. O esquema de saída fixa cada chave ANO-MÊS e
-restringe seus IDs às referências daquele mês, antes da validação editorial.
+`supabase/revisar-estacoes-salvas.sql`. O esquema de saída identifica cada ANO-MÊS. Referências são índices locais,
+resolvidos somente dentro daquele período; meses e áreas repetidos ou ausentes são
+bloqueados. As áreas usam uma lista compacta para respeitar o limite do provedor.
 
 Os testes comparam 40 posições e quatro Ascendentes com dados independentes
 JPL DE421/Skyfield, conferem ausência de Lua/ângulos sem hora, mudança de setênio,
