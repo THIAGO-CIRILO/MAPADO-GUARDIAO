@@ -124,6 +124,9 @@ com comparação do snapshot anterior. Em instalações que já têm a fila, apl
 `supabase/revisar-estacoes-salvas.sql`. O esquema de saída identifica cada ANO-MÊS. Referências são índices locais,
 resolvidos somente dentro daquele período; meses e áreas repetidos ou ausentes são
 bloqueados. As áreas usam uma lista compacta para respeitar o limite do provedor.
+Os limites de palavras orientam a redação; a validação de espaço usa caracteres
+e a medição de todas as caixas do PDF. Uma recusa indica o mês ou área e o campo
+que deve ser ajustado, preservando as respostas e a versão anterior.
 
 Os testes comparam 40 posições e quatro Ascendentes com dados independentes
 JPL DE421/Skyfield, conferem ausência de Lua/ângulos sem hora, mudança de setênio,

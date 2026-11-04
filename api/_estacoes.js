@@ -68,7 +68,8 @@ function instrucao(fase,estudo,leitura){
 function validar(parte,fase,estudo,leitura){
  if(!estudo)return null;
  const validSeason=x=>chaves.includes(x);
- const text=(s,min,max,words)=>typeof s==='string'&&s.trim().length>=min&&s.length<=max&&s.trim().split(/\s+/).length<=words;
+ // Palavras são uma orientação de escrita; caracteres e medição real controlam o espaço.
+ const text=(s,min,max)=>typeof s==='string'&&s.trim().length>=min&&s.length<=max;
  const all=new Set(estudo.meses.flatMap(m=>[m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)]));
  for(const k of AREA_KEYS)all.add('area-'+k);
  const current=estudo.meses[0];
@@ -77,7 +78,8 @@ function validar(parte,fase,estudo,leitura){
   if(!Array.isArray(parte?.meses)||parte.meses.length!==12)return 'A leitura das estações dos meses veio incompleta.';
   for(let i=0;i<12;i++){
    const p=parte.meses[i],m=estudo.meses[i],allowed=new Set([m.base_numerologica,m.base_setenio,...m.transitos.map(t=>t.id)]);
-   if(!validSeason(p?.estacao)||!text(p.porque,20,140,18)||!text(p.titulo,6,65,7)||!text(p.potencial,15,115,16)||!text(p.cuidado,15,100,14)||!text(p.passo,15,100,14))return 'Uma caixa mensal precisa de ajuste de tamanho ou estação.';
+   if(!validSeason(p?.estacao))return 'A estação do mês '+chaveMes(m)+' veio inválida.';
+   for(const [k,min,max] of [['porque',20,150],['titulo',6,65],['potencial',15,140],['cuidado',15,120],['passo',15,120]])if(!text(p[k],min,max))return 'Mês '+chaveMes(m)+', campo '+k+': use de '+min+' a '+max+' caracteres. Vieram '+String(p[k]?.length||0)+'.';
    if(!validRefs(p.base_ids,allowed)||!p.base_ids.some(x=>x===m.base_numerologica||x===m.base_setenio)||m.transitos.length&&!p.base_ids.some(x=>m.transitos.some(t=>t.id===x)))return 'Um mês citou uma referência que não foi calculada para ele.';
   }
  }
@@ -86,7 +88,7 @@ function validar(parte,fase,estudo,leitura){
   if(!p||!validSeason(p.estacao)||leitura?.meses?.[0]?.estacao&&p.estacao!==leitura.meses[0].estacao)return 'A estação atual ficou diferente da leitura mensal.';
   for(const [k,min,max,words] of [['titulo',5,65,7],['leitura',35,360,50],['porque',35,260,35],['fase_vida',35,220,30],['questao',35,260,35],['gesto',20,150,20],['ao_longo_do_ano',35,260,35]])if(!text(p[k],min,max,words))return 'Uma caixa da Estação da Alma precisa de ajuste de tamanho.';
   if(!validRefs(p.base_ids,all)||!p.base_ids.includes(current.base_numerologica)||!p.base_ids.includes(current.base_setenio)||current.transitos.length&&!p.base_ids.some(x=>current.transitos.some(t=>t.id===x)))return 'A Estação da Alma precisa citar as referências atuais do estudo.';
-  for(const k of AREA_KEYS){const a=parte.estacoes_areas?.[k];if(!a||!validSeason(a.estacao)||!text(a.leitura,20,160,22)||!validRefs(a.base_ids,all)||!a.base_ids.includes('area-'+k))return 'A estação de uma área veio incompleta ou sem referência válida.';}
+  for(const k of AREA_KEYS){const a=parte.estacoes_areas?.[k];if(!a||!validSeason(a.estacao))return 'A estação da área '+k+' veio incompleta.';if(!text(a.leitura,20,180))return 'Área '+k+': use de 20 a 180 caracteres na leitura. Vieram '+String(a.leitura?.length||0)+'.';if(!validRefs(a.base_ids,all)||!a.base_ids.includes('area-'+k))return 'A área '+k+' precisa de uma referência calculada do mês atual.';}
  }
  return null;
 }

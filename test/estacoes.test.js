@@ -61,6 +61,8 @@ test('textos longos continuam inteiros e o PDF alternativo também fecha em 20 p
  const cap=(words,chars)=>('Você pode conferir uma condição concreta antes de assumir outra responsabilidade. '.repeat(20)).split(/\s+/).slice(0,words).join(' ').slice(0,chars).replace(/\s+\S*$/,'')+'.';
  for(const [k,v] of Object.entries({leitura:[50,359],porque:[35,259],fase_vida:[30,219],questao:[35,259],gesto:[20,149],ao_longo_do_ano:[35,259]}))r.estacao_alma[k]=cap(...v);
  for(const [k,v] of Object.entries({natal:[45,329],numerologia:[35,249],arcano:[35,249]}))r.bases_leitura[k]=cap(...v);
+ for(const m of r.meses)for(const [k,max] of Object.entries({potencial:140,cuidado:120,passo:120,porque:150}))m[k]=cap(100,max-1);
+ for(const a of Object.values(r.estacoes_areas))a.leitura=cap(100,179);
  const before=structuredClone(x.mapa),b=await renderConsulta(x.mapa,{});assert.equal((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,20);assert.deepEqual(x.mapa,before);
  fs.writeFileSync('qa/consulta-estacoes-limites.pdf',b);
  let output;const JsPDF=require('jspdf').jsPDF;
