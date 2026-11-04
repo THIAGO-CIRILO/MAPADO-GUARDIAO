@@ -84,6 +84,46 @@ Cada job exige um token aleatório de 256 bits, tem validade curta e preserva o
 resultado anterior. O executor `/api/atualizar-sintese` não cria jobs e publica
 apenas `objetivo` e `sintese_respostas`, após validação; o resto do mapa fica igual.
 
+## Estações da Alma
+
+Novos questionários incluem `versao_estacoes: 1`. Rascunhos já respondidos
+continuam com a assinatura original. A hora, o fuso e a informação de horário
+de verão já coletados seguem para o servidor, junto das coordenadas.
+
+`api/_transitos.js` usa Astronomy Engine 2.1.19 (MIT) para posições geocêntricas
+tropicais. Os alvos natais são calculados no servidor; Ascendente e Meio do Céu
+exigem hora, fuso e coordenadas válidas. Sem hora/fuso confiáveis, o cálculo usa
+12h UTC e exclui Lua e ângulos dos trânsitos. As casas são por signo inteiro a
+partir do Ascendente ou, quando indisponível, solares.
+
+Júpiter, Saturno, Urano, Netuno e Plutão são amostrados diariamente às 12h UTC
+até o último dia do 12º mês. Os aspectos usados são 0°, 60°, 90°, 120° e 180°;
+o orbe é 3° para Júpiter/Saturno e 2° para os demais. As janelas são limitadas ao
+período estudado e a aproximação máxima tem precisão diária. Cada mês recebe
+até quatro referências de maior peso pessoal. Isso não é previsão de eventos.
+
+A IA interpreta Inverno, Primavera, Verão ou Outono com os dados calculados,
+setênio, numerologia e respostas da pessoa. A classificação é uma síntese
+simbólica do método, não uma estação astronômica. Não se força uma sequência de
+quatro estações. IDs de referência são validados por mês antes da gravação; a
+busca privada também usa os planetas envolvidos para selecionar os livros.
+
+`consulta-estacoes.js` centraliza nomes e cores para navegador e os dois motores
+de PDF. A edição usa caixas na leitura, quatro meses por página em três páginas,
+e reúne prática de cinco minutos e sete dias na página 19, mantendo 20 páginas.
+A página 6 traz a Estação da Alma; as bases natal e do arcano ficam nas páginas
+4 e 5. Antes de salvar a síntese nova, o servidor verifica a geração do PDF.
+
+`supabase/estacoes-salvas.sql` e `/api/atualizar-estacoes` permitem uma atualização
+administrativa de mapas com respostas completas, em duas etapas (F e D). O
+resultado anterior fica preservado até a publicação atômica. Cada token é
+aleatório, limitado a um mapa, com validade curta e até três tentativas por etapa.
+Clientes não podem criar trabalhos nem ler a fila privada.
+
+Os testes comparam 40 posições e quatro Ascendentes com dados independentes
+JPL DE421/Skyfield, conferem ausência de Lua/ângulos sem hora, mudança de setênio,
+referências inválidas, retomada de etapas e PDFs de 20 páginas.
+
 A fase B também gera `lugar_potencia` (título concreto, leitura e gesto), a partir
 dos recursos do teste e da questão atual. Ele aparece na capa, junto da frase
 “O seu lugar de potência é onde a sua energia rende mais e custa menos.” Leituras

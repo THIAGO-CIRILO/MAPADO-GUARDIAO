@@ -6,6 +6,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "astronomy-engine": "2.1.19",
     "pdfkit": "0.17.2"
   },
   "devDependencies": {

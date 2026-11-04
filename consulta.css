@@ -16,7 +16,7 @@
 .consulta-card--outline h3,.consulta-card--soft h3{font:700 11px/1.5 Figtree,Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:#75675d}
 .consulta-card--outline ol,.consulta-card--soft ol{background:transparent;padding:0 0 0 20px;margin-top:12px}
 .consulta-page--cover h2{font-size:clamp(2.8rem,6vw,3.6rem);color:#a35330;margin-top:28px}
-.consulta-page--cover .consulta-card:first-of-type h3{font:400 32px/1.1 'Instrument Serif',Georgia,serif;text-transform:none;letter-spacing:0;color:#a35330;border-bottom:1px solid #ddd2c4;padding-bottom:14px}
+.consulta-page--cover .consulta-blocks>div:first-child .consulta-card h3{font:400 32px/1.1 'Instrument Serif',Georgia,serif;text-transform:none;letter-spacing:0;color:#a35330;border-bottom:1px solid #ddd2c4;padding-bottom:14px}
 .consulta-page--cover .consulta-kicker{border:0}
 .consulta-table-wrap{overflow-x:auto;margin:24px 0}.consulta-table-wrap table{border-collapse:collapse;width:100%;font-size:15px;line-height:1.5;min-width:520px}
 .consulta-table-wrap th,.consulta-table-wrap td{border:0;border-bottom:1px solid #ddd2c4;text-align:left;padding:14px 12px;vertical-align:top;font-weight:400}
@@ -33,6 +33,25 @@
 .wz-review{font-size:13px;line-height:1.5}.wz-review summary{cursor:pointer;color:var(--accent)}.wz-review ol{padding-left:20px}.wz-review li{margin:14px 0}.wz-review li span{display:block;color:var(--muted);margin-top:5px}
 .consulta-original{margin-top:12px;font-size:13px;line-height:1.6;color:#75675d}.consulta-original summary{cursor:pointer;text-decoration:underline;text-underline-offset:3px}.consulta-original p{margin-top:10px;padding-top:10px;border-top:1px solid #ddd2c4}
 @media print{.consulta-original{display:none}}
+
+/* As mesmas quatro cores do PDF; o nome da estação acompanha cada cor. */
+.consulta-blocks{display:grid;gap:14px}.consulta-blocks>.consulta-block-full{grid-column:1/-1}
+.consulta-blocks .consulta-card{margin:0;height:100%;box-sizing:border-box}
+.consulta-blocks--two{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.consulta-card--season{border:1px solid var(--season-border);border-left:4px solid var(--season-accent);background:var(--season-bg)}
+.consulta-season-label{display:block;font:700 11px/1.5 Figtree,Arial,sans-serif;color:var(--season-accent);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em}
+.consulta-card--season h3{color:var(--season-accent)}
+.consulta-card--estacao h3{font:400 30px/1.15 'Instrument Serif',Georgia,serif;text-transform:none;letter-spacing:0}
+.consulta-card--mes{position:relative;padding-top:22px!important}
+.consulta-card--mes .consulta-season-label{display:inline-block;padding:4px 8px;background:var(--season-accent);color:#fff;border-radius:5px;margin-bottom:12px;font-size:10px}
+.consulta-card--mes h3{font:700 12px/1.5 Figtree,Arial,sans-serif!important;text-transform:none;letter-spacing:0;color:#75675d!important;margin-bottom:6px}
+.consulta-month-title{font:400 27px/1.15 'Instrument Serif',Georgia,serif;margin-bottom:16px!important;color:#453a33}
+.consulta-fields{margin:16px 0 0;display:grid;gap:12px}.consulta-fields dt{font:700 10px/1.5 Figtree,Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--season-accent,#75675d);margin-bottom:3px}.consulta-fields dd{margin:0;font-size:15px;line-height:1.6}
+.consulta-card-note{font-size:12px;line-height:1.6;color:#75675d;margin-top:16px!important}
+.consulta-season-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:20px 0}
+.consulta-season-legend>div{border:1px solid var(--season-border);background:var(--season-bg);padding:10px;border-radius:5px}.consulta-season-legend strong{display:block;font-size:12px;color:var(--season-accent)}.consulta-season-legend span{display:block;font-size:10px;line-height:1.5;margin-top:4px}
+@media(max-width:680px){.consulta-blocks--two{grid-template-columns:1fr}.consulta-season-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.consulta-blocks .consulta-card{padding:18px}.consulta-fields dd{font-size:15px}}
+@media print{.consulta-blocks--two{grid-template-columns:repeat(2,minmax(0,1fr))}.consulta-card{break-inside:avoid}}
 
 /* Paleta da marca: marrom, laranja e bege no fluxo de perguntas. */
 :root{--bg:#F0E8DB;--surface:#FAF6EE;--fg:#3A2C26;--muted:#6B5A50;--line:#DACDBA;--accent:#B04F1E;--accent-soft:#EEE0D2;--mark:#B04F1E;--mark-soft:#F0DFCE;--b1:#EEE0D2;--b2:#F0DFCE;--b3:#E9DED4;--b4:#E7DBCF}

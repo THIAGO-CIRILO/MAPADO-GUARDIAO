@@ -1,0 +1,77 @@
+{
+  "fonte": "JPL DE421 via Skyfield; geocêntrico aparente, eclíptica verdadeira da data. Ascendente conferido por interseção vetorial com horizonte leste.",
+  "dados": [
+    {
+      "date": "1990-05-15T13:00:00Z",
+      "positions": {
+        "Sun": 54.436284,
+        "Moon": 297.676995,
+        "Mercury": 38.007515,
+        "Venus": 12.865843,
+        "Mars": 348.364798,
+        "Jupiter": 99.549631,
+        "Saturn": 295.248705,
+        "Uranus": 279.18286,
+        "Neptune": 284.352269,
+        "Pluto": 226.166249
+      },
+      "ascendente": 99.798195,
+      "latitude": -23.5505,
+      "longitude": -46.6333
+    },
+    {
+      "date": "2000-01-01T12:00:00Z",
+      "positions": {
+        "Sun": 280.368923,
+        "Moon": 223.3238,
+        "Mercury": 271.889283,
+        "Venus": 241.565793,
+        "Mars": 327.963306,
+        "Jupiter": 25.253087,
+        "Saturn": 40.395663,
+        "Uranus": 314.809191,
+        "Neptune": 303.193015,
+        "Pluto": 251.454781
+      },
+      "ascendente": 327.145658,
+      "latitude": -23.5505,
+      "longitude": -46.6333
+    },
+    {
+      "date": "2026-11-04T12:00:00Z",
+      "positions": {
+        "Sun": 222.0805,
+        "Moon": 165.381529,
+        "Mercury": 222.311963,
+        "Venus": 204.703647,
+        "Mars": 140.364101,
+        "Jupiter": 144.734153,
+        "Saturn": 9.073013,
+        "Uranus": 64.546211,
+        "Neptune": 2.012893,
+        "Pluto": 303.157783
+      },
+      "ascendente": 277.258882,
+      "latitude": -23.5505,
+      "longitude": -46.6333
+    },
+    {
+      "date": "2027-06-15T12:00:00Z",
+      "positions": {
+        "Sun": 84.18687,
+        "Moon": 223.77133,
+        "Mercury": 95.552992,
+        "Venus": 68.509131,
+        "Mars": 164.039478,
+        "Jupiter": 142.508888,
+        "Saturn": 25.389634,
+        "Uranus": 66.876295,
+        "Neptune": 6.496198,
+        "Pluto": 306.864756
+      },
+      "ascendente": 115.28898,
+      "latitude": -23.5505,
+      "longitude": -46.6333
+    }
+  ]
+}

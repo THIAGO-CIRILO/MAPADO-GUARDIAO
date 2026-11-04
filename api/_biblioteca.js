@@ -30,7 +30,7 @@ function termosDoTexto(textos){
  terms.push(...[...counts.values()].sort((a,b)=>b.count-a.count).slice(0,4).map(x=>x.word));
  return [...new Set(terms)].slice(0,9);
 }
-function consultasBibliograficas(fase,teste={}){
+function consultasBibliograficas(fase,teste={},estudo=null){
  if(!SEARCH[fase])return [];
  const queries=[];
  const add=(text,category,limit=2)=>{const q=plain(text).slice(0,180);if(q.length>1&&!queries.some(x=>x.p_consulta===q&&x.p_categoria===category))queries.push({p_consulta:q,p_categoria:category,p_limite:limit});};
@@ -48,14 +48,22 @@ function consultasBibliograficas(fase,teste={}){
  if(pessoais.length)add(pessoais.slice(0,6).map(x=>'"'+x+'"').join(' OR '),'metodo');
  if(situacao.length)add(situacao.slice(0,6).map(x=>'"'+x+'"').join(' OR '),'metodo');
  if(escolhas.length)add(escolhas.slice(0,5).map(x=>'"'+x+'"').join(' OR '),'metodo',1);
+ if(estudo?.transitos?.length){
+  const chosen=new Set();
+  for(const t of estudo.transitos){
+   if(chosen.has(t.transitante))continue;
+   add('"'+t.transitante+'" "'+t.natal+'"',null,1);chosen.add(t.transitante);
+   if(chosen.size===3)break;
+  }
+ }
  for(const q of SEARCH[fase])add(q,null,1);
  if(!queries.some(x=>x.p_categoria==='metodo'))add('proteção potencial','metodo',2);
  return queries;
 }
-async function obterContextoBibliografico(fase,teste={}){
+async function obterContextoBibliografico(fase,teste={},estudo=null){
  const base=process.env.SUPABASE_URL,anonKey=process.env.SUPABASE_ANON_KEY,key=process.env.BIBLIOTECA_RPC_SECRET;
  if(!base||!anonKey||!key)return '';
- const queries=consultasBibliograficas(fase,teste);if(!queries.length)return '';
+ const queries=consultasBibliograficas(fase,teste,estudo);if(!queries.length)return '';
  const settled=await Promise.allSettled(queries.map(q=>fetch(base+'/rest/v1/rpc/biblioteca_buscar_contexto',{
   method:'POST',headers:{apikey:anonKey,Authorization:'Bearer '+anonKey,'Content-Type':'application/json'},
   body:JSON.stringify({...q,p_chave:key}),signal:AbortSignal.timeout(3200)

@@ -66,7 +66,7 @@ def use_real_auth(html, filename):
     return html
 
 # Shared intake, page model, and PDF layout for the personalized 20-page edition.
-for filename in ('consulta-entrada.js','consulta-contexto.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js','consulta.css','meditacao.html'):
+for filename in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js','consulta.css','meditacao.html'):
     shutil.copyfile(root / filename, out / filename)
 shutil.copytree(root / 'assets/fonts', out / 'fonts', dirs_exist_ok=True)
 shutil.copytree(root / 'assets/audio', out / 'audio', dirs_exist_ok=True)
@@ -105,10 +105,10 @@ close_tag = html.find("</script>", wizard_pos)
 if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
-consulta_scripts = ''.join('<script src="/'+name+'?v='+('20261102-sintese1' if name in ('consulta-modelo.js','consulta-view.js') else '20261102-resposta3' if name=='consulta-pdf-layout.js' else '20261102-contexto3')+'"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
+consulta_scripts = ''.join('<script src="/'+name+'?v=20261104-estacoes1"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
 
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
-html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261102-sintese1"></head>', 1)
+html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261104-estacoes1"></head>', 1)
 
 # Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
 # in the old archive. Editorial responsibility is handled by the new server prompt.

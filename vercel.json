@@ -17,10 +17,15 @@
   ],
   "functions": {
     "api/gerar.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "assets/fonts/**"
     },
     "api/atualizar-sintese.js": {
       "maxDuration": 60
+    },
+    "api/atualizar-estacoes.js": {
+      "maxDuration": 60,
+      "includeFiles": "assets/fonts/**"
     },
     "api/relatorio.js": {
       "maxDuration": 60,

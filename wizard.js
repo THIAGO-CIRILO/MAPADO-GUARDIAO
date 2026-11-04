@@ -19,6 +19,8 @@ const quizSteps=()=>['teste',...GT_Q.map((_,i)=>'q'+i)];
 // Drafts already answered keep their original signature and generation format.
 D.flowVersion = D.flowVersion || (GT_Q.some((_,i)=>D.ans[i]!==undefined) ? 1 : 2);
 D.contextoVersion=Contexto.versaoRascunho(D,GT_Q.length);
+// Rascunhos que já responderam ao teste preservam a assinatura anterior.
+if(D.estacoesVersion===undefined)D.estacoesVersion=GT_Q.some((_,i)=>D.ans[i]!==undefined)?0:1;
 let STEPS = [...(D.flowVersion===2 ? Entrada.campos.map(c=>'ctx_'+c.key) : []), 'dados1', 'dados2', ...quizSteps(), ...(D.flowVersion===2?apoioSteps():[]), 'obj'];
 function intake(){return Entrada.contexto(D.ans?._consulta);}
 function saveIntake(key,value){D.ans._consulta={versao:2,...intake(),[key]:String(value).slice(0,Entrada.campos.find(c=>c.key===key).max)};if(key==='questao')D.goal=value;gtSave();}
@@ -42,7 +44,7 @@ async function startUpgrade(){
   if(!resume){
     D.ans={...m.respostas,_consulta:{versao:2,...Entrada.contexto({questao:f.objetivo||''})}};
     Object.assign(D,{name:f.nome||'',birth:f.nascimento||'',time:f.hora||'',uf:f.uf||'',city:f.cidade||'',lat:f.lat??'',lon:f.lon??'',tz:f.tz??-3,dst:!!f.dst,goal:f.objetivo||'',aceite:false,step:'ctx_questao'});
-    D.contextoVersion=1;D.contextosComplementares={};W.assinaturaAtualizacao=null;W.partesGeradas={};W.assinaturaGeracao=null;
+    D.contextoVersion=1;D.contextosComplementares={};D.estacoesVersion=1;W.assinaturaAtualizacao=null;W.partesGeradas={};W.assinaturaGeracao=null;
   }
   W.upgradeFrozen=!!pending.contexto?.teste?.contexto_atual;
   if(W.upgradeFrozen){D.ans._consulta={versao:2,...Entrada.contexto(pending.contexto.teste.contexto_atual)};D.goal=intake().questao;D.step='obj';W.assinaturaAtualizacao=pending.assinatura;}
@@ -63,7 +65,7 @@ function resetDraft(keepPerson) {
   W.upgradeFrozen=false;
   const keep = keepPerson ? { name: D.name, birth: D.birth, time: D.time, uf: D.uf, city: D.city, lat: D.lat, lon: D.lon, tz: D.tz, dst: D.dst, manual: D.manual } : {};
   Object.keys(D).forEach(k => delete D[k]);
-  Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'ctx_questao', flowVersion: 2, contextoVersion:1,contextosComplementares:{},manual: false }, keep);
+  Object.assign(D, { ans: {}, name: '', birth: '', time: '', uf: '', city: '', lat: '', lon: '', tz: -3, dst: false, goal: '', aceite: false, pid: null, step: 'ctx_questao', flowVersion: 2, contextoVersion:1,estacoesVersion:1,contextosComplementares:{},manual: false }, keep);
   STEPS = [...Entrada.campos.map(c=>'ctx_'+c.key),'dados1','dados2',...quizSteps(),...apoioSteps(),'obj'];
   gtSave();
 }
@@ -296,7 +298,7 @@ function wzTeste(p, S) {
     estilo_de_aprender: { principal: GT_L[S.rl[0]][0] + ': ' + GT_L[S.rl[0]][1], secundario: S.rl[1] && Number(S.l[S.rl[1]]) > 0 ? GT_L[S.rl[1]][0] : null },
     fonte_de_renda_preferida: { principal: GT_M[S.rm[0]][0] + ': ' + GT_M[S.rm[0]][1], secundaria: S.rm[1] && Number(S.m[S.rm[1]]) > 0 ? GT_M[S.rm[1]][0] : null },
     respostas: GT_Q.map((q, i) => ({ pergunta: q[0], resposta: q[2][D.ans[i]] ? q[2][D.ans[i]][0] : 'não respondeu' })),
-    ...(D.flowVersion===2?{versao_consulta:2,contexto_atual:intake(),...(D.contextoVersion===1?{contextos_complementares:Contexto.contexto(D.contextosComplementares)}:{})}:{}),
+    ...(D.flowVersion===2?{versao_consulta:2,...(D.estacoesVersion===1?{versao_estacoes:1}:{}),contexto_atual:intake(),...(D.contextoVersion===1?{contextos_complementares:Contexto.contexto(D.contextosComplementares)}:{})}:{}),
     objetivo_da_pessoa: p.goal
   };
 }
@@ -419,6 +421,7 @@ async function gerar() {
   if (!dossier) { W.busy = false; W.err = 'Não consegui calcular os ciclos. Confira a data de nascimento.'; W.screen = 'erro'; return wz(); }
   if(D.flowVersion!==2)delete dossier.areas;
   else if(!frozen) {dossier.pessoa.nome=p.name;dossier.pessoa.cidade=p.city;dossier.pessoa.nascimento_iso=D.birth;dossier.pessoa.hora_informada=!!D.time;dossier.arcano_pessoal=Entrada.arcanoPessoal(D.birth);}
+  if(!frozen&&D.estacoesVersion===1)Object.assign(dossier.pessoa,{hora:D.time||'',tz:p.tz,dst:p.dst,lat:p.lat,lon:p.lon});
   delete dossier.modo; delete dossier.elementos_autoavaliacao;
   const teste = frozen?.teste || wzTeste(p, S);
   try { await guardarHistoricoGuardiao({S,teste,dossier,referencia:dataFixa}); }
