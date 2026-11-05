@@ -243,7 +243,7 @@ if not photo.is_file() or not sales_source.is_file():
 shutil.copyfile(photo,out/photo.name)
 sales_html=sales_source.read_text(encoding='utf-8')
 for required in ('https://pay.kiwify.com.br/vT6ZxZd','8x de R$ 5,38','R$ 37,00',
-                 'dez perguntas fixas','três perguntas','20 páginas','12 áreas',
+                 'dez perguntas fixas','três perguntas','20 páginas','Seu Guardião',
                  'mailto:contato.energystudio@gmail.com'):
     if required not in sales_html:raise SystemExit('Sales content missing: '+required)
 if 'href="#"' in sales_html or '24 Guardiões' in sales_html:
