@@ -72,11 +72,11 @@ test('resposta destacada cabe no PDF mesmo com os cinco campos no tamanho máxim
  for(const c of Entrada.campos)m.resultado.entrada_consulta[c.key]=('Texto de exemplo para conferir a preservação da resposta e o espaço disponível. '.repeat(30)).slice(0,c.max);
  m.resultado.objetivo.leitura=Array.from({length:75},()=> 'clareza').join(' ')+'.';
  const pdf=await renderConsulta(m,{});
- assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
+ assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,12);
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-respostas-maximas.pdf',pdf);
 });
 
-test('síntese e orientação cabem no PDF com os detalhes disponíveis no painel',async()=>{
+test('síntese e orientação cabem no PDF completo',async()=>{
  const Entrada=require('../consulta-entrada.js'),m=mapa();
  for(const c of Entrada.campos){
   m.resultado.entrada_consulta[c.key]='Resposta original longa. '.repeat(50).slice(0,c.max);
@@ -86,6 +86,6 @@ test('síntese e orientação cabem no PDF com os detalhes disponíveis no paine
  m.resultado.objetivo.proximo_passo=Array.from({length:25},()=> 'critério').join(' ')+'.';
  assert.equal(validarParte(m.resultado,'d'),null);
  const pdf=await renderConsulta(m,{});
- assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
+ assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,12);
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-sintese-maxima.pdf',pdf);
 });

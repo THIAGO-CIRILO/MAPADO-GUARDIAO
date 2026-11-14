@@ -105,10 +105,10 @@ close_tag = html.find("</script>", wizard_pos)
 if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
-consulta_scripts = ''.join('<script src="/'+name+'?v=20261114-consulta-curta"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
+consulta_scripts = ''.join('<script src="/'+name+'?v=20261114-pdf-completo"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
 
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
-html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261114-consulta-curta"></head>', 1)
+html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261114-pdf-completo"></head>', 1)
 
 # Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
 # in the old archive. Editorial responsibility is handled by the new server prompt.
@@ -243,7 +243,7 @@ if not photo.is_file() or not sales_source.is_file():
 shutil.copyfile(photo,out/photo.name)
 sales_html=sales_source.read_text(encoding='utf-8')
 for required in ('https://pay.kiwify.com.br/vT6ZxZd','8x de R$ 5,38','R$ 37,00',
-                 'dez perguntas fixas','três perguntas','5 páginas','Seu Guardião',
+                 'dez perguntas fixas','três perguntas','12 páginas','Seu Guardião',
                  'mailto:contato.energystudio@gmail.com'):
     if required not in sales_html:raise SystemExit('Sales content missing: '+required)
 if 'href="#"' in sales_html or '24 Guardiões' in sales_html:

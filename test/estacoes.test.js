@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {longitude,angulos,calcularTransitos,nascimentoUTC}=require('../api/_transitos.js');
 const Estacoes=require('../api/_estacoes.js');
 const {exemplo,respostaIA}=require('./estacoes-fixture.js');
-const {paginas}=require('../consulta-modelo.js');
+const {paginasPDF}=require('../consulta-modelo.js');
 const {renderConsulta}=require('../api/_consulta_pdf.js');
 const vm=require('node:vm'),path=require('node:path');
 test('posições e Ascendente concordam com referência independente JPL/Skyfield',()=>{
@@ -46,28 +46,33 @@ test('o esquema fixa cada mês e impede selecionar referências de outro períod
  const d=respostaIA(x.d,'d',x.estudo);d.estacoes_areas.reverse();assert.deepEqual(Estacoes.normalizar(d,'d',x.estudo),x.d);
  d.estacoes_areas[0].area=d.estacoes_areas[1].area;assert.ok(Estacoes.validar(Estacoes.normalizar(d,'d',x.estudo),'d',x.estudo,x.mapa.resultado));
 });
-test('Estação atual e doze meses recebem as mesmas cores nas cinco páginas',async()=>{
- const x=exemplo(),p=paginas(x.mapa),s=require('../consulta-estacoes.js');
- assert.equal(p.length,5);assert.equal(p[2].title,'Sua Estação da Alma');assert.equal(p[2].blocks[0].estacao,'outono');
+test('Estação atual e 12 meses mantêm as cores no PDF completo',async()=>{
+ const x=exemplo(),p=paginasPDF(x.mapa),s=require('../consulta-estacoes.js');
+ assert.equal(p.length,12);assert.equal(p[2].title,'Sua Estação da Alma');assert.equal(p[2].blocks[0].estacao,'outono');
  assert.ok(p[3].legend);assert.equal(p[3].blocks.length,6);assert.equal(p[4].blocks.length,6);assert.equal(p[3].columns,2);
- assert.deepEqual(p.slice(3).flatMap(page=>page.blocks).map(b=>b.estacao),x.mapa.resultado.meses.map(m=>m.estacao));
- assert.ok(p[1].details[1].blocks.some(b=>b.body===x.mapa.resultado.plano.min5));
- assert.ok(p[2].details.at(-1).blocks.every(b=>s.obter(b.estacao)&&b.fields.length===2));
- const b=await renderConsulta(x.mapa,{});assert.equal((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
+ const meses=p.slice(3,5).flatMap(page=>page.blocks);
+ assert.deepEqual(meses.map(b=>s.obter(b.estacao).nome),x.mapa.resultado.meses.map(m=>s.obter(m.estacao).nome));
+ assert.ok(meses.every(b=>b.fields.some(f=>f.label==='Um cuidado')));
+ assert.equal(p[5].blocks.length,5);assert.ok(p[5].blocks.every(b=>b.original&&b.body));
+ assert.equal(p[7].blocks.length+p[8].blocks.length,12);
+ assert.equal(p[1].table.rows.length+p[9].table.rows.length,6);
+ assert.equal(p[10].blocks.filter(b=>b.kind==='step').length,5);
+ assert.equal(p[11].blocks.length,7);
+ const b=await renderConsulta(x.mapa,{});assert.equal((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,12);
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-estacoes.pdf',b);
 });
-test('textos no limite cabem na consulta curta e o PDF alternativo tem as mesmas cinco páginas',async()=>{
+test('textos no limite cabem nos dois formatos de PDF completo',async()=>{
  const x=exemplo(),r=x.mapa.resultado;
  const cap=(words,chars)=>('Você pode conferir uma condição concreta antes de assumir outra responsabilidade. '.repeat(20)).split(/\s+/).slice(0,words).join(' ').slice(0,chars).replace(/\s+\S*$/,'')+'.';
  for(const [k,v] of Object.entries({leitura:[50,359],porque:[35,259],fase_vida:[30,219],questao:[35,259],gesto:[20,149],ao_longo_do_ano:[35,259]}))r.estacao_alma[k]=cap(...v);
  for(const [k,v] of Object.entries({natal:[45,329],numerologia:[35,249],arcano:[35,249]}))r.bases_leitura[k]=cap(...v);
  for(const m of r.meses)for(const [k,max] of Object.entries({potencial:140,cuidado:120,passo:120,porque:150}))m[k]=cap(100,max-1);
  for(const a of Object.values(r.estacoes_areas))a.leitura=cap(100,179);
- const before=structuredClone(x.mapa),b=await renderConsulta(x.mapa,{});assert.equal((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);assert.deepEqual(x.mapa,before);
+ const before=structuredClone(x.mapa),b=await renderConsulta(x.mapa,{});assert.equal((b.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,12);assert.deepEqual(x.mapa,before);
  fs.writeFileSync('qa/consulta-estacoes-limites.pdf',b);
  let output;const JsPDF=require('jspdf').jsPDF;
  const context={window:{jspdf:{jsPDF:function(o){const d=new JsPDF(o);d.save=()=>output=Buffer.from(d.output('arraybuffer'));return d;}},GuardiaoConsulta:require('../consulta-modelo.js'),GuardiaoPdfLayout:require('../consulta-pdf-layout.js')},fetch:async u=>({ok:true,arrayBuffer:async()=>{const bytes=fs.readFileSync(path.join(__dirname,'../assets',u));return bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);}}),btoa:s=>Buffer.from(s,'binary').toString('base64'),Uint8Array};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../consulta-pdf-browser.js'),'utf8'),context);
  await context.window.GuardiaoPdfConsulta.download({...exemplo().mapa,name:'Ana Exemplo'},null,{});
- assert.ok(output);assert.equal((output.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);fs.writeFileSync('qa/consulta-estacoes-navegador.pdf',output);
+ assert.ok(output);assert.equal((output.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,12);fs.writeFileSync('qa/consulta-estacoes-navegador.pdf',output);
 });

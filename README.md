@@ -130,7 +130,7 @@ que deve ser ajustado, preservando as respostas e a versão anterior.
 
 Os testes comparam 40 posições e quatro Ascendentes com dados independentes
 JPL DE421/Skyfield, conferem ausência de Lua/ângulos sem hora, mudança de setênio,
-referências inválidas, retomada de etapas e PDFs de cinco páginas.
+referências inválidas, retomada de etapas e PDFs de 12 páginas.
 
 A fase B também gera `lugar_potencia` (título concreto, leitura e gesto), a partir
 dos recursos do teste e da questão atual. Ele aparece na capa, junto da frase
@@ -149,14 +149,16 @@ convertida para MP3 de 128 kbps estéreo, preservando os dois canais do original
 sem ouvir. A pessoa pode repetir em `/meditacao`. O roteiro anterior foi retirado
 da tela de áudio para não ser confundido com a gravação enviada.
 
-O modelo de cinco páginas alimenta a leitura na tela e os PDFs do servidor e
-do navegador. A primeira página responde à questão, mostra o Guardião e destaca
-o lugar de potência. A segunda traz o plano de 72 horas e três situações da tabela
-Reconhecer, Honrar e Atualizar. No painel, a cliente pode abrir as interpretações
-das cinco respostas, todas as situações, as práticas e as 12 áreas. Os mapas já
-salvos na edição de consulta rápida usam a nova apresentação com os dados que já
-têm. As cores das estações aparecem quando a leitura salva contém a classificação
-do período. O áudio continua disponível antes da leitura.
+O PDF completo tem 12 páginas no servidor e no navegador. A primeira
+responde à questão, mostra o Guardião e destaca o lugar de potência. A segunda
+traz o plano de 72 horas e a primeira tabela. A Estação da Alma e os 12 meses
+ocupam as páginas 3 a 5. As páginas 6 a 12 trazem as cinco respostas interpretadas,
+o Guardião em ação, as 12 áreas, as outras três situações e as práticas. A primeira
+página tem atalhos para consultar as demais. O painel também permite abrir
+os detalhes. Quem já tem uma leitura de consulta rápida salva pode baixar o
+arquivo completo com os dados existentes. As cores das estações aparecem
+quando a leitura salva contém a classificação do período. O áudio continua
+disponível antes da leitura e tem um atalho no PDF.
 
 ### Atualizar uma leitura anterior
 

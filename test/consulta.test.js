@@ -39,12 +39,12 @@ test('consulta de cinco páginas começa pela resposta e mantém o contexto pess
  assert.ok(!JSON.stringify(pa).includes('Cinco minutos antes da leitura'));
  assert.ok(!JSON.stringify(pa).includes('Primeiro minuto'));
 });
-test('PDF de consulta rápida tem cinco páginas e mantém as fontes da leitura',async()=>{
+test('PDF completo tem 12 páginas e mantém as fontes da leitura',async()=>{
  const pdf=await renderConsulta(mapa(),{nome:'Outro nome no perfil'});
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-servidor.pdf',pdf);
  assert.equal(pdf.subarray(0,5).toString(),'%PDF-');
  const raw=pdf.toString('latin1');
- assert.equal((raw.match(/\/Type \/Page\b/g)||[]).length,5);
+ assert.equal((raw.match(/\/Type \/Page\b/g)||[]).length,12);
  assert.match(raw,/InstrumentSerif/);assert.match(raw,/Figtree/);
 });
 test('gerador envia todo contexto, mantém autorização e grava a versão nova',async()=>{

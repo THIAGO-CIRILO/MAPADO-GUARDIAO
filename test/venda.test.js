@@ -13,5 +13,6 @@ test('página de vendas mantém checkout, contato e navegação utilizáveis',()
   assert.equal(d.querySelector('a[href^="mailto:"]').href,'mailto:contato.energystudio@gmail.com');
   for(const img of d.images)assert.ok(img.src&&!img.src.includes('placeholder')&&img.alt);
   assert.match(d.body.textContent,/8x de R\$ 5,38/);assert.match(d.body.textContent,/R\$ 37,00/);
+  assert.match(d.getElementById('recebe').textContent,/PDF individual · 12 páginas/);
  }finally{dom.window.close();}
 });

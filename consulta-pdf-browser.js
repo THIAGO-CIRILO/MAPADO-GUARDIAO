@@ -10,7 +10,7 @@
   return fontPromise;
  }
  async function download(p,button,status){
-  const pages=window.GuardiaoConsulta.paginas(p,{nome:p.name});
+  const pages=window.GuardiaoConsulta.paginasPDF(p,{nome:p.name});
   const fonts=await loadFonts();
   const JsPDF=window.jspdf?.jsPDF;
   if(!JsPDF)throw new Error('O recurso de PDF não carregou. Atualize a página.');
@@ -19,9 +19,9 @@
   let count=0;const links=[];
   const set=(s,f,c)=>{doc.setFont(f,'normal');doc.setFontSize(s);if(c)doc.setTextColor(c);doc.setLineHeightFactor(1+2/s);};
   const painter={
-   page:()=>{if(count++)doc.addPage('a4','portrait');},
+   page:title=>{if(count++)doc.addPage('a4','portrait');doc.outline?.add(null,title,{pageNumber:count});},
    height:(t,w,s,f)=>{set(s,f);return doc.splitTextToSize(t,w).length*(s+2);},
-   text:(t,x,y,w,s,f,c)=>{set(s,f,c);doc.text(doc.splitTextToSize(t,w),x,y,{baseline:'top'});},
+   text:(t,x,y,w,s,f,c,align='left')=>{set(s,f,c);doc.text(doc.splitTextToSize(t,w),align==='right'?x+w:x,y,{baseline:'top',align});},
    line:(x,y,xx,yy,c)=>{doc.setDrawColor(c);doc.setLineWidth(.6);doc.line(x,y,xx,yy);},
    rect:(x,y,w,h,c,b,r=0)=>{doc.setFillColor(c);if(b)doc.setDrawColor(b);doc.setLineWidth(.6);if(r)doc.roundedRect(x,y,w,h,r,r,b?'FD':'F');else doc.rect(x,y,w,h,b?'FD':'F');},
    link:(x,y,w,h,target)=>links.push({page:count,x,y,w,h,target})

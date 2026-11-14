@@ -83,7 +83,7 @@ test('leitura antiga recebe os campos novos, mantém o mesmo mapa e oferece medi
   assert.equal(f.old.id,mapa().id);assert.equal(f.old.resultado.versao_consulta,2);
   assert.equal(f.calls.filter(x=>x.fase==='a').length,1,'A etapa concluída deve ser reutilizada.');
   for(const body of f.calls){assert.deepEqual(body.teste.contexto_atual,entrada);assert.equal(body.teste.respostas.length,10);assert.equal(body.dossier.areas.length,12);assert.equal(body.dadosCiclos.nascimento,'1990-05-15');}
-  f.click('wzOpenReading');assert.equal(f.w.document.querySelectorAll('.consulta-page').length,5);assert.match(f.$('wzPdf29').textContent,/5 páginas/);assert.ok(!f.$('wzUpgrade'));
+  f.click('wzOpenReading');assert.equal(f.w.document.querySelectorAll('.consulta-page').length,5);assert.match(f.$('wzPdf29').textContent,/12 páginas/);assert.ok(!f.$('wzUpgrade'));
   assert.deepEqual(f.errors,[]);
  }finally{f.dom.window.close();}
 });

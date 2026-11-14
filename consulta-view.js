@@ -33,7 +33,7 @@
    ${page.table?table(page.table):''}
    ${(page.details||[]).map(d=>`<details class="consulta-details"><summary>${esc(d.title)}</summary>${d.table?table(d.table):blocks(d.blocks,2)}</details>`).join('')}
    <p class="consulta-page-count">${i+1} / ${pages.length}</p></section>`).join('');
-  document.getElementById('gtBody').innerHTML=`<div class="consulta-toolbar"><button id="gtPdf" type="button">Baixar meu mapa · ${pages.length} páginas</button><a href="/meditacao" target="_blank" rel="noopener">Ouvir meditação novamente</a><span id="gtPdfSt" role="status" aria-live="polite"></span></div><main class="consulta-reading" id="gtDoc">${html}</main>`;
+  document.getElementById('gtBody').innerHTML=`<div class="consulta-toolbar"><button id="gtPdf" type="button">Baixar PDF completo · ${window.GuardiaoConsulta.paginasDoPDF} páginas</button><a href="/meditacao" target="_blank" rel="noopener">Ouvir meditação novamente</a><span id="gtPdfSt" role="status" aria-live="polite"></span></div><main class="consulta-reading" id="gtDoc">${html}</main>`;
  }
  window.GuardiaoConsultaView={render};
 })();
