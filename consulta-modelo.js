@@ -3,117 +3,153 @@
  else root.GuardiaoConsulta=factory(root.GuardiaoEntrada,root.GuardiaoEstacoes);
 })(typeof globalThis!=='undefined'?globalThis:this,function(Entrada,Estacoes){
  'use strict';
+
  const areas=[['identidade','Identidade e corpo'],['dinheiro','Dinheiro e valores'],['comunicacao','Comunicação e estudos'],['familia','Casa e família'],['criatividade','Criatividade e prazer'],['rotina','Trabalho diário e saúde'],['relacionamentos','Relacionamentos'],['intimidade','Crises e intimidade'],['proposito','Propósito e expansão'],['carreira','Carreira e reconhecimento'],['coletivos','Amigos e coletivos'],['interioridade','Espiritualidade e interioridade']];
- const meditacao=[
-  ['Primeiro minuto','Encontre uma posição confortável. Você pode manter os olhos abertos. Olhe ao redor e escolha um objeto. Perceba uma cor e um detalhe dele. Se quiser mudar de posição, mude. Use este tempo no seu ritmo.'],
-  ['Segundo minuto','Perceba um apoio confortável: os pés no chão ou as costas na cadeira. Se preferir, continue olhando para o objeto. Deixe a respiração seguir sem esforço. Você pode apenas notar o que está ao seu redor.'],
-  ['Terceiro minuto','Se a questão voltar à sua cabeça, perceba que ela voltou. Você terá espaço para olhar para isso na leitura. Agora, volte ao objeto ou a um som do ambiente. Repita esse movimento de atenção com calma.'],
-  ['Quarto minuto','Traga sua pergunta por um instante. Qual parte dela precisa de atenção hoje? Escolha um ponto para levar à leitura. Pode ser uma conversa ou uma dúvida que deseja compreender. Depois, volte a observar o ambiente.'],
-  ['Quinto minuto','Perceba como está agora. Você pode continuar ou preferir mais tempo. Se estiver confortável, movimente as mãos e olhe ao redor. Ao abrir a leitura, comece pela parte ligada à sua pergunta. Leia um trecho de cada vez.']
- ];
+ const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
  const promessa={inicio:'O seu lugar de potência é onde',destaque:'a sua energia rende mais e custa menos.'};
  const clean=v=>typeof v==='string'?v.trim():'';
- const card=(label,body,items)=>({label,body:clean(body),items:(items||[]).map(clean).filter(Boolean)});
+ const card=(label,body,props={})=>({label,body:clean(body),tone:'outline',...props});
+ const field=(label,text)=>({label,text});
+
+ // A leitura salva pode ter sido escrita para páginas maiores. Preserve a
+ // primeira frase inteira quando precisar de um trecho para a consulta rápida.
+ function trecho(value,max){
+  const text=clean(value).replace(/\s+/g,' ');
+  if(text.length<=max)return text;
+  const window=text.slice(0,max);
+  const sentence=window.match(/^.*[.!?](?=\s|$)/u)?.[0];
+  return sentence&&sentence.length>=max*.45
+   ?sentence
+   :(window.slice(0,-1).replace(/\s+\S*$/u,'').trimEnd()+'…');
+ }
+
+ function nascimento(r){
+  const bases=r.bases_leitura||{};
+  const cards=[
+   card('O que seu mapa natal acrescenta',trecho(bases.natal,280),{fullWidth:true}),
+   card('Seu ciclo pessoal',trecho(bases.numerologia,200)),
+   card('Seu arcano pessoal',trecho(bases.arcano,200))
+  ];
+  return cards.filter(c=>c.body);
+ }
+
+ function situacoes(rows,short=false){
+  const keys=['situacao','reconhecer','honrar','atualizar'];
+  return {
+   headers:['Situação','Reconhecer','Honrar','Atualizar'],
+   rows:rows.map(row=>keys.map(k=>short?trecho(row[k],k==='atualizar'?165:140):clean(row[k]))),
+   widths:[.24,.24,.24,.28],
+   stackOnMobile:true
+  };
+ }
+
  function paginas(map,profile={}){
   const r=map.resultado||map.gt?.res||{};
   if(r.versao_consulta!==2)throw new Error('Esta leitura usa o formato anterior.');
+  if(!Array.isArray(r.tabela_consulta)||r.tabela_consulta.length<3||r.meses?.length!==12)
+   throw new Error('A leitura de consulta rápida ainda está incompleta.');
+
   const input=Entrada.contexto(r.entrada_consulta||map.respostas?._consulta||map.gt?.ans?._consulta);
-  const pessoa=r.dados_pessoa||{};
-  const nome=pessoa.nome||profile.nome||map.name||'Sua leitura';
-  const g=r.guardiao||{},f=r.ferida||{},p=r.potencial||{},pl=r.plano||{};
-  const bases=r.bases_leitura||{},arc=r.arcano_pessoal||null;
+  const nome=trecho(clean(r.dados_pessoa?.nome||profile.nome||map.name).split(/\s+/)[0],42);
+  const guardiao=clean(map.guardiao)||'O seu padrão de proteção';
+  const g=r.guardiao||{},p=r.potencial||{},pl=r.plano||{};
   const est=r.versao_estacoes===1&&Estacoes.obter(r.estacao_alma?.estacao)?r.estacao_alma:null;
-  const dados=nome+' · Nascimento: '+(pessoa.nascimento||profile.nascimento||'não informado')+' · Hora: '+(pessoa.hora||profile.hora||'não informada')+' · Local: '+(pessoa.cidade||profile.cidade||(Number.isFinite(pessoa.lat)&&Number.isFinite(pessoa.lon)?pessoa.lat+', '+pessoa.lon:'não informado'));
-  const lugar=clean(r.lugar_potencia?.titulo)&&clean(r.lugar_potencia?.leitura)?r.lugar_potencia:{titulo:map.potencial||'Seu potencial em uso',leitura:p.leitura,gesto:p.primeiro_gesto};
-  if(areas.some(([k])=>!r.areas_vida?.[k]?.texto)||r.tabela_consulta?.length!==6||r.meses?.length!==12||pl.dias?.length!==7)throw new Error('A leitura de consulta rápida ainda está incompleta.');
-  const pages=[];
-  function add(title,section,intro,blocks=[],table){pages.push({title,section,intro:clean(intro),blocks,table});}
-  add('Mapa do Guardião','SUA LEITURA PESSOAL',promessa.inicio+' '+promessa.destaque,[
-   {...card(lugar.titulo,lugar.leitura,[lugar.gesto]),kind:'potencia',eyebrow:'Seu lugar de potência'},
-   card(nome,r.abertura),card('Sua questão',input.questao),card('Um foco por consulta','As 12 áreas ajudam a olhar sua questão por diferentes ângulos. Consulte a parte de que precisa e use a tabela para preparar uma resposta.'),card('Thiago Cervi','Material de consulta rápida · Leitura individual em 20 páginas.')
-  ]);
-  add('Como usar o seu mapa','COMECE POR AQUI','Antes da primeira leitura, ouça a meditação. Retome sua questão, consulte a área ligada à situação e use a tabela para preparar uma resposta. Escolha uma ação e defina quando vai experimentá-la.',[],{headers:['Procure aqui','Página'],rows:[['Sua questão',3],['Guardião e potencial',4],['Reconhecer, Honrar e Atualizar',5],['Mapa natal, numerologia e arcano',6],['Identidade e dinheiro',7],['Comunicação e família',8],['Criatividade e rotina',9],['Relacionamentos e intimidade',10],['Propósito e carreira',11],['Coletivos e interioridade',12],['Seus próximos 12 meses',13],['Continuação dos meses',14],['Sua tabela de consulta',15],['Possíveis desdobramentos',16],['Uma ação em 72 horas',17],['Prática de cinco minutos',18],['Sete dias para experimentar',19],['Seu próximo passo',20]],widths:[.89,.11],links:true});
-  const temSintese=Entrada.campos.every(c=>clean(r.sintese_respostas?.[c.key]));
-  const respostasIniciais=Entrada.campos.map(c=>temSintese?{...card(c.titulo,r.sintese_respostas[c.key]),original:input[c.key]}:card(c.titulo,input[c.key]));
-  if(temSintese)respostasIniciais.push(card('Seu próximo passo',r.objetivo?.proximo_passo));
-  add(temSintese?'Síntese das suas respostas':'A resposta à sua questão','PARTE 1 · SUA QUESTÃO ATUAL',r.objetivo?.leitura||r.integrada,respostasIniciais);
-  add('Sua proteção e seu potencial','O QUE A LEITURA ENCONTROU',r.integrada,[card(map.guardiao||'Seu Guardião',g.leitura+'\n\nO que preserva: '+g.beneficio+'\n\nO custo atual: '+g.preco),card('A ferida como referência simbólica',f.leitura),card(map.potencial||'Potencial em uso',p.leitura),card('Primeiro gesto',p.primeiro_gesto)]);
-  add('Reconhecer · Honrar · Atualizar','DA LEITURA À RESPOSTA','Use os movimentos numa cena concreta. Você pode voltar aqui antes de responder a um pedido ou tomar uma decisão.',[
-   card('Reconhecer','Observe o que aconteceu, o pensamento que apareceu e sua reação mais rápida. Sua descrição: '+input.reacao),
-   card('Honrar','Nomeie o que essa resposta tenta preservar. Seu receio: '+input.receio),
-   card('Atualizar','Escolha outra forma de responder, com uma frase ou uma ação que caiba agora. O que você deseja: '+input.desejo),
-   card('Uma frase para experimentar',r.frase_nova)
-  ]);
-  if(est){
-   const s=r.estudo_estacoes?.ciclos_atual;
-   add('Sua Estação da Alma','SEU MOMENTO DE VIDA',est.ao_longo_do_ano,[
-    {...card(est.titulo,est.leitura),kind:'estacao',estacao:est.estacao,fullWidth:true},
-    {...card('Por que esta estação',est.porque),estacao:est.estacao,seasonLabel:false},
-    card('Sua fase de vida',est.fase_vida+'\n\n'+clean(bases.numerologia),s?['Fase dos '+s.faixa_setenio[0]+' aos '+s.faixa_setenio[1]+' anos.','Ano pessoal '+s.ano_pessoal+' · Mês pessoal '+s.mes_pessoal+'.']:[]),
-    {...card('A resposta para sua questão',est.questao),estacao:est.estacao,seasonLabel:false},
-    {...card('Um movimento para agora',est.gesto),estacao:est.estacao,seasonLabel:false}
-   ]);
-   pages.at(-1).columns=2;pages.at(-1).estacao=est.estacao;
-   pages[3].blocks.push({...card('Seu mapa de nascimento',bases.natal),fullWidth:true});
-   pages[4].blocks.push(card(arc?'Seu arcano · '+arc.numero+' · '+arc.nome:'Seu arcano pessoal',bases.arcano,[arc?.metodo||'Método informado na leitura.']));
-   pages[1].legend=true;pages[1].blocks.push(card('Dados desta leitura',dados));
-   pages[1].table.rows=pages[1].table.rows.map(row=>row[1]===6?['Sua Estação da Alma',6]:row[1]===4?['Guardião, potencial e mapa de nascimento',4]:row[1]===5?['Reconhecer, Honrar, Atualizar e arcano',5]:row);
-   pages[0].blocks.splice(3,0,{...card('Sua estação atual',est.titulo),estacao:est.estacao});
-  }else add('Sua leitura e o momento atual','MAPA NATAL E CICLOS','Relacione as referências da leitura à questão concreta que você trouxe.',[
-   card('Dados desta leitura',dados),card('Mapa natal',bases.natal),card('Numerologia e fases da vida',bases.numerologia),card(arc?'Arcano pessoal · '+arc.numero+' · '+arc.nome:'Arcano pessoal',bases.arcano),card('Como foi calculado',arc?.metodo||'Não calculado nesta leitura.')
-  ]);
-  const titles=['Sua autonomia e seus recursos','Conversas e responsabilidades','O espaço da sua rotina','Vínculos e acordos','Direção e trabalho','Trocas e vida interior'];
-  for(let i=0;i<6;i++)add(titles[i],'AS 12 ÁREAS DA VIDA','',areas.slice(i*2,i*2+2).map(([key,label])=>{
-   const a=r.estacoes_areas?.[key];
-   if(est&&Estacoes.obter(a?.estacao))return {...card(label,r.areas_vida[key].texto),estacao:a.estacao,fields:[{label:'O que a estação destaca',text:a.leitura},{label:'Um passo possível',text:r.areas_vida[key].gesto}]};
-   return card(label,r.areas_vida[key].texto,['Um passo possível: '+r.areas_vida[key].gesto]);
-  }));
-  const nomesMeses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  for(let i=0;i<(est?3:2);i++){
-   const count=est?4:6,months=r.meses.slice(i*count,i*count+count);
-   if(est&&months.every(m=>Estacoes.obter(m.estacao))){
-    add('Seu ano, mês a mês',i===0?'AS ESTAÇÕES AO LONGO DO ANO':'AS ESTAÇÕES AO LONGO DO ANO · CONTINUAÇÃO',i===0?'Cada cor indica a estação simbólica daquele mês. O foco acompanha a questão que você trouxe.':'As estações seguem o seu estudo individual e podem continuar por vários meses.',months.map(m=>({...card(nomesMeses[m.mes-1]+' · '+m.ano,m.titulo),kind:'mes',estacao:m.estacao,note:'Por que esta estação: '+m.porque,fields:[{label:'O que ganha espaço',text:m.potencial},{label:'Um cuidado',text:m.cuidado},{label:'Uma ação possível',text:m.passo}]})));
-    pages.at(-1).columns=2;pages.at(-1).months=true;
-   }else add('Seus próximos doze meses',i===0?'CONSULTA AO LONGO DO TEMPO':'CONSULTA AO LONGO DO TEMPO · CONTINUAÇÃO',i===0?'Um tema, um cuidado e uma ação para cada mês, a partir da referência da sua leitura.':'',[],{headers:['Mês','Tema e recurso','Cuidado','Ação possível'],rows:months.map(m=>[String(m.mes).padStart(2,'0')+'/'+m.ano,m.titulo+'. '+m.potencial,m.cuidado,m.passo]),widths:[.13,.33,.25,.29]});
-  }
-  const headers=['Situação possível','Reconhecer','Honrar','Atualizar'];
-  const rows=r.tabela_consulta.map(t=>[t.situacao,t.reconhecer,t.honrar,t.atualizar]);
-  add('Sua tabela de consulta rápida','RECONHECER · HONRAR · ATUALIZAR',input.questao,[card('Como consultar','Procure uma cena próxima da sua. Reconhecer mostra o que observar. Honrar ajuda a compreender a necessidade envolvida. Atualizar traz uma frase ou ação possível.')],{headers,rows:rows.slice(0,3),widths:[.24,.25,.24,.27]});
-  add('Se a questão aparecer de outro jeito','POSSÍVEIS DESDOBRAMENTOS','Estas cenas são possibilidades relacionadas à sua questão. Use a linha que se aproxima da situação que estiver vivendo.',[card('Da leitura para uma conversa','Prepare sua resposta e confira se ela cabe nas condições que você tem hoje. Você pode adaptar a frase à sua maneira de falar.')],{headers,rows:rows.slice(3),widths:[.24,.25,.24,.27]});
-  add('Uma ação para as próximas 72 horas','SEU RESULTADO CONCRETO','Escolha uma ação que ajude a esclarecer ou movimentar a questão. Ao terminar, registre o que fez e o que percebeu.',[
-   card('Seu combinado',pl.h72),card('Antes de começar','', ['O que vou fazer: uma ação específica.','Quando vou fazer: um prazo nas próximas 72 horas.','Do que preciso: informação, recurso ou uma conversa.','O que vou observar para avaliar o próximo passo.']),card('Se a ação ficou grande','Reduza a etapa. Preparar uma pergunta pode ser suficiente quando ainda falta informação para uma decisão.')
-  ]);
-  if(est)add('Cinco minutos e sete dias','COLOQUE A LEITURA EM PRÁTICA','Use a prática numa situação concreta. A sequência abaixo ajuda a experimentar uma resposta por dia.',[
-   card('Sua prática de cinco minutos',pl.min5),card('Depois de experimentar','Anote o que fez e o que percebeu. Ajuste o tamanho da ação quando precisar de mais tempo ou apoio.')
-  ],{headers:['Dia','Uma ação por dia'],rows:pl.dias.map((t,i)=>[i+1,t]),widths:[.11,.89]});
-  else {
-  add('Cinco minutos para uma situação','PRÁTICA DEPOIS DA LEITURA','Esta prática organiza uma resposta no dia a dia. Ela é diferente da meditação de preparação.',[
-   card('Sua prática',pl.min5),card('Um minuto para cada movimento','', ['Descreva o que aconteceu.','Reconhecer: observe sua reação e o pensamento que apareceu.','Honrar: nomeie o que tentou preservar.','Atualizar: escolha uma frase ou ação possível.','Defina quando vai experimentar essa resposta.']),card('Depois do teste','Anote o que fez e o que aconteceu. Se ficou difícil, ajuste o tamanho da ação ou identifique o apoio de que precisa.')
-  ]);
-  add('Sete dias para experimentar','ACOMPANHE O USO DO MAPA','Use esta sequência como uma organização possível. Ajuste o ritmo quando a situação exigir mais tempo.',[],{headers:['Dia','Uma ação por dia'],rows:pl.dias.map((t,i)=>[i+1,t]),widths:[.11,.89]});
-  }
-  add('Seu próximo passo','PARA VOLTAR QUANDO PRECISAR','Retome a pergunta que trouxe. Registre o que ficou mais claro e qual ação deseja experimentar agora.',[
-   card('Sua direção',r.objetivo?.proximo_passo),card('Leve uma resposta para a vida real','', ['Minha questão de agora é…','O que consegui compreender foi…','O próximo passo que vou experimentar é…','Vou fazer isso até…']),card('Quando quiser aprofundar','Se precisar de ajuda para relacionar a leitura à situação que está vivendo, você pode seguir comigo em uma sessão individual. Entre em contato para conhecer o atendimento e agendar.\ncontato.energystudio@gmail.com'),card('Thiago Cervi','Mapa do Guardião · Reconhecer, Honrar e Atualizar.')
-  ]);
-  // Keep the text intact. Only presentation metadata changes between editions.
-  pages[0].cover=true;pages[0].promessa=promessa;pages[2].compact=true;
-  pages.forEach((page,index)=>page.blocks.forEach((block,i)=>{
-   block.tone=index===0?(i<3?'outline':i===3?'soft':'plain'):
-     index===2?(temSintese&&i===5?'soft':'outline'):index===4&&i===3?'soft':
-     index===5&&i===0?'outline':index===5&&i===4?'soft':
-     [14,15].includes(index)?'soft':index===16&&i===1?'soft':
-     index===17&&i===1?'soft':index===19&&i===1?'soft':'outline';
-  }));
-  pages[3].columns=2;
-  if(est){
-   pages[1].table.rows=pages[1].table.rows.filter(row=>row[1]!==19).map(row=>{
-    const n=row[1];if(n===13)return ['Meses 1 a 4 · suas estações',13];if(n===14)return ['Meses 5 a 8 · suas estações',14];
-    if(n===18)return ['Prática de cinco minutos e sete dias',19];return [row[0],n>=15&&n<=17?n+1:n];
+  const lugar=r.lugar_potencia||{};
+  const h72=clean(pl.h72)||clean(r.objetivo?.proximo_passo)||clean(lugar.gesto);
+  const frase=clean(r.frase_nova);
+  const respostas=Entrada.campos.map(c=>card(c.titulo,r.sintese_respostas?.[c.key]||input[c.key],{
+   original:r.sintese_respostas?.[c.key]?input[c.key]:null
+  })).filter(c=>c.body);
+  const passos=pl.dias?.map((text,i)=>field('Dia '+(i+1),text))||[];
+
+  const pages=[
+   {
+    title:'Mapa do Guardião',
+    section:[profile.exemplo?'Exemplo fictício':'Sua leitura',nome].filter(Boolean).join(' · '),
+    intro:trecho(input.questao,350),cover:true,columns:2,
+    blocks:[
+     card('A resposta para sua questão',trecho(r.objetivo?.leitura||r.integrada||r.abertura,650),{
+      tone:'soft',fullWidth:true,
+      fields:[field('Por onde começar',trecho(r.objetivo?.proximo_passo,250))].filter(f=>f.text)
+     }),
+     card(guardiao,trecho(g.leitura,210),{
+      eyebrow:'Seu Guardião',
+      fields:[field('O que tenta proteger',trecho(g.beneficio,165)),field('O custo hoje',trecho(g.preco,165))].filter(f=>f.text)
+     }),
+     card(trecho(lugar.titulo||map.potencial||'Seu potencial em uso',85),trecho(lugar.leitura||p.leitura,280),{
+      kind:'potencia',eyebrow:'Seu lugar de potência',tone:'soft',promise:promessa
+     })
+    ],
+    details:respostas.length?[{title:'Como a leitura interpretou suas respostas',blocks:respostas}]:[]
+   },
+   {
+    title:'Na hora em que acontecer',section:'RECONHECER · HONRAR · ATUALIZAR',
+    intro:'Procure a situação mais parecida com a sua. Em Atualizar, você encontra uma resposta para testar.',
+    blocks:[card('Seu plano para as próximas 72 horas',trecho(h72,450),{tone:'soft'})].filter(c=>c.body),
+    table:situacoes(r.tabela_consulta.slice(0,3),true),
+    details:[
+     {title:'Todas as situações da sua leitura',table:situacoes(r.tabela_consulta)},
+     {title:'Prática de cinco minutos e ações para sete dias',blocks:[
+      card('Prática depois da leitura',pl.min5),
+      card('Uma frase para experimentar',frase),
+      card('Sete dias',null,{fields:passos})
+     ].filter(c=>c.body||c.fields?.length)}
+    ].filter(d=>d.table||d.blocks.length)
+   },
+   {
+    title:est?'Sua Estação da Alma':'O que seu mapa acrescenta',
+    section:'SEU MOMENTO DE VIDA',estacao:est?.estacao,columns:2,
+    blocks:[
+     ...(est?[card(trecho(est.titulo,70),trecho(est.leitura,300),{
+      kind:'estacao',estacao:est.estacao,fullWidth:true,
+      fields:[
+       field('Por que esta estação',trecho(est.porque,210)),
+       field('Sua fase de vida',trecho(est.fase_vida,180)),
+       field('Um movimento para agora',trecho(est.gesto,150))
+      ].filter(f=>f.text)
+     })]:[]),
+     ...nascimento(r)
+    ],
+    details:[
+     {title:'Como o mapa de nascimento ajudou na leitura',blocks:[
++      card('Mapa natal',r.bases_leitura?.natal),
+      card('Numerologia e fases da vida',r.bases_leitura?.numerologia),
+      card('Arcano pessoal',r.bases_leitura?.arcano),
+      card('O que muda ao longo do ano',est?.ao_longo_do_ano)
+     ].filter(c=>c.body)},
+     {title:'Consultar as 12 áreas do seu mapa',blocks:areas.map(([key,label])=>card(label,r.areas_vida?.[key]?.texto,{
+      estacao:r.estacoes_areas?.[key]?.estacao,
+      fields:[
+       field('O que a estação destaca',clean(r.estacoes_areas?.[key]?.leitura)),
+       field('Um passo possível',clean(r.areas_vida?.[key]?.gesto))
+      ].filter(f=>f.text)
+     })).filter(c=>c.body)}
+    ].filter(d=>d.blocks.length)
+   }
+  ];
+
+  for(let start=0;start<12;start+=6){
+   const months=r.meses.slice(start,start+6);
+   const cards=months.map(m=>card(meses[m.mes-1]+' · '+m.ano,trecho(m.titulo,70),{
+    kind:'mes',
+    estacao:m.estacao,
+    fields:[field('Foco',trecho(m.potencial,130)),field('O que fazer',trecho(m.passo,130))].filter(f=>f.text)
+   }));
+   pages.push({
+    title:'Seus próximos meses',section:start?'MESES 7 A 12':'MESES 1 A 6',columns:2,months:true,
+    intro:start?'':'Em cada mês, você encontra um foco e uma ação ligada à questão que trouxe.',
+    legend:start===0&&cards.some(c=>Estacoes.obter(c.estacao)),blocks:cards,
+    details:months.some(m=>m.cuidado||m.porque)?[{
+     title:'Cuidados e contexto de cada mês',
+     blocks:months.map((m,i)=>card(cards[i].label,null,{
+      estacao:m.estacao,
+      fields:[field('Por que esta estação',clean(m.porque)),field('Um cuidado',clean(m.cuidado))].filter(f=>f.text)
+     })).filter(c=>c.fields.length)
+    }]:[]
    });
-   const idx=pages[1].table.rows.findIndex(row=>row[1]===14);pages[1].table.rows.splice(idx+1,0,['Meses 9 a 12 · suas estações',15]);
   }
-  if(pages.length!==20)throw new Error('O mapa precisa ter exatamente 20 páginas.');
   return pages;
  }
- return {areas,meditacao,paginas};
+
+ return {areas,paginas};
 });

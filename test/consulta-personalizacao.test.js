@@ -27,24 +27,22 @@ test('desejo mantém seu sentido e não é substituído por receio ou apoio de c
 test('resposta central de uma leitura já salva aparece sem alterar as cinco respostas',()=>{
  const m=mapa();delete m.resultado.sintese_respostas;const original=structuredClone(m);
  const pages=paginas(m);
- assert.equal(pages[2].intro,m.resultado.objetivo.leitura);
- assert.deepEqual(pages[2].blocks.map(b=>b.body),Object.values(entrada));
- assert.ok(pages.slice(6,12).every(p=>p.intro===''));
+ assert.equal(pages[0].blocks[0].body,m.resultado.objetivo.leitura);
+ assert.deepEqual(pages[0].details[0].blocks.map(b=>b.body),Object.values(entrada));
  assert.deepEqual(m,original,'A mudança de apresentação não pode reescrever o mapa salvo.');
  delete m.resultado.objetivo;
- assert.equal(paginas(m)[2].intro,m.resultado.integrada);
+ assert.equal(paginas(m)[0].blocks[0].body,m.resultado.integrada);
 });
 
 test('síntese responde a cada campo e mantém o original separado da interpretação',()=>{
- const m=mapa(),page=paginas(m)[2];
- assert.equal(page.title,'Síntese das suas respostas');
- assert.equal(page.blocks.length,6);
+ const m=mapa(),page=paginas(m)[0],blocks=page.details[0].blocks;
+ assert.equal(blocks.length,5);
  for(const [i,key] of Object.keys(entrada).entries()){
-  assert.equal(page.blocks[i].body,m.resultado.sintese_respostas[key]);
-  assert.equal(page.blocks[i].original,entrada[key]);
-  assert.notEqual(page.blocks[i].body,entrada[key]);
+  assert.equal(blocks[i].body,m.resultado.sintese_respostas[key]);
+  assert.equal(blocks[i].original,entrada[key]);
+  assert.notEqual(blocks[i].body,entrada[key]);
  }
- assert.equal(page.blocks[5].body,m.resultado.objetivo.proximo_passo);
+ assert.equal(page.blocks[0].body,m.resultado.objetivo.leitura);
  const d=partes().d;assert.equal(validarParte(d,'d'),null);
  delete d.sintese_respostas.receio;assert.ok(validarParte(d,'d'));
  const copiada=partes().d;copiada.sintese_respostas.reacao=entrada.reacao;
@@ -74,11 +72,11 @@ test('resposta destacada cabe no PDF mesmo com os cinco campos no tamanho máxim
  for(const c of Entrada.campos)m.resultado.entrada_consulta[c.key]=('Texto de exemplo para conferir a preservação da resposta e o espaço disponível. '.repeat(30)).slice(0,c.max);
  m.resultado.objetivo.leitura=Array.from({length:75},()=> 'clareza').join(' ')+'.';
  const pdf=await renderConsulta(m,{});
- assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,20);
+ assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-respostas-maximas.pdf',pdf);
 });
 
-test('as cinco interpretações e o próximo passo cabem no PDF sem imprimir os relatos longos de novo',async()=>{
+test('síntese e orientação cabem no PDF com os detalhes disponíveis no painel',async()=>{
  const Entrada=require('../consulta-entrada.js'),m=mapa();
  for(const c of Entrada.campos){
   m.resultado.entrada_consulta[c.key]='Resposta original longa. '.repeat(50).slice(0,c.max);
@@ -88,6 +86,6 @@ test('as cinco interpretações e o próximo passo cabem no PDF sem imprimir os 
  m.resultado.objetivo.proximo_passo=Array.from({length:25},()=> 'critério').join(' ')+'.';
  assert.equal(validarParte(m.resultado,'d'),null);
  const pdf=await renderConsulta(m,{});
- assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,20);
+ assert.equal((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-sintese-maxima.pdf',pdf);
 });

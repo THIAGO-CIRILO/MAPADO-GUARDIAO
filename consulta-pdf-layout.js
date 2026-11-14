@@ -2,8 +2,8 @@
  if(typeof module==='object'&&module.exports)module.exports=factory(require('./consulta-estacoes.js'));else root.GuardiaoPdfLayout=factory(root.GuardiaoEstacoes);
 })(typeof globalThis!=='undefined'?globalThis:this,function(Estacoes){
  'use strict';
- const C={ink:'#453A33',accent:'#A35330',muted:'#75675D',pale:'#EEE4D7',light:'#FBF9F5',border:'#DDD2C4'};
- const W=595.28,H=841.89,M=28,CW=W-2*M;
+ const C={ink:'#3A2C26',accent:'#A35330',muted:'#75675D',pale:'#EEE4D7',light:'#FBF8F2',border:'#DDD2C4',paper:'#FFFCF7'};
+ const W=595.28,H=841.89,M=34,CW=W-2*M;
  function draw(painter,pages){
   pages.forEach((p,index)=>{
    let scale=1,columns=p.columns===2?2:1;
@@ -21,15 +21,15 @@
     }
     const gap=(p.compact?9:12)*scale,cols=columns,cards=[];
     function measure(b,i,outerWidth){
-     const palette=Estacoes.obter(b.estacao),month=b.kind==='mes',hero=p.cover&&i===0,seasonHero=b.kind==='estacao';
+     const palette=Estacoes.obter(b.estacao),month=b.kind==='mes',hero=(p.cover&&i===0)||b.kind==='potencia',seasonHero=b.kind==='estacao';
      const boxed=b.tone!=='plain'||!!palette;
      const pad=boxed?(p.compact?8:month?10:12)*scale:0,width=outerWidth-2*pad;
      const label=boxed&&!hero&&!seasonHero&&!month?b.label.toUpperCase():b.label;
      const labelFont=hero||seasonHero?'serif':boxed?'bold':'serif';
-     const labelSize=(hero?24:seasonHero?23:month?10.3:boxed?8.7:19)*scale;
+     const labelSize=(b.kind==='potencia'?22:hero?24:seasonHero?23:month?10.3:boxed?9.1:19)*scale;
      const eyebrowY=pad,eyebrowH=b.eyebrow?painter.height(b.eyebrow.toUpperCase(),width,8.4*scale,'bold')+8*scale:0;
      const seasonY=eyebrowY+eyebrowH,seasonH=palette&&!month&&b.seasonLabel!==false?15*scale:0;
-     const labelY=seasonY+seasonH,labelW=month?width-69*scale:width,labelH=painter.height(label,labelW,labelSize,labelFont);
+     const labelY=seasonY+seasonH,labelW=month&&palette?width-69*scale:width,labelH=painter.height(label,labelW,labelSize,labelFont);
      const bodyY=labelY+labelH+(hero?13:8)*scale,bodySize=month?15.5*scale:size,bodyFont=month?'serif':'regular';
      const bodyH=b.body?painter.height(b.body,width,bodySize,bodyFont):0;
      const items=(b.items||[]).map((t,j)=>(j+1)+'. '+t).join('\n'),itemsY=bodyY+bodyH+(bodyH&&items?9*scale:0);
@@ -41,9 +41,13 @@
       bottom=textY+painter.height(f.text,width,fs,'regular');
       return {...f,labelY,textY,fs,ls};
      });
+     const promiseY=bottom+12*scale;
+     const promiseSize=10.4*scale,highlightSize=13*scale;
+     const highlightY=b.promise?promiseY+painter.height(b.promise.inicio,width,promiseSize,'regular')+2*scale:0;
+     if(b.promise)bottom=highlightY+painter.height(b.promise.destaque,width,highlightSize,'bold');
      const noteY=bottom+8*scale,noteSize=9.1*scale;
      if(b.note)bottom=noteY+painter.height(b.note,width,noteSize,'regular');
-     return {outerWidth,pad,width,label,labelW,labelFont,labelSize,labelY,eyebrowY,seasonY,bodyY,bodySize,bodyFont,items,itemsY,itemsH,itemPad,fields,noteY,noteSize,boxed,hero,month,palette,h:bottom+pad};
+     return {outerWidth,pad,width,label,labelW,labelFont,labelSize,labelY,eyebrowY,seasonY,bodyY,bodySize,bodyFont,items,itemsY,itemsH,itemPad,fields,promiseY,promiseSize,highlightY,highlightSize,noteY,noteSize,boxed,hero,month,palette,h:bottom+pad};
     }
     let row=[];
     function flush(){if(!row.length)return;const h=Math.max(...row.map(x=>x.h));for(let j=0;j<row.length;j++){const c=row[j];c.x=M+j*((CW-gap)/2+gap);c.y=y;c.h=h;cards[c.index]=c;}y+=h+gap;row=[];}
@@ -64,6 +68,8 @@
    while(m.y>H-53&&scale>.85){scale-=.025;m=metrics();}
    if(m.y>H-47)throw new Error('Conteúdo excede o espaço da página '+(index+1)+'.');
    painter.page();const pageAccent=Estacoes.obter(p.estacao)?.accent||C.accent;
+   painter.rect(0,0,W,H,C.paper);
+   painter.rect(0,0,W,5,pageAccent);
    if(p.cover)painter.text(p.section,M,38,CW,8.7,'bold',C.muted);
    else{painter.text(String(index+1).padStart(2,'0'),M+10,36,30,22,'serif',pageAccent);painter.text(p.section,M+46,43,CW-46,8.7,'regular',C.ink);painter.line(M,68,W-M,68,C.border);}
    painter.text(p.title,M,m.titleY,CW,m.titleSize,'serif',p.cover?pageAccent:C.ink);
@@ -85,6 +91,11 @@
     if(b.body)painter.text(b.body,x,y+c.bodyY,c.width,c.bodySize,c.bodyFont,C.ink);
     if(c.items){if(c.itemPad)painter.rect(x,y+c.itemsY,c.width,c.itemsH,C.light,null,3);painter.text(c.items,x+c.itemPad,y+c.itemsY+c.itemPad,c.width-2*c.itemPad,m.size,'regular',C.ink);}
     for(const f of c.fields){painter.text(f.label.toUpperCase(),x,y+f.labelY,c.width,f.ls,'bold',pal?.accent||C.muted);painter.text(f.text,x,y+f.textY,c.width,f.fs,'regular',C.ink);}
+    if(b.promise){
+     painter.line(x,y+c.promiseY-5*scale,x+c.width,y+c.promiseY-5*scale,C.border);
+     painter.text(b.promise.inicio,x,y+c.promiseY,c.width,c.promiseSize,'regular',C.ink);
+     painter.text(b.promise.destaque,x,y+c.highlightY,c.width,c.highlightSize,'bold',pageAccent);
+    }
     if(b.note)painter.text(b.note,x,y+c.noteY,c.width,c.noteSize,'regular',C.muted);
    });
    if(p.table){const t=p.table,tm=m.table;let y=tm.y;[t.headers,...t.rows].forEach((row,i)=>{

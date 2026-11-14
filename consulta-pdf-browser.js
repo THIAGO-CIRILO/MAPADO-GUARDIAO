@@ -28,10 +28,10 @@
   };
   window.GuardiaoPdfLayout.draw(painter,pages);
   links.forEach(l=>{doc.setPage(l.page);doc.link(l.x,l.y,l.w,l.h,typeof l.target==='number'?{pageNumber:l.target}:{url:l.target});});
-  if(doc.getNumberOfPages()!==20)throw new Error('Não consegui fechar o PDF em 20 páginas.');
+  if(doc.getNumberOfPages()!==pages.length)throw new Error('Não consegui fechar o PDF da sua leitura.');
   const name=String(p.name||'Meu_Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,60);
-  doc.save('Mapa_do_Guardiao_20_Paginas_'+name+'.pdf');
-  if(status)status.textContent='Seu mapa de 20 páginas está pronto.';
+  doc.save('Mapa_do_Guardiao_'+name+'.pdf');
+  if(status)status.textContent='Seu PDF está pronto.';
  }
  window.GuardiaoPdfConsulta={download};
 })();

@@ -21,8 +21,9 @@ async function renderConsulta(map,profile){
   link:(x,y,w,h,target)=>links.push({page:doc.bufferedPageRange().count-1,x,y,w,h,target})
  };
  draw(painter,pages);
+ if(doc.bufferedPageRange().count!==pages.length)throw new Error('A paginação do PDF excedeu a leitura.');
  for(const l of links){doc.switchToPage(l.page);if(typeof l.target==='number')doc.goTo(l.x,l.y,l.w,l.h,'pagina'+l.target);else doc.link(l.x,l.y,l.w,l.h,l.target);}
- for(let i=0;i<20;i++){doc.switchToPage(i);doc.addNamedDestination('pagina'+(i+1),'Fit');}
+ for(let i=0;i<pages.length;i++){doc.switchToPage(i);doc.addNamedDestination('pagina'+(i+1),'Fit');}
  doc.end();return done;
 }
 module.exports={renderConsulta};

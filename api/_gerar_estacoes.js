@@ -33,7 +33,7 @@ async function gerarEstacoes({fase,contexto,mapa,orientacaoRevisao}){
  if(fase==='f'){parte.metodo_mensal=calculos.ciclos.metodo;parte.referencia_mensal=calculos.ciclos.referencia;}
  if(fase==='d'){
   const {renderConsulta}=require('./_consulta_pdf.js');
-  try{await renderConsulta({...mapa,resultado:{...leitura,...parte}},{});}catch(_){const e=new Error('As caixas precisam de textos menores para caber nas 20 páginas.');e.name='RevisaoEstacoes';throw e;}
+  try{await renderConsulta({...mapa,resultado:{...leitura,...parte}},{});}catch(_){const e=new Error('As caixas precisam de textos menores para caber no PDF.');e.name='RevisaoEstacoes';throw e;}
  }
  return parte;
 }

@@ -389,7 +389,7 @@ module.exports=async function handler(req,res){
     const profiles=profile.ok?await profile.json():[];
     const consulta=m.resultado?.versao_consulta===2;
     const pdf=await (consulta?renderConsulta:renderCompact)(m,profiles?.[0]||{});
-    const filename=(consulta?'Mapa_do_Guardiao_20_Paginas_':'Mapa_do_Guardiao_Edicao_Essencial_')+String(m.resultado?.dados_pessoa?.nome||profiles?.[0]?.nome||'Meu_Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,60)+'.pdf';
+    const filename=(consulta?'Mapa_do_Guardiao_':'Mapa_do_Guardiao_Edicao_Essencial_')+String(m.resultado?.dados_pessoa?.nome||profiles?.[0]?.nome||'Meu_Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]+/g,'_').slice(0,60)+'.pdf';
     res.setHeader('Content-Type','application/pdf');
     res.setHeader('Content-Disposition','attachment; filename="'+filename+'"');
     res.setHeader('Content-Length',pdf.length);

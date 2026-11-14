@@ -100,7 +100,7 @@ function wz() {
   if (s === 'boot') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Carregando…</p></div></div>'; return; }
   if (s === 'config') { R.innerHTML = '<div class="wz"><div class="wz-card"><h2>Falta configurar</h2><p class="lead">Preencha o arquivo <b>config.js</b> com o endereço e a chave pública do seu Supabase (veja o README) e publique de novo.</p></div></div>'; return; }
   if (s === 'welcome') {
-    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">O seu lugar de potência é onde <em>a sua energia rende mais e custa menos.</em></p><p class="wz-sub">Conte sua questão, responda às dez perguntas fixas e às três perguntas sobre o momento atual. O mapa reúne suas respostas, as 12 áreas da vida e um próximo passo possível.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
+    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">O seu lugar de potência é onde <em>a sua energia rende mais e custa menos.</em></p><p class="wz-sub">Conte sua questão, responda às dez perguntas fixas e às três perguntas sobre o momento atual. O mapa responde à sua questão e traz um passo para as próximas 72 horas.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
   }
   if (s === 'auth') {
     const m = W.mode;
@@ -139,9 +139,13 @@ function wz() {
   if (s === 'erro') { R.innerHTML = `<div class="wz"><div class="wz-card"><h2>Não deu certo desta vez</h2><p class="wz-err" role="alert">${esc(W.err)}</p>${W.msg ? '<p class="wz-msg" role="status">'+esc(W.msg)+'</p>' : ''}<div class="wz-nav"><button class="ghost" id="wzToObj" type="button">Voltar</button><button id="wzRetry" type="button">Tentar de novo</button></div><button class="wz-link" id="wzSendHistory" type="button">Enviar meus dados ao suporte</button><p class="gt-note">Se a leitura já foi gerada, o suporte poderá recuperá-la sem cobrar outra compra. Não envie senha ou dados bancários.</p></div></div>`; return; }
   if (s === 'result') {
     const p = db.people.find(x => x.id === D.pid && x.gt && x.gt.res); if (!p) { W.screen = 'welcome'; return wz(); }
-    if(p.gt.res.versao_consulta===2)window.GuardiaoConsultaView.render({...p,guardiao:GT_G[p.gt.S.rg[0]][0],potencial:GT_P[p.gt.S.rp[0]][0]});else gtResult(p);
+    if(p.gt.res.versao_consulta===2){
+      p.guardiao=p.guardiao||GT_G[p.gt.S.rg[0]][0];
+      p.potencial=p.potencial||GT_P[p.gt.S.rp[0]][0];
+      window.GuardiaoConsultaView.render(p);
+    }else gtResult(p);
     if(p.gt.res.versao_consulta!==2&&W.sourceMap?.user_id===W.user?.id){
-      root().insertAdjacentHTML('afterbegin',`<section class="wz-card" style="max-width:860px;margin:18px auto"><span class="eyebrow">Sua leitura está no formato anterior</span><h2>Atualizar para o mapa de 20 páginas</h2><p>Responda às cinco perguntas sobre sua questão atual. Vamos aproveitar seus dados de nascimento e as respostas do teste para gerar as 12 áreas e sua tabela de consulta.</p><p>Sua leitura anterior fica preservada. Esta atualização não exige outra compra.</p><button id="wzUpgrade" type="button">${D.upgradeMapId===W.activeMapId?'Continuar atualização':'Atualizar meu mapa · 20 páginas'}</button></section>`);
+      root().insertAdjacentHTML('afterbegin',`<section class="wz-card" style="max-width:860px;margin:18px auto"><span class="eyebrow">Sua leitura está no formato anterior</span><h2>Atualizar minha leitura</h2><p>Responda às cinco perguntas sobre sua questão atual. Vamos usar seus dados de nascimento e as respostas do teste para preparar sua síntese e tabela.</p><p>Sua leitura anterior fica preservada. Esta atualização não exige outra compra.</p><button id="wzUpgrade" type="button">${D.upgradeMapId===W.activeMapId?'Continuar atualização':'Atualizar meu mapa'}</button></section>`);
     }
 
     const extra = W.viewing ? '' : `<div class="btns" style="margin-top:12px"><button class="ghost" id="wzMine" type="button">Meus mapas</button></div>`;
@@ -150,8 +154,8 @@ function wz() {
     // Duas saídas distintas: leitura completa imprimível e resumo fotográfico.
     if ($('gtPdf')) {
       $('gtPdf').id = 'wzPdf29';
-      $('wzPdf29').textContent = p.gt.res.versao_consulta===2?'Baixar meu mapa · 20 páginas':'Baixar PDF anterior · 14 a 18 páginas';
       if(p.gt.res.versao_consulta!==2){
+      $('wzPdf29').textContent='Baixar PDF anterior · 14 a 18 páginas';
       const full = document.createElement('button');
       full.type='button';full.id='wzPrintFull';full.className='ghost';
       full.textContent='Guardar esta página · PDF / Imprimir';

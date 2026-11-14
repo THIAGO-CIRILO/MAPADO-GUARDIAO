@@ -4,7 +4,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const campos=[
-    {key:'questao',titulo:'Qual questão você quer entender agora?',ajuda:'Escolha a questão principal desta leitura. As outras áreas entram como apoio.',exemplo:'Quero mudar minha forma de trabalhar, mas tenho medo de perder minha autonomia.',max:350},
+    {key:'questao',titulo:'Qual questão você quer entender agora?',ajuda:'Escolha a situação que você mais quer resolver agora.',exemplo:'Quero mudar minha forma de trabalhar, mas tenho medo de perder minha autonomia.',max:350},
     {key:'cena',titulo:'Conte uma situação recente em que isso apareceu.',ajuda:'O que aconteceu? Quem estava envolvido? Conte só o que quiser compartilhar.',exemplo:'Recebi um convite para outra função, mas adiei a conversa sobre as condições.',max:700},
     {key:'reacao',titulo:'Nessa hora, o que passa na sua cabeça e o que você faz?',ajuda:'Pode escrever o pensamento e a reação com suas palavras.',exemplo:'Penso que posso perder a estabilidade. Procuro mais informações e deixo a resposta para depois.',max:700},
     {key:'receio',titulo:'O que você teme perder se responder de outro jeito?',ajuda:'Nomeie o que importa para você nessa situação.',exemplo:'Tenho medo de perder a renda que conquistei e voltar a depender da família.',max:500},

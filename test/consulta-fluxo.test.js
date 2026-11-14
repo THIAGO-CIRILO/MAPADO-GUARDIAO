@@ -9,7 +9,7 @@ const {entrada,complementares,partes,mapa}=require('./consulta-fixture.js');
 const {compatibilidade}=require('../api/_consulta.js');
 const ROOT=path.resolve(__dirname,'..');
 const waitFor=async fn=>{for(let i=0;i<300;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('O fluxo não chegou à tela esperada.');};
-test('questionário completo salva contexto, mostra meditação e reabre as 20 páginas',async()=>{
+test('questionário completo salva contexto, mostra meditação e reabre as cinco páginas',async()=>{
  const errors=[],calls=[],backups=[],saved=[];let profile;
  const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));vc.on('error',e=>errors.push(e));
  const dom=new JSDOM(fs.readFileSync(path.join(ROOT,'public/index.html'),'utf8'),{url:'https://teste.invalid/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
@@ -61,34 +61,35 @@ test('questionário completo salva contexto, mostra meditação e reabre as 20 p
   assert.deepEqual(saved[0].resultado.entrada_consulta,entrada);
   assert.equal(Object.keys(saved[0].respostas).length,10);
   for(const req of calls){assert.deepEqual(req.teste.contexto_atual,entrada);assert.deepEqual(req.teste.contextos_complementares,complementares);assert.ok(JSON.stringify({teste:req.teste,dossier:req.dossier}).length<42000);assert.equal(req.dossier.areas.length,12);assert.equal(req.teste.respostas.length,10);assert.ok(req.dossier.mapa_natal.posicoes.Sol);}
-  click('wzOpenReading');assert.equal(w.document.querySelectorAll('.consulta-page').length,20);
-  assert.ok(w.document.getElementById('consulta-pagina-3').textContent.includes(partes().d.objetivo.leitura));
+  click('wzOpenReading');assert.equal(w.document.querySelectorAll('.consulta-page').length,5);
+  assert.ok(w.document.getElementById('consulta-pagina-1').textContent.includes(partes().d.objetivo.leitura));
   assert.deepEqual(saved[0].resultado.sintese_respostas,partes().d.sintese_respostas);
-  const sintesePage=w.document.getElementById('consulta-pagina-3');
+  const sintesePage=w.document.getElementById('consulta-pagina-1');
   for(const texto of Object.values(partes().d.sintese_respostas))assert.ok(sintesePage.textContent.includes(texto));
   assert.equal(sintesePage.querySelectorAll('details.consulta-original').length,5);
   assert.ok([...sintesePage.querySelectorAll('details.consulta-original')].every(d=>!d.open));
-  assert.ok(!w.document.getElementById('consulta-pagina-8').textContent.includes('Consulte a área ligada à sua pergunta'));
+  assert.equal(w.document.querySelectorAll('.consulta-details[open]').length,0);
+  assert.match($('wzPdf29').textContent,/5 páginas/);
   assert.ok(w.document.body.textContent.includes(entrada.cena));
   assert.equal(w.document.querySelector('.consulta-promise strong').textContent,'a sua energia rende mais e custa menos.');
   assert.equal(w.document.querySelector('.consulta-card--potencia h3').textContent,partes().b.lugar_potencia.titulo);
   profile.objetivo='Objetivo diferente no perfil';
   await w.wzOpenMap(saved[0].id,false);
-  assert.equal(w.document.querySelectorAll('.consulta-page').length,20);
+  assert.equal(w.document.querySelectorAll('.consulta-page').length,5);
   assert.ok(w.document.body.textContent.includes(entrada.questao));
   assert.ok(!errors.length,errors.join('\n'));
  }finally{w.close();}
 });
-test('PDF alternativo do navegador também fecha em 20 páginas',async()=>{
+test('PDF alternativo do navegador também fecha em cinco páginas',async()=>{
  const jsPDF=require('jspdf').jsPDF;let output;
  const context={window:{jspdf:{jsPDF:function(opts){const doc=new jsPDF(opts);doc.save=()=>{output=Buffer.from(doc.output('arraybuffer'));};return doc;}},GuardiaoConsulta:require('../consulta-modelo.js'),GuardiaoPdfLayout:require('../consulta-pdf-layout.js')},fetch:async url=>({ok:true,arrayBuffer:async()=>{const b=fs.readFileSync(path.join(ROOT,'assets',url));return b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);}}),btoa:s=>Buffer.from(s,'binary').toString('base64'),Uint8Array};
  vm.runInNewContext(fs.readFileSync(path.join(ROOT,'consulta-pdf-browser.js'),'utf8'),context);
  const m=mapa();await context.window.GuardiaoPdfConsulta.download({name:'Ana Exemplo',gt:{res:m.resultado,ans:m.respostas}},null,{});
  assert.ok(output);fs.writeFileSync(path.join(ROOT,'qa/consulta-navegador.pdf'),output);
- assert.equal((output.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,20);
+ assert.equal((output.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
  for(const key of Object.keys(m.resultado.sintese_respostas))m.resultado.sintese_respostas[key]=('responsabilidade '.repeat(45)).slice(0,375).trim();
  m.resultado.objetivo.leitura=Array(75).fill('clareza').join(' ')+'.';m.resultado.objetivo.proximo_passo=Array(25).fill('critério').join(' ')+'.';
  await context.window.GuardiaoPdfConsulta.download({name:'Ana Exemplo',gt:{res:m.resultado,ans:m.respostas}},null,{});
- assert.equal((output.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,20);
+ assert.equal((output.toString('latin1').match(/\/Type \/Page\b/g)||[]).length,5);
  fs.writeFileSync(path.join(ROOT,'qa/consulta-navegador-sintese-maxima.pdf'),output);
 });

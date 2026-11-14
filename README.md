@@ -109,10 +109,10 @@ quatro estações. IDs de referência são validados por mês antes da gravaçã
 busca privada também usa os planetas envolvidos para selecionar os livros.
 
 `consulta-estacoes.js` centraliza nomes e cores para navegador e os dois motores
-de PDF. A edição usa caixas na leitura, quatro meses por página em três páginas,
-e reúne prática de cinco minutos e sete dias na página 19, mantendo 20 páginas.
-A página 6 traz a Estação da Alma; as bases natal e do arcano ficam nas páginas
-4 e 5. Antes de salvar a síntese nova, o servidor verifica a geração do PDF.
+de PDF. A Estação da Alma fica na página 3, junto das referências da leitura.
+As páginas 4 e 5 mostram seis meses cada, com o nome e a cor da estação, um foco
+e uma ação por mês. Antes de salvar a síntese nova, o servidor verifica a geração
+do PDF.
 
 `supabase/estacoes-salvas.sql` e `/api/atualizar-estacoes` permitem uma atualização
 administrativa de mapas com respostas completas, em duas etapas (F e D). O
@@ -130,7 +130,7 @@ que deve ser ajustado, preservando as respostas e a versão anterior.
 
 Os testes comparam 40 posições e quatro Ascendentes com dados independentes
 JPL DE421/Skyfield, conferem ausência de Lua/ângulos sem hora, mudança de setênio,
-referências inválidas, retomada de etapas e PDFs de 20 páginas.
+referências inválidas, retomada de etapas e PDFs de cinco páginas.
 
 A fase B também gera `lugar_potencia` (título concreto, leitura e gesto), a partir
 dos recursos do teste e da questão atual. Ele aparece na capa, junto da frase
@@ -149,12 +149,14 @@ convertida para MP3 de 128 kbps estéreo, preservando os dois canais do original
 sem ouvir. A pessoa pode repetir em `/meditacao`. O roteiro anterior foi retirado
 da tela de áudio para não ser confundido com a gravação enviada.
 
-O mesmo modelo de 20 páginas alimenta a leitura na tela, o PDF do servidor e o
-PDF alternativo do navegador. A preparação em áudio fica antes da leitura; seu
-roteiro não ocupa uma página do mapa. Os 12 meses são distribuídos em duas páginas,
-com seis meses em cada uma. O layout usa fundo branco, títulos serifados, números
-em terracota e caixas bege apenas nos destaques. Fontes Figtree e Instrument Serif ficam no projeto
-com suas licenças OFL.
+O modelo de cinco páginas alimenta a leitura na tela e os PDFs do servidor e
+do navegador. A primeira página responde à questão, mostra o Guardião e destaca
+o lugar de potência. A segunda traz o plano de 72 horas e três situações da tabela
+Reconhecer, Honrar e Atualizar. No painel, a cliente pode abrir as interpretações
+das cinco respostas, todas as situações, as práticas e as 12 áreas. Os mapas já
+salvos na edição de consulta rápida usam a nova apresentação com os dados que já
+têm. As cores das estações aparecem quando a leitura salva contém a classificação
+do período. O áudio continua disponível antes da leitura.
 
 ### Atualizar uma leitura anterior
 
@@ -162,7 +164,7 @@ Execute `supabase/atualizar-consulta.sql` no projeto existente antes de publicar
 esta correção. O script cria uma tabela em schema privado e um RPC autenticado;
 não modifica as leituras existentes durante a instalação.
 
-Leituras antigas mostram **Atualizar meu mapa · 20 páginas**. O link
+Leituras antigas mostram **Atualizar meu mapa**. O link
 `/?atualizar=1` abre o mesmo fluxo depois do login. A pessoa responde aos cinco
 campos abertos e às três perguntas do momento atual, e confirma o consentimento. Nascimento e alternativas salvas são
 reutilizados. Não há outra compra.
@@ -185,10 +187,9 @@ A página `/venda` usa `venda.html` como fonte, com a paleta da marca
 a mesma paleta, inclusive nas cores de seleção e no tema escuro. Preço, checkout, garantia e acesso
 continuam os mesmos. Exemplos de leitura são identificados como fictícios.
 
-A página 3 das novas leituras traz a conclusão `objetivo.leitura`, uma interpretação
-individual de cada uma das cinco respostas em `sintese_respostas` e o próximo passo.
-No navegador, o relato original pode ser conferido em cada bloco; no PDF, aparece
-a síntese, sem repetir os relatos longos. A etapa D é gerada por último, recebendo
+Na primeira página, `objetivo.leitura` responde à pergunta da cliente. No painel,
+as cinco interpretações em `sintese_respostas` podem ser abertas junto dos relatos
+originais. A etapa D é gerada por último, recebendo
 as áreas, a tabela, o plano e os meses já preparados. O número de chamadas continua
 sendo seis e as reservas concluídas continuam reutilizadas depois de uma falha.
 Mapas já salvos sem `sintese_respostas` mantêm o conteúdo e a apresentação anterior.

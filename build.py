@@ -65,7 +65,7 @@ def use_real_auth(html, filename):
         html = html[:banner_start] + html[banner_end + len('</style>'):]
     return html
 
-# Shared intake, page model, and PDF layout for the personalized 20-page edition.
+# Shared intake, page model, and PDF layout for the personalized consultation.
 for filename in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js','consulta.css','meditacao.html'):
     shutil.copyfile(root / filename, out / filename)
 shutil.copytree(root / 'assets/fonts', out / 'fonts', dirs_exist_ok=True)
@@ -81,7 +81,7 @@ manifest.update(theme_color='#B04F1E',background_color='#F0E8DB')
 manifest_file.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 old_description='<meta name="description" content="Em 10 minutos, descubra o seu lugar de potência para ganhar ainda mais dinheiro. Mapa do Guardião, do Campo Guardião.">'
 if html.count(old_description)!=1:raise SystemExit('Unexpected app description in the archive')
-html=html.replace(old_description,'<meta name="description" content="Traga uma questão, responda ao teste e receba um mapa pessoal de 20 páginas, com recursos, 12 áreas da vida e um próximo passo possível.">',1)
+html=html.replace(old_description,'<meta name="description" content="Traga uma questão e receba um mapa de consulta rápida com seu Guardião e um passo para as próximas 72 horas.">',1)
 # Prepare a standalone quiz motor for the administrator from the public site archive.
 quiz_begin = html.find('const GT_G = {')
 quiz_finish = html.find('const gtDraft =', quiz_begin)
@@ -105,10 +105,10 @@ close_tag = html.find("</script>", wizard_pos)
 if open_tag < 0 or close_tag < 0:
     raise SystemExit("Could not safely replace wizard script")
 wizard_source = (root / "wizard.js").read_text(encoding="utf-8")
-consulta_scripts = ''.join('<script src="/'+name+'?v=20261104-estacoes1"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
+consulta_scripts = ''.join('<script src="/'+name+'?v=20261114-consulta-curta"></script>\n' for name in ('consulta-entrada.js','consulta-contexto.js','consulta-estacoes.js','consulta-modelo.js','consulta-pdf-layout.js','consulta-pdf-browser.js','consulta-view.js'))
 
 html = html[:open_tag] + "<script>\n" + wizard_source + "\n</script>" + html[close_tag + len("</script>"):]
-html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261104-estacoes1"></head>', 1)
+html = html.replace('</head>', '<link rel="stylesheet" href="/consulta.css?v=20261114-consulta-curta"></head>', 1)
 
 # Keep the detailed on-screen reading but remove the repetitive disclaimer embedded
 # in the old archive. Editorial responsibility is handled by the new server prompt.
@@ -243,7 +243,7 @@ if not photo.is_file() or not sales_source.is_file():
 shutil.copyfile(photo,out/photo.name)
 sales_html=sales_source.read_text(encoding='utf-8')
 for required in ('https://pay.kiwify.com.br/vT6ZxZd','8x de R$ 5,38','R$ 37,00',
-                 'dez perguntas fixas','três perguntas','20 páginas','Seu Guardião',
+                 'dez perguntas fixas','três perguntas','5 páginas','Seu Guardião',
                  'mailto:contato.energystudio@gmail.com'):
     if required not in sales_html:raise SystemExit('Sales content missing: '+required)
 if 'href="#"' in sales_html or '24 Guardiões' in sales_html:

@@ -15,35 +15,36 @@ test('entrada mantém as palavras e calcula AP-22 com data válida',()=>{
  assert.equal(validarEntrada({contexto_atual:{questao:'Oi'}})!==null,true);
  assert.equal(Object.keys(schemas.c.properties.areas_vida.properties).length,12);
 });
-test('modelo tem 20 páginas, 12 áreas, seis cenas e contexto próprio de cada cliente',()=>{
- const a=mapa(),b=mapa();b.resultado.entrada_consulta.questao='Quero renegociar uma responsabilidade na empresa da família.';
+test('consulta de cinco páginas começa pela resposta e mantém o contexto pessoal no painel',()=>{
+ const a=mapa(),b=mapa();
+ b.resultado.entrada_consulta.questao='Quero renegociar uma responsabilidade na empresa da família.';
  const pa=paginas(a),pb=paginas(b);
- assert.equal(pa.length,20);assert.equal(pb.length,20);
- assert.equal(pa[0].blocks[0].label,a.resultado.lugar_potencia.titulo);
- assert.equal(pa[0].promessa.destaque,'a sua energia rende mais e custa menos.');
- const antiga=mapa();delete antiga.resultado.lugar_potencia;assert.equal(paginas(antiga)[0].blocks[0].label,antiga.potencial);
- assert.equal(pa[2].blocks[0].body,a.resultado.sintese_respostas.questao);
- assert.equal(pa[2].blocks[0].original,entrada.questao);
- assert.equal(pa[2].title,'Síntese das suas respostas');
- assert.equal(pa[2].intro,a.resultado.objetivo.leitura);
- assert.ok(!JSON.stringify(pa).includes('Consulte a área ligada à sua pergunta'));
- assert.notEqual(pa[2].blocks[0].original,pb[2].blocks[0].original);
- assert.equal(pa.slice(6,12).reduce((s,x)=>s+x.blocks.length,0),12);
- assert.equal(pa[14].table.rows.length+pa[15].table.rows.length,6);
- assert.equal(pa[12].table.rows.length,6);assert.equal(pa[13].table.rows.length,6);
- const monthRows=pa.filter(p=>p.table?.headers[0]==='Mês').flatMap(p=>p.table.rows);
- assert.equal(monthRows.length,12);assert.equal(new Set(monthRows.map(row=>row[0])).size,12);
+ assert.equal(pa.length,5);
+ assert.equal(pa[0].intro,entrada.questao);
+ assert.equal(pb[0].intro,b.resultado.entrada_consulta.questao);
+ assert.equal(pa[0].blocks[0].body,a.resultado.objetivo.leitura);
+ assert.equal(pa[0].blocks[1].label,a.guardiao);
+ assert.equal(pa[0].blocks[2].label,a.resultado.lugar_potencia.titulo);
+ assert.equal(pa[0].blocks[2].promise.destaque,'a sua energia rende mais e custa menos.');
+ const antiga=mapa();delete antiga.resultado.lugar_potencia;
+ assert.equal(paginas(antiga)[0].blocks[2].label,antiga.potencial);
+ assert.equal(pa[0].details[0].blocks[0].original,entrada.questao);
+ assert.deepEqual(pa[1].table.rows.map(row=>row[0]),a.resultado.tabela_consulta.slice(0,3).map(row=>row.situacao));
+ assert.equal(pa[1].details[0].table.rows.length,6);
+ assert.equal(pa[1].details[1].blocks.at(-1).fields.length,7);
+ assert.equal(pa[2].details.at(-1).blocks.length,12);
+ const monthCards=pa.slice(3).flatMap(p=>p.blocks);
+ assert.equal(monthCards.length,12);
+ assert.equal(new Set(monthCards.map(c=>c.label)).size,12);
  assert.ok(!JSON.stringify(pa).includes('Cinco minutos antes da leitura'));
  assert.ok(!JSON.stringify(pa).includes('Primeiro minuto'));
- for(const row of pa[1].table.rows)assert.ok(row[1]>=3&&row[1]<=20);
- assert.equal(pa[18].table.rows.length,7);
 });
-test('PDF real tem 20 páginas e mantém a questão e a fonte serifada',async()=>{
+test('PDF de consulta rápida tem cinco páginas e mantém as fontes da leitura',async()=>{
  const pdf=await renderConsulta(mapa(),{nome:'Outro nome no perfil'});
  fs.mkdirSync('qa',{recursive:true});fs.writeFileSync('qa/consulta-servidor.pdf',pdf);
  assert.equal(pdf.subarray(0,5).toString(),'%PDF-');
  const raw=pdf.toString('latin1');
- assert.equal((raw.match(/\/Type \/Page\b/g)||[]).length,20);
+ assert.equal((raw.match(/\/Type \/Page\b/g)||[]).length,5);
  assert.match(raw,/InstrumentSerif/);assert.match(raw,/Figtree/);
 });
 test('gerador envia todo contexto, mantém autorização e grava a versão nova',async()=>{
