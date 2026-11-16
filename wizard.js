@@ -100,7 +100,29 @@ function wz() {
   if (s === 'boot') { R.innerHTML = '<div class="wz"><div class="wz-load"><span class="gt-dot"></span><p class="wz-msg">Carregando…</p></div></div>'; return; }
   if (s === 'config') { R.innerHTML = '<div class="wz"><div class="wz-card"><h2>Falta configurar</h2><p class="lead">Preencha o arquivo <b>config.js</b> com o endereço e a chave pública do seu Supabase (veja o README) e publique de novo.</p></div></div>'; return; }
   if (s === 'welcome') {
-    R.innerHTML = `<div class="wz"><div class="wz-card" style="padding:28px 20px;gap:18px"><span class="eyebrow">Campo Guardião</span><h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1><p class="wz-promise">O seu lugar de potência é onde <em>a sua energia rende mais e custa menos.</em></p><p class="wz-sub">Conte sua questão, responda às dez perguntas fixas e às três perguntas sobre o momento atual. O mapa responde à sua questão e traz um passo para as próximas 72 horas.</p><div class="wz-nav"><button id="wzStart" type="button">${W.user ? (W.maps.length ? 'Entrar no meu mapa' : 'Começar') : 'Começar'}</button></div>${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}<p class="gt-note">Em poucos minutos, você conhece seu Guardião, seus potenciais e os primeiros passos para agir de outro jeito.</p></div></div>`; return;
+    const startLabel = W.user && W.maps.length ? 'Entrar no meu mapa' : 'Descobrir o que escolhe por mim';
+    R.innerHTML = `
+      <div class="wz">
+        <div class="wz-card" style="padding:28px 20px;gap:18px">
+          <span class="eyebrow">CAMPO GUARDIÃO</span>
+          <h1 style="font-size:2.3rem;line-height:1.05">Mapa do Guardião</h1>
+          <p class="wz-promise"><strong>Você sabe que tem alguma coisa errada. Só não sabe o que é. E, quando vê, já fez de novo.</strong></p>
+          <p class="wz-sub">Existe um padrão que responde antes de você. Ele tem nome, e tem um jeito de desarmar.</p>
+          <div>
+            <p class="wz-sub">Conte a cena que sempre se repete, responda a algumas perguntas rápidas e receba:</p>
+            <ul class="wz-sub" style="margin-top:8px;padding-inline-start:1.125rem">
+              <li><strong>o nome do que escolhe por você</strong>, e o que ele tenta proteger</li>
+              <li>a frase para usar da próxima vez</li>
+              <li>um plano para as próximas 72 horas</li>
+              <li>seus próximos 12 meses, mês a mês</li>
+            </ul>
+          </div>
+          <div class="wz-nav"><button id="wzStart" type="button">${startLabel}</button></div>
+          ${W.user ? '' : '<button class="wz-link" id="wzHave" type="button">Já tenho conta</button>'}
+          <p class="gt-note"><em>Leva poucos minutos. Seu mapa chega na hora, para consultar quando a cena voltar.</em></p>
+        </div>
+      </div>`;
+    return;
   }
   if (s === 'auth') {
     const m = W.mode;
